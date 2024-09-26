@@ -42,7 +42,7 @@ const Header: React.FC = () => {
 
           <div className="hidden lg:flex items-center space-x-2">
             <Button
-              onClick={() => router.push('/dashboard')}
+              onClick={() => router.push('/home')}
               variant="ghost"
               className="border-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
             >
@@ -94,7 +94,7 @@ const Header: React.FC = () => {
           <div className="lg:hidden">
             <div className="px-2 pt-2 pb-3 space-y-1 sm:px-3">
               <Button
-                onClick={() => router.push('/dashboard')}
+                onClick={() => router.push('/home')}
                 variant="ghost"
                 className="w-full mt-2 border-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
               >

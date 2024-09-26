@@ -31,7 +31,7 @@ const SignIn: React.FC = () => {
       });
     }
     if (status === 'authenticated') {
-      router.push('/dashboard');
+      router.push('/home');
     }
   }, [verified, toast, status, router]);
 
@@ -58,7 +58,7 @@ const SignIn: React.FC = () => {
         if (callbackUrl && typeof callbackUrl === 'string') {
           router.push(callbackUrl);
         } else {
-          router.push('/dashboard');
+          router.push('/home');
         }
       }
     } catch (error) {
@@ -78,7 +78,7 @@ const SignIn: React.FC = () => {
       await signIn('google', { 
         callbackUrl: callbackUrl && typeof callbackUrl === 'string' 
           ? callbackUrl 
-          : '/dashboard' 
+          : '/home' 
       });
     } catch (error) {
       console.error(error);

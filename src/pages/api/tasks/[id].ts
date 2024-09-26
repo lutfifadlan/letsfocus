@@ -1,13 +1,29 @@
 import { NextApiRequest, NextApiResponse } from 'next';
 import { connectDB } from '@/lib/mongodb';
-import { Task } from '@/lib/models'
+import { Task, User } from '@/lib/models';
 import { ObjectId } from 'mongodb';
+import { authOptions } from '@/lib/auth';
+import { getServerSession } from 'next-auth';
 
-export default async function handler(req: NextApiRequest, res: NextApiResponse) {
-  const { method } = req;
-  const { taskId } = req.query;
-
+export default async function handler(
+  req: NextApiRequest,
+  res: NextApiResponse
+) {
   await connectDB();
+
+  const session = await getServerSession(req, res, authOptions);
+  if (!session || !session.user) {
+    return res.status(401).json({ message: 'Unauthorized' });
+  }
+
+  const { method } = req;
+  const { id: taskId } = req.query;
+
+  const user = await User.findOne({ nextAuthUserId: session.user.id });
+
+  if (!user) {
+    return res.status(404).json({ message: 'User not found' });
+  }
 
   switch (method) {
     case 'GET':
@@ -25,11 +41,17 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
     case 'PUT':
       try {
-        const { completed } = req.body;
+        const { isCompleted, isDeleted } = req.body;
+
+        const updateFields: Partial<{ isCompleted: boolean; isDeleted: boolean }> = {};
+        if (isCompleted !== undefined) updateFields.isCompleted = isCompleted;
+        if (isDeleted !== undefined) updateFields.isDeleted = isDeleted;
+
         const result = await Task.updateOne(
-          { _id: new ObjectId(taskId as string) },
-          { $set: { completed } }
+          { _id: new ObjectId(taskId as string), userId: user._id },
+          { $set: updateFields }
         );
+
         if (result.matchedCount === 0) {
           return res.status(404).json({ message: 'Task not found' });
         }
@@ -42,11 +64,14 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
     case 'DELETE':
       try {
-        const result = await Task.deleteOne({ _id: new ObjectId(taskId as string) });
-        if (result.deletedCount === 0) {
+        const result = await Task.updateOne(
+          { _id: new ObjectId(taskId as string), userId: user._id },
+          { $set: { isDeleted: true } }
+        );
+        if (result.matchedCount === 0) {
           return res.status(404).json({ message: 'Task not found' });
         }
-        res.status(200).json({ message: 'Task deleted successfully' });
+        res.status(200).json({ message: 'Task marked as deleted successfully' });
       } catch (error) {
         console.error(error);
         res.status(500).json({ message: 'Internal Server Error' });

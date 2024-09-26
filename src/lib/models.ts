@@ -25,8 +25,9 @@ const FocusTimeSchema = new mongoose.Schema({
 
 const TaskSchema = new mongoose.Schema({
   title: { type: String, required: true },
-  completed: { type: Boolean, default: false },
+  isCompleted: { type: Boolean, default: false },
   userId: { type: String, required: true },
+  isDeleted: { type: Boolean, default: false },
 }, { timestamps: true });
 
 export const User = mongoose.models.User || mongoose.model('User', UserSchema);

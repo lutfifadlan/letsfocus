@@ -1,7 +1,8 @@
 export interface Task {
   _id: string;
   title: string;
-  completed: boolean;
+  isCompleted: boolean;
+  isDeleted: boolean;
   userId: string;
   createdAt: Date;
   updatedAt: Date;

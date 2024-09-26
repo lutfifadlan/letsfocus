@@ -31,7 +31,7 @@ const Register: React.FC = () => {
 
   useEffect(() => {
     if (status === 'authenticated') {
-      router.push('/dashboard');
+      router.push('/home');
     }
   }, [status, router]);
 
@@ -98,7 +98,7 @@ const Register: React.FC = () => {
   };
 
   const handleGoogleSignIn = () => {
-    signIn('google', { callbackUrl: '/dashboard' }).catch(() => {
+    signIn('google', { callbackUrl: '/home' }).catch(() => {
       toast({
         title: "Error",
         description: "Failed to sign in with Google. Please try again.",
