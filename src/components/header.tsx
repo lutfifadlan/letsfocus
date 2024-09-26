@@ -52,9 +52,9 @@ const Header: React.FC = () => {
               session && (
                 <Popover>
                   <PopoverTrigger asChild>
-                    <Avatar className="cursor-pointer">
-                      <AvatarImage src={session.user.image || ''} alt={session.user.name || ''} />
-                      <AvatarFallback>{session.user.name?.charAt(0) || 'U'}</AvatarFallback>
+                    <Avatar className="cursor-pointer rounded-full border" style={{ width: '30px', height: '30px' }}>
+                      <AvatarImage src={session.user.image || ''} alt={session.user.name || ''} style={{ width: '30px', height: '30px' }} />
+                      <AvatarFallback style={{ width: '30px', height: '30px' }}>{session.user.name?.charAt(0) || 'U'}</AvatarFallback>
                     </Avatar>
                   </PopoverTrigger>
                   <PopoverContent className="w-auto p-2">
@@ -102,12 +102,18 @@ const Header: React.FC = () => {
               </Button>
               {
                 session && (
-                  <div className="flex items-center space-x-2 px-3 py-2">
-                    <Avatar className="cursor-pointer">
-                      <AvatarImage src={session.user.image || ''} alt={session.user.name || ''} />
-                      <AvatarFallback>{session.user.name?.charAt(0) || 'U'}</AvatarFallback>
-                    </Avatar>
-                    <p>{session.user.email}</p>
+                  <div className="flex justify-center items-center space-x-2 px-3 py-2">
+                    <Popover>
+                      <PopoverTrigger asChild>
+                        <Avatar className="cursor-pointer rounded-full border" style={{ width: '30px', height: '30px' }} >
+                          <AvatarImage src={session.user.image || ''} alt={session.user.name || ''} style={{ width: '30px', height: '30px' }} />
+                          <AvatarFallback style={{ width: '30px', height: '30px' }}>{session.user.name?.charAt(0) || 'U'}</AvatarFallback>
+                        </Avatar>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-auto p-2">
+                        <p>{session.user.email}</p>
+                      </PopoverContent>
+                    </Popover>
                   </div>
                 )
               }

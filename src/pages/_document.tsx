@@ -11,47 +11,27 @@ class MyDocument extends Document {
             href="https://fonts.googleapis.com/css2?family=Grape+Nuts&family=Poppins:wght@300;400;600&family=Work+Sans:wght@300;400;600&display=swap"
             rel="stylesheet"
           />
-          <meta name="description" content="SyncPulse is an application that helps businesses understand their engineering teams better" />
+          <meta name="description" content="Let's Focus is an all-in-one productivity app that helps you focus on what matters most." />
           <meta
             name="keywords"
             content="
-              syncpulse,  
-              SyncPulse,
-              SyncPulse engineering,
-              SyncPulse software,
-              SyncPulse tools,
-              SyncPulse productivity,
-              SyncPulse efficiency,
-              SyncPulse performance,
-              SyncPulse management,
-              SyncPulse engineering management,
-              SyncPulse engineering performance,
-              SyncPulse engineering productivity,
-              SyncPulse engineering efficiency,
-              SyncPulse engineering software,
-              engineering productivity,
-              engineering efficiency,
-              engineering software,
-              engineering tools,
-              engineering productivity software,
-              engineering performance software,
-              engineering efficiency software,
-              engineering productivity tools,
-              engineering performance tools,
-              engineering efficiency tools,
-              engineering productivity software,
-              engineering performance software,
-              engineering efficiency software,
-              engineering productivity tools,
-              engineering performance tools,
-              engineering efficiency tools"
+              letsfocus,
+              lets focus,
+              focus,
+              productivity,
+              focus app,
+              focus tracker,
+              focus timer,
+              focus pomodoro,
+              focus productivity,
+            "
           />
-          <meta property="og:title" content="SyncPulse" />
-          <meta property="og:description" content="Engineering management software" />
-          <meta property="og:image" content="/sample-image.png" />
-          <meta property="og:url" content="https://getsyncpulse.co" />
+          <meta property="og:title" content="Let's Focus" />
+          <meta property="og:description" content="All-in-one productivity app" />
+          <meta property="og:image" content="/logo.svg" />
+          <meta property="og:url" content="https://letsfocus.today" />
           <meta property="og:type" content="website" />
-          <link rel="icon" href="/icon.svg" />
+          <link rel="icon" href="/logo.svg" />
         </Head>
         <body>
           <Main />
