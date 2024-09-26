@@ -12,7 +12,7 @@ interface LayoutProps {
 }
 
 const Sidebar = () => (
-  <div className="w-64 bg-white p-4 border-r border-gray-200">
+  <div className="w-64 bg-white p-4 border-r border-gray-200 dark:bg-background dark:border-gray-900">
     <nav className="h-full">
       <Button variant="ghost" className="w-full justify-start mb-2" onClick={() => router.push('/home')}>
         <Home className="mr-2 h-4 w-4" />
@@ -61,7 +61,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
       <main className="flex-grow w-full mx-auto">
         {
           router.pathname === '/home' || router.pathname === '/todolist' ? (
-            <div className="flex h-screen overflow-y-auto border-t border-b">
+            <div className="flex min-h-screen overflow-y-auto border-t border-b">
               <Sidebar />
               <div className="flex-grow p-4">
                 {children}

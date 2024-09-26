@@ -28,6 +28,7 @@ const TaskSchema = new mongoose.Schema({
   isCompleted: { type: Boolean, default: false },
   userId: { type: String, required: true },
   isDeleted: { type: Boolean, default: false },
+  tags: { type: [String], default: [] }, // Add this line
 }, { timestamps: true });
 
 export const User = mongoose.models.User || mongoose.model('User', UserSchema);

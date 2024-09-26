@@ -12,9 +12,10 @@ import { useSession } from 'next-auth/react';
 import { Task } from '@/interfaces';
 import Layout from '@/components/layout';
 import router from 'next/router';
-import { Plus, Check, Trash } from 'lucide-react';
+import { Plus, Check, Trash, Tag } from 'lucide-react'; // Import Tag icon
 import { useToast } from '@/hooks/use-toast';
 import { ToastAction } from '@/components/ui/toast';
+import { InputTags } from '@/components/ui/input-tags';
 
 interface MainContentProps {
   tasks: Task[];
@@ -23,6 +24,8 @@ interface MainContentProps {
   addTask: () => void;
   toggleTaskCompletion: (id: string) => void;
   deleteTask: (id: string) => void;
+  tags: string[]; // Add tags prop
+  setTags: (value: string[]) => void; // Add setTags prop
 }
 
 const MainContent: React.FC<MainContentProps> = ({
@@ -32,18 +35,21 @@ const MainContent: React.FC<MainContentProps> = ({
   addTask,
   toggleTaskCompletion,
   deleteTask,
+  tags, // Destructure tags
+  setTags, // Destructure setTags
 }) => {
   const incompleteTasks = tasks.filter((task) => !task.isCompleted && !task.isDeleted);
+  const [showTagsInput, setShowTagsInput] = useState(false); // State to manage visibility
 
   return (
-    <Card className="max-w-md mx-auto">
+    <Card className="max-w-4xl mx-auto">
       <CardHeader>
         <CardTitle className="text-center text-2xl">To-Do List</CardTitle>
       </CardHeader>
       <CardContent>
-        <div className="flex mb-4">
+        <div className="flex flex-row gap-2 mb-4">
           <Input
-            placeholder="Add a new task..."
+            placeholder="Add a new task title..."
             className="flex-1 mr-2"
             type="text"
             value={newTask}
@@ -63,7 +69,23 @@ const MainContent: React.FC<MainContentProps> = ({
           >
             <Plus size={16} />
           </Button>
+          <Button
+            onClick={() => setShowTagsInput(!showTagsInput)} // Toggle visibility
+            aria-label="Add Tags"
+            variant="outline"
+          >
+            <Tag size={16} />
+          </Button>
         </div>
+        {showTagsInput && (
+          <InputTags
+            type="text"
+            value={tags}
+            onChange={(value) => setTags(value as string[])}
+            placeholder="Add tags..."
+            className="w-full mb-4"
+          />
+        )}
         <ScrollArea className="h-[300px]">
           {incompleteTasks.length > 0 ? (
             incompleteTasks.map((task) => (
@@ -71,7 +93,21 @@ const MainContent: React.FC<MainContentProps> = ({
                 key={task._id}
                 className="flex items-center justify-between mb-2"
               >
-                <p className="flex-1">{task.title}</p>
+                <div className="flex-1">
+                  <p>{task.title}</p>
+                  {task.tags && task.tags.length > 0 && (
+                    <div className="flex flex-wrap gap-1 mt-1">
+                      {task.tags.map((tag, index) => (
+                        <span
+                          key={index}
+                          className="bg-gray-200 text-gray-700 px-2 py-1 rounded"
+                        >
+                          {tag}
+                        </span>
+                      ))}
+                    </div>
+                  )}
+                </div>
                 <div className="flex items-center">
                   <Button
                     variant="ghost"
@@ -105,6 +141,7 @@ export default function TaskPage() {
   const { status } = useSession();
   const [tasks, setTasks] = useState<Task[]>([]);
   const [newTask, setNewTask] = useState('');
+  const [tags, setTags] = useState<string[]>([]); // State to manage tags
   const { toast } = useToast();
 
   useEffect(() => {
@@ -127,18 +164,20 @@ export default function TaskPage() {
   const addTask = async () => {
     if (newTask.trim()) {
       try {
+        console.log('tags', tags);
         const response = await fetch('/api/tasks', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
           },
-          body: JSON.stringify({ title: newTask }),
+          body: JSON.stringify({ title: newTask, tags }), // Include tags in the request body
         });
         const data = await response.json();
   
         // Update tasks state using functional updater
         setTasks((prevTasks) => [...prevTasks, data]);
         setNewTask('');
+        setTags([]); // Clear tags after adding task
   
         // Toast after ensuring task is added
         toast({
@@ -294,7 +333,6 @@ export default function TaskPage() {
         title: 'Error',
         description: 'Failed to delete task.',
         variant: 'destructive',
-        duration: 3000,
       });
   
       // Revert isDeleted if the API call fails
@@ -331,7 +369,6 @@ export default function TaskPage() {
       toast({
         title: 'Undo Successful',
         description: 'Task has been restored.',
-        duration: 3000,
       });
     } catch (error) {
       console.error('Failed to undo delete:', error);
@@ -339,7 +376,6 @@ export default function TaskPage() {
         title: 'Error',
         description: 'Failed to undo delete.',
         variant: 'destructive',
-        duration: 3000,
       });
     }
   };  
@@ -359,6 +395,8 @@ export default function TaskPage() {
         addTask={addTask}
         toggleTaskCompletion={toggleTaskCompletion}
         deleteTask={deleteTask}
+        tags={tags} // Pass tags to MainContent
+        setTags={setTags} // Pass setTags to MainContent
       />
     </Layout>
   );

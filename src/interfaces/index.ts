@@ -6,6 +6,7 @@ export interface Task {
   userId: string;
   createdAt: Date;
   updatedAt: Date;
+  tags: string[];
 }
 
 export interface Habit {
@@ -23,5 +24,10 @@ export interface FocusTime {
   userId: string;
   createdAt: Date;
   updatedAt: Date;
+}
+
+export interface Tag {
+  id: string;
+  text: string;
 }
 
