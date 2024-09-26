@@ -5,7 +5,7 @@ import { useRouter } from 'next/router';
 import { Button } from "@/components/ui/button";
 import { motion } from "framer-motion";
 import Image from 'next/image';
-import { Menu, Home, LogIn, LogOut } from 'lucide-react'; // Importing new icons
+import { Menu, LogIn, LogOut, List, BarChart2 } from 'lucide-react'; // Importing new icon
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover"
 import { ThemeToggle } from "@/components/ui/theme-toggle"
@@ -21,6 +21,8 @@ const Header: React.FC = () => {
   }, []);
 
   if (!isMounted) return null;
+
+  const isLandingPage = router.pathname === '/';
 
   return (
     <header className="z-50">
@@ -42,44 +44,59 @@ const Header: React.FC = () => {
 
           <div className="hidden lg:flex items-center space-x-2">
             <Button
-              onClick={() => router.push('/home')}
+              onClick={() => router.push('/todolists')}
               variant="ghost"
               className="border-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
             >
-              <Home className="w-5 h-5" />
+              <List className="w-5 h-5" />
             </Button>
-            {
-              session && (
-                <Popover>
-                  <PopoverTrigger asChild>
-                    <Avatar className="cursor-pointer rounded-full border" style={{ width: '30px', height: '30px' }}>
-                      <AvatarImage src={session.user.image || ''} alt={session.user.name || ''} style={{ width: '30px', height: '30px' }} />
-                      <AvatarFallback style={{ width: '30px', height: '30px' }}>{session.user.name?.charAt(0) || 'U'}</AvatarFallback>
-                    </Avatar>
-                  </PopoverTrigger>
-                  <PopoverContent className="w-auto p-2">
-                    <p>{session.user.email}</p>
-                  </PopoverContent>
-                </Popover>
-              )
-            }
-            {
-              session ? (
-                <Button
-                  onClick={() => signOut({ callbackUrl: '/' })}
-                  variant="ghost"
-                  className="border-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
-                >
-                  <LogOut className="w-5 h-5" />
-                </Button>
-            ) : (
-              <Link href="/signin">
-                <Button variant="ghost" className="border-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700">
-                  <LogIn className="w-5 h-5" />
-                </Button>
-              </Link>
+            {!isLandingPage && (
+              <Button
+                onClick={() => router.push('/home')}
+                variant="ghost"
+                className="border-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
+              >
+                <BarChart2 className="w-5 h-5" />
+              </Button>
             )}
             <ThemeToggle />
+            {!isLandingPage && (
+              <>
+                {
+                  session && (
+                    <>
+                      <Popover>
+                        <PopoverTrigger asChild>
+                          <Avatar className="cursor-pointer rounded-full border" style={{ width: '30px', height: '30px' }}>
+                            <AvatarImage src={session.user.image || ''} alt={session.user.name || ''} style={{ width: '30px', height: '30px' }} />
+                            <AvatarFallback style={{ width: '30px', height: '30px' }}>{session.user.name?.charAt(0) || 'U'}</AvatarFallback>
+                          </Avatar>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-auto p-2">
+                          <p>{session.user.email}</p>
+                        </PopoverContent>
+                      </Popover>
+                    </>
+                  )
+                }
+                {
+                  session ? (
+                    <Button
+                      onClick={() => signOut({ callbackUrl: '/' })}
+                      variant="ghost"
+                      className="border-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
+                    >
+                      <LogOut className="w-5 h-5" />
+                    </Button>
+                ) : (
+                  <Link href="/signin">
+                    <Button variant="ghost" className="border-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700">
+                      <LogIn className="w-5 h-5" />
+                    </Button>
+                  </Link>
+                )}
+              </>
+            )}
           </div>
 
           {/* Mobile Menu Button */}
@@ -94,45 +111,60 @@ const Header: React.FC = () => {
           <div className="lg:hidden">
             <div className="px-2 pt-2 pb-3 space-y-1 sm:px-3">
               <Button
-                onClick={() => router.push('/home')}
+                onClick={() => router.push('/todolists')}
                 variant="ghost"
                 className="w-full mt-2 border-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
               >
-                <Home className="w-5 h-5" />
+                <List className="w-5 h-5" />
               </Button>
-              {
-                session && (
-                  <div className="flex justify-center items-center space-x-2 px-3 py-2">
-                    <Popover>
-                      <PopoverTrigger asChild>
-                        <Avatar className="cursor-pointer rounded-full border" style={{ width: '30px', height: '30px' }} >
-                          <AvatarImage src={session.user.image || ''} alt={session.user.name || ''} style={{ width: '30px', height: '30px' }} />
-                          <AvatarFallback style={{ width: '30px', height: '30px' }}>{session.user.name?.charAt(0) || 'U'}</AvatarFallback>
-                        </Avatar>
-                      </PopoverTrigger>
-                      <PopoverContent className="w-auto p-2">
-                        <p>{session.user.email}</p>
-                      </PopoverContent>
-                    </Popover>
-                  </div>
-                )
-              }
-              {session ? (
+              {!isLandingPage && (
                 <Button
-                  onClick={() => signOut({ callbackUrl: '/' })}
+                  onClick={() => router.push('/home')}
                   variant="ghost"
                   className="w-full mt-2 border-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
                 >
-                  <LogOut className="w-5 h-5" />
+                  <BarChart2 className="w-5 h-5" />
                 </Button>
-              ) : (
-                <Link href="/signin" passHref>
-                  <Button variant="ghost" className="w-full mt-2 border-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700">
-                    <LogIn className="w-5 h-5" />
-                  </Button>
-                </Link>
               )}
               <ThemeToggle />
+              {!isLandingPage && (
+                <>
+                  {
+                    session && (
+                      <>
+                        <div className="flex justify-center items-center space-x-2 px-3 py-2">
+                          <Popover>
+                            <PopoverTrigger asChild>
+                              <Avatar className="cursor-pointer rounded-full border" style={{ width: '30px', height: '30px' }} >
+                                <AvatarImage src={session.user.image || ''} alt={session.user.name || ''} style={{ width: '30px', height: '30px' }} />
+                                <AvatarFallback style={{ width: '30px', height: '30px' }}>{session.user.name?.charAt(0) || 'U'}</AvatarFallback>
+                              </Avatar>
+                            </PopoverTrigger>
+                            <PopoverContent className="w-auto p-2">
+                              <p>{session.user.email}</p>
+                            </PopoverContent>
+                          </Popover>
+                        </div>
+                      </>
+                    )
+                  }
+                  {session ? (
+                    <Button
+                      onClick={() => signOut({ callbackUrl: '/' })}
+                      variant="ghost"
+                      className="w-full mt-2 border-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
+                    >
+                      <LogOut className="w-5 h-5" />
+                    </Button>
+                  ) : (
+                    <Link href="/signin" passHref>
+                      <Button variant="ghost" className="w-full mt-2 border-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700">
+                        <LogIn className="w-5 h-5" />
+                      </Button>
+                    </Link>
+                  )}
+                </>
+              )}
             </div>
           </div>
         )}

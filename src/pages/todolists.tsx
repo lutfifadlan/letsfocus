@@ -40,11 +40,17 @@ const MainContent: React.FC<MainContentProps> = ({
 }) => {
   const incompleteTasks = tasks.filter((task) => !task.isCompleted && !task.isDeleted);
   const [showTagsInput, setShowTagsInput] = useState(false); // State to manage visibility
+  const [selected, setSelected] = useState(false); // State to track if the button is selected
+
+  const handleTagButtonClick = () => {
+    setShowTagsInput(!showTagsInput);
+    setSelected(!selected); // Toggle selected state
+  };
 
   return (
-    <Card className="max-w-4xl mx-auto">
+    <Card className="max-w-4xl mx-auto border-none shadow-none">
       <CardHeader>
-        <CardTitle className="text-center text-2xl">To-Do List</CardTitle>
+        <CardTitle className="text-center text-2xl">To-Do Lists</CardTitle>
       </CardHeader>
       <CardContent>
         <div className="flex flex-row gap-2 mb-4">
@@ -70,9 +76,10 @@ const MainContent: React.FC<MainContentProps> = ({
             <Plus size={16} />
           </Button>
           <Button
-            onClick={() => setShowTagsInput(!showTagsInput)} // Toggle visibility
+            onClick={handleTagButtonClick} // Use the handler function
             aria-label="Add Tags"
-            variant="outline"
+            variant={selected ? 'default' : 'outline'} // Change button variant when selected
+            className={selected ? 'bg-gray-900 text-white dark:bg-gray-100 dark:text-gray-900' : ''} // Conditionally apply styles
           >
             <Tag size={16} />
           </Button>
@@ -82,7 +89,7 @@ const MainContent: React.FC<MainContentProps> = ({
             type="text"
             value={tags}
             onChange={(value) => setTags(value as string[])}
-            placeholder="Add tags..."
+            placeholder="Add tags by pressing enter or comma after each tag..."
             className="w-full mb-4"
           />
         )}
