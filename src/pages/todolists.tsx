@@ -10,7 +10,7 @@ import { Input } from '@/components/ui/input';
 import { useSession } from 'next-auth/react';
 import { Task } from '@/interfaces';
 import Layout from '@/components/layout';
-import { Plus, Check, Trash, Tag, Folder, PlusCircle, Edit, FileText } from 'lucide-react';
+import { Plus, Check, Trash, Tag, Folder, PlusCircle, Edit, FileText, Save, X } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { ToastAction } from '@/components/ui/toast';
 import { InputTags } from '@/components/ui/input-tags';
@@ -22,7 +22,7 @@ interface MainContentProps {
   tasks: Task[];
   newTask: string;
   setNewTask: (value: string) => void;
-  addTask: () => void;
+  addTask: (description: string) => void;
   toggleTaskCompletion: (id: string) => void;
   deleteTask: (id: string) => void;
   tags: string[];
@@ -65,6 +65,12 @@ const MainContent: React.FC<MainContentProps> = ({
   const [editingTaskId, setEditingTaskId] = useState<string | null>(null);
   const [taskDescription, setTaskDescription] = useState<string>('');
   const [isFileTextButtonClicked, setIsFileTextButtonClicked] = useState(false);
+
+  const handleAddTask = (description: string) => {
+    addTask(description);
+    setNewTaskDescription('');
+  };
+
   return (
     <Card className="max-w-4xl mx-auto border-none shadow-none">
       <CardHeader>
@@ -82,7 +88,7 @@ const MainContent: React.FC<MainContentProps> = ({
                 onChange={(e) => setNewTask(e.target.value)}
                 onKeyDown={(e) => {
                   if (e.key === 'Enter') {
-                    addTask();
+                    handleAddTask(newTaskDescription);
                   }
                 }}
                 aria-label="New Task"
@@ -119,17 +125,17 @@ const MainContent: React.FC<MainContentProps> = ({
                 </Button>
               </PopoverTrigger>
               <PopoverContent className="w-64">
-                <div className="space-y-2">
-                  <div className="font-medium">Select or create a group</div>
+                <div className="space-y-2 text-sm">
+                  <p>Select or create a group</p>
                   <Button
                     variant={selectedGroup === null ? "secondary" : "ghost"}
-                    className="w-full justify-start"
+                    className="w-full justify-start text-sm"
                     onClick={() => setSelectedGroup(null)}
                   >
                     No Group
                   </Button>
                   {groups.map((group) => (
-                    <div key={group._id} className="flex items-center justify-between">
+                    <div key={group._id} className="flex items-center justify-between text-sm">
                       {editingGroup === group.name ? (
                         <Input
                           type="text"
@@ -181,7 +187,7 @@ const MainContent: React.FC<MainContentProps> = ({
                       </Button>
                     </div>
                   ))}
-                  <div className="flex items-center space-x-2">
+                  <div className="flex items-center space-x-2 text-sm">
                     <Input
                       type="text"
                       placeholder="New group name"
@@ -211,25 +217,25 @@ const MainContent: React.FC<MainContentProps> = ({
             </Popover>
             <Popover>
               <PopoverTrigger asChild>
-              <Button aria-label="Add Tags" variant="ghost" size="icon">
-                <Tag size={16} />
-              </Button>
+                <Button aria-label="Add Tags" variant="ghost" size="icon">
+                  <Tag size={16} />
+                </Button>
               </PopoverTrigger>
-              <PopoverContent className="w-64">
+              <PopoverContent className="w-64 text-sm">
                 <div className="space-y-2">
                   <div className="font-medium">Add tags</div>
                   <InputTags
                     type="text"
                     value={tags}
                     onChange={(value) => setTags(value as string[])}
-                    placeholder="Add tags..."
-                    className="w-full"
+                    placeholder="Use enter or comma to add tag"
+                    className="w-full text-xs"
                   />
                 </div>
               </PopoverContent>
             </Popover>
             <Button
-                onClick={addTask}
+                onClick={() => handleAddTask(newTaskDescription)}
                 aria-label="Add Task"
                 variant="ghost"
                 size="icon"
@@ -314,15 +320,15 @@ const MainContent: React.FC<MainContentProps> = ({
                               <Tag size={16} />
                             </Button>
                           </PopoverTrigger>
-                          <PopoverContent className="w-64">
+                          <PopoverContent className="w-64 text-sm">
                             <div className="space-y-2">
                               <div className="font-medium">Add tags</div>
                               <InputTags
                                 type="text"
                                 value={task.tags || []}
                                 onChange={(value) => updateTaskTags(task._id, value as string[])}
-                                placeholder="Add tags..."
-                                className="w-full"
+                                placeholder="Use enter or comma to add tag"
+                                className="w-full text-xs"
                               />
                             </div>
                           </PopoverContent>
@@ -353,23 +359,26 @@ const MainContent: React.FC<MainContentProps> = ({
                           onChange={(e) => setTaskDescription(e.target.value)}
                           className="w-full"
                         />
-                        <div className="flex space-x-2 mt-2">
+                        <div className="flex justify-end mt-1">
                           <Button
+                            variant="ghost"
+                            size="icon"
                             onClick={() => {
                               updateTaskDescription(task._id, taskDescription);
                               setEditingTaskId(null);
                             }}
                           >
-                            Save
+                            <Save size={16} />
                           </Button>
                           <Button
-                            variant="outline"
+                            variant="ghost"
+                            size="icon"
                             onClick={() => {
                               setEditingTaskId(null);
                               setTaskDescription('');
                             }}
                           >
-                            Cancel
+                            <X size={16} />
                           </Button>
                         </div>
                       </div>
@@ -405,7 +414,6 @@ export default function TaskPage() {
   const { status } = useSession();
   const [tasks, setTasks] = useState<Task[]>([]);
   const [newTask, setNewTask] = useState('');
-  const [newTaskDescription, setNewTaskDescription] = useState('');
   const [tags, setTags] = useState<string[]>([]);
   const [groups, setGroups] = useState<{ _id: string; name: string }[]>([]);
   const [selectedGroup, setSelectedGroup] = useState<string | null>(null);
@@ -484,7 +492,7 @@ export default function TaskPage() {
     }
   };
 
-  const addTask = async () => {
+  const addTask = async (description: string) => {
     if (newTask.trim()) {
       try {
         const response = await fetch('/api/tasks', {
@@ -492,13 +500,12 @@ export default function TaskPage() {
           headers: {
             'Content-Type': 'application/json',
           },
-          body: JSON.stringify({ title: newTask, tags, group: selectedGroup, description: newTaskDescription }),
+          body: JSON.stringify({ title: newTask, tags, group: selectedGroup, description }),
         });
         const data = await response.json();
 
         setTasks((prevTasks) => [...prevTasks, data]);
         setNewTask('');
-        setNewTaskDescription('');
         setTags([]);
         // Don't reset selectedGroup here to keep the selection
         toast({

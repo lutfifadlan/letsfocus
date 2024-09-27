@@ -41,13 +41,23 @@ export default async function handler(
 
     case 'PUT':
       try {
-        console.log('taskId', taskId);
-        console.log('userId ', user._id);
-        const { isCompleted, isDeleted } = req.body;
+        const { status, isDeleted, description, tags, group, dueDate } = req.body;
 
-        const updateFields: Partial<{ isCompleted: boolean; isDeleted: boolean }> = {};
-        if (isCompleted !== undefined) updateFields.isCompleted = isCompleted;
+        const updateFields: Partial<{ status: string; isDeleted: boolean; description: string; tags: string[]; group: string; dueDate: Date; completedAt: Date; deletedAt: Date }> = {};
+        if (status !== undefined) updateFields.status = status;
         if (isDeleted !== undefined) updateFields.isDeleted = isDeleted;
+        if (description !== undefined) updateFields.description = description;
+        if (tags !== undefined) updateFields.tags = tags;
+        if (group !== undefined) updateFields.group = group;
+        if (dueDate !== undefined) updateFields.dueDate = dueDate;
+
+        if (status === 'COMPLETED') {
+          updateFields.completedAt = new Date();
+        }
+
+        if (isDeleted) {
+          updateFields.deletedAt = new Date();
+        }
 
         const result = await Task.updateOne(
           { _id: new ObjectId(taskId as string), userId: user._id },
@@ -68,7 +78,7 @@ export default async function handler(
       try {
         const result = await Task.updateOne(
           { _id: new ObjectId(taskId as string), userId: user._id },
-          { $set: { isDeleted: true } }
+          { $set: { isDeleted: true, deletedAt: new Date() } }
         );
         if (result.matchedCount === 0) {
           return res.status(404).json({ message: 'Task not found' });

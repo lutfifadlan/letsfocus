@@ -35,7 +35,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
     case 'POST':
       try {
-        const { title, tags, group } = req.body;
+        const { title, tags, group, description } = req.body;
         const userId = user._id;
 
         const taskData = {
@@ -43,6 +43,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
           userId,
           tags,
           group,
+          description,
         };
 
         const newTask = await Task.create(taskData);
@@ -52,42 +53,6 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         res.status(500).json({ error: 'Error creating task' });
       }
       break;
-
-    case 'PUT':
-      try {
-        const { id, title, isCompleted, tags, group } = req.body;
-        const userId = user._id;
-
-        const updateData = {
-          title,
-          isCompleted,
-          tags,
-          group,
-        };
-
-        if (group === null) {
-          updateData.group = null;
-        } else if (group) {
-          updateData.group = group;
-        }
-
-        const updatedTask = await Task.findOneAndUpdate(
-          { _id: id, userId },
-          updateData,
-          { new: true }
-        );
-
-        if (!updatedTask) {
-          return res.status(404).json({ error: 'Task not found' });
-        }
-
-        res.status(200).json(updatedTask);
-      } catch (error) {
-        console.error(error);
-        res.status(500).json({ error: 'Error updating task' });
-      }
-      break;
-
     default:
       res.setHeader('Allow', ['GET', 'POST']);
       res.status(405).end(`Method ${req.method} Not Allowed`);
