@@ -17,8 +17,15 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
   const handleMouseEnter = () => setIsHeaderVisible(true);
   const handleMouseLeave = () => setIsHeaderVisible(false);
 
-  if (status === 'loading') return <div>Loading...</div>;
-  if (status === 'unauthenticated') {
+  if (status === 'loading') {
+    return (
+      <div className="py-16 flex justify-center items-center h-full">
+        <div className="animate-spin h-8 w-8 border-4 border-t-transparent dark:border-t-black border-black dark:border-white rounded-full"></div>
+      </div>
+    );
+  }
+
+  if (status === 'unauthenticated' && router.pathname !== '/') {
     router.push('/signin');
     return null;
   }
@@ -35,7 +42,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
         <Header />
       </div>
       <main className="flex-grow w-full mx-auto">
-        {router.pathname === '/home' || router.pathname === '/todolist' ? (
+        {router.pathname === '/todolists' || router.pathname === '/charts' ? (
           <div className="flex min-h-screen overflow-y-auto">
             <div className="flex-grow p-4">
               {children}

@@ -52,7 +52,7 @@ const Header: React.FC = () => {
             </Button>
             {!isLandingPage && (
               <Button
-                onClick={() => router.push('/home')}
+                onClick={() => router.push('/charts')}
                 variant="ghost"
                 className="border-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
               >
@@ -119,7 +119,7 @@ const Header: React.FC = () => {
               </Button>
               {!isLandingPage && (
                 <Button
-                  onClick={() => router.push('/home')}
+                  onClick={() => router.push('/charts')}
                   variant="ghost"
                   className="w-full mt-2 border-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
                 >

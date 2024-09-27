@@ -35,16 +35,60 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
     case 'POST':
       try {
-        const task = new Task({
-          ...req.body,
-          userId: user._id,
-          isDeleted: false,
-        });
-        await task.save();
-        res.status(201).json(task);
+        const { title, tags, group } = req.body;
+        const userId = user._id;
+
+        const taskData = {
+          title,
+          userId,
+          tags,
+          group,
+        };
+
+        if (group) {
+          taskData.group = group;
+        }
+
+        const newTask = await Task.create(taskData);
+        res.status(201).json(newTask);
       } catch (error) {
         console.error(error);
-        res.status(500).json({ message: 'Internal Server Error' });
+        res.status(500).json({ error: 'Error creating task' });
+      }
+      break;
+
+    case 'PUT':
+      try {
+        const { id, title, isCompleted, tags, group } = req.body;
+        const userId = user._id;
+
+        const updateData = {
+          title,
+          isCompleted,
+          tags,
+          group,
+        };
+
+        if (group === null) {
+          updateData.group = null;
+        } else if (group) {
+          updateData.group = group;
+        }
+
+        const updatedTask = await Task.findOneAndUpdate(
+          { _id: id, userId },
+          updateData,
+          { new: true }
+        );
+
+        if (!updatedTask) {
+          return res.status(404).json({ error: 'Task not found' });
+        }
+
+        res.status(200).json(updatedTask);
+      } catch (error) {
+        console.error(error);
+        res.status(500).json({ error: 'Error updating task' });
       }
       break;
 

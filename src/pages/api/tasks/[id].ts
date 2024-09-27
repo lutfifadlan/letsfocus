@@ -41,6 +41,8 @@ export default async function handler(
 
     case 'PUT':
       try {
+        console.log('taskId', taskId);
+        console.log('userId ', user._id);
         const { isCompleted, isDeleted } = req.body;
 
         const updateFields: Partial<{ isCompleted: boolean; isDeleted: boolean }> = {};
