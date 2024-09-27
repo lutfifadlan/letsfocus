@@ -36,6 +36,7 @@ interface MainContentProps {
   updateTaskGroup: (taskId: string, groupName: string | null) => void;
   updateTaskTags: (taskId: string, newTags: string[]) => void;
   updateTaskDescription: (taskId: string, newDescription: string) => void;
+  updateTaskTitle: (taskId: string, newTitle: string) => void;
 }
 
 const MainContent: React.FC<MainContentProps> = ({
@@ -56,19 +57,23 @@ const MainContent: React.FC<MainContentProps> = ({
   updateTaskGroup,
   updateTaskTags,
   updateTaskDescription,
+  updateTaskTitle,
 }) => {
   const incompleteTasks = tasks.filter((task) => task.status !== 'COMPLETED' && !task.isDeleted);
   const [newGroupName, setNewGroupName] = useState('');
   const [editingGroup, setEditingGroup] = useState<string | null>(null);
   const [isGroupPopoverOpen, setIsGroupPopoverOpen] = useState(false);
   const [newTaskDescription, setNewTaskDescription] = useState('');
-  const [editingTaskId, setEditingTaskId] = useState<string | null>(null);
+  const [editingTaskDescriptionId, setEditingTaskDescriptionId] = useState<string | null>(null);
+  const [editingTaskTitleId, setEditingTaskTitleId] = useState<string | null>(null);
   const [taskDescription, setTaskDescription] = useState<string>('');
   const [isFileTextButtonClicked, setIsFileTextButtonClicked] = useState(false);
+  const [taskTitle, setTaskTitle] = useState<string>('');
 
   const handleAddTask = (description: string) => {
     addTask(description);
     setNewTaskDescription('');
+    setIsFileTextButtonClicked(false);
   };
 
   return (
@@ -82,7 +87,7 @@ const MainContent: React.FC<MainContentProps> = ({
             <div className="flex flex-col gap-2 w-full">
               <Input
                 placeholder="Task name"
-                className="w-full border-none shadow-none"
+                className="w-full shadow-none"
                 type="text"
                 value={newTask}
                 onChange={(e) => setNewTask(e.target.value)}
@@ -96,7 +101,7 @@ const MainContent: React.FC<MainContentProps> = ({
               {isFileTextButtonClicked && (
                 <Textarea
                   placeholder="Task description"
-                  className="w-full border-none shadow-none resize-vertical"
+                  className="w-full shadow-none resize-vertical"
                   value={newTaskDescription}
                   onChange={(e) => setNewTaskDescription(e.target.value)}
                   aria-label="New Task Description"
@@ -268,17 +273,55 @@ const MainContent: React.FC<MainContentProps> = ({
                 <div className="flex items-center justify-between">
                   <div className="flex-1">
                     <div className="flex items-center justify-between">
-                      <p className="font-medium">{task.title}</p>
+                      <div className="flex items-center justify-center space-x-2">
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => toggleTaskCompletion(task._id)}
+                          aria-label="Complete Task"
+                        >
+                          <Check size={16} className="text-green-500" />
+                        </Button>
+                        {editingTaskTitleId === task._id ? (
+                          <Input
+                            type="text"
+                            value={taskTitle}
+                            onChange={(e) => setTaskTitle(e.target.value)}
+                            onBlur={() => {
+                              if (taskTitle.trim() && taskTitle !== task.title) {
+                                updateTaskTitle(task._id, taskTitle);
+                              }
+                              setEditingTaskTitleId(null);
+                              setTaskTitle('');
+                            }}
+                            onKeyDown={(e) => {
+                              if (e.key === 'Enter') {
+                                if (taskTitle.trim() && taskTitle !== task.title) {
+                                  updateTaskTitle(task._id, taskTitle);
+                                }
+                                setEditingTaskTitleId(null);
+                                setTaskTitle('');
+                              }
+                            }}
+                            autoFocus
+                          />
+                        ) : (
+                          <p className="font-medium" onClick={() => {
+                            setEditingTaskTitleId(task._id);
+                            setTaskTitle(task.title);
+                          }}>{task.title}</p>
+                        )}
+                      </div>
                       <div className="flex items-center">
                         <Button
                           variant="ghost"
                           size="icon"
                           onClick={() => {
-                            if (editingTaskId === task._id) {
-                              setEditingTaskId(null);
+                            if (editingTaskDescriptionId === task._id) {
+                              setEditingTaskDescriptionId(null);
                               setTaskDescription('');
                             } else {
-                              setEditingTaskId(task._id);
+                              setEditingTaskDescriptionId(task._id);
                               setTaskDescription(task.description || '');
                             }
                           }}
@@ -336,14 +379,6 @@ const MainContent: React.FC<MainContentProps> = ({
                         <Button
                           variant="ghost"
                           size="icon"
-                          onClick={() => toggleTaskCompletion(task._id)}
-                          aria-label="Complete Task"
-                        >
-                          <Check size={16} />
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="icon"
                           onClick={() => deleteTask(task._id)}
                           aria-label="Delete Task"
                         >
@@ -351,13 +386,19 @@ const MainContent: React.FC<MainContentProps> = ({
                         </Button>
                       </div>
                     </div>
-                    {editingTaskId === task._id && (
+                    {editingTaskDescriptionId === task._id && (
                       <div className="mt-2">
                         <Textarea
                           placeholder="Update description..."
                           value={taskDescription}
                           onChange={(e) => setTaskDescription(e.target.value)}
-                          className="w-full"
+                          className="w-full resize-vertical"
+                          style={{ minHeight: '2.5rem', overflow: 'hidden' }}
+                          onInput={(e) => {
+                            const target = e.target as HTMLTextAreaElement;
+                            target.style.height = 'auto';
+                            target.style.height = `${target.scrollHeight}px`;
+                          }}
                         />
                         <div className="flex justify-end mt-1">
                           <Button
@@ -365,7 +406,8 @@ const MainContent: React.FC<MainContentProps> = ({
                             size="icon"
                             onClick={() => {
                               updateTaskDescription(task._id, taskDescription);
-                              setEditingTaskId(null);
+                              setEditingTaskDescriptionId(null);
+                              setTaskDescription('');
                             }}
                           >
                             <Save size={16} />
@@ -374,7 +416,7 @@ const MainContent: React.FC<MainContentProps> = ({
                             variant="ghost"
                             size="icon"
                             onClick={() => {
-                              setEditingTaskId(null);
+                              setEditingTaskDescriptionId(null);
                               setTaskDescription('');
                             }}
                           >
@@ -779,6 +821,43 @@ export default function TaskPage() {
     }
   };
 
+  const updateTaskTitle = async (taskId: string, newTitle: string) => {
+    try {
+      const response = await fetch(`/api/tasks/${taskId}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ title: newTitle }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Failed to update task title');
+      }
+
+      setTasks((prevTasks) =>
+        prevTasks.map((task) =>
+          task._id === taskId ? { ...task, title: newTitle } : task
+        )
+      );
+
+      toast({
+        title: 'Title Updated',
+        description: 'Task title has been updated.',
+        duration: 3000,
+      });
+    } catch (error) {
+      console.error('Failed to update task title:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to update task title.',
+        variant: 'destructive',
+        duration: 3000,
+      });
+    }
+  };
+
   const updateTaskDescription = async (taskId: string, newDescription: string) => {
     try {
       const response = await fetch(`/api/tasks/${taskId}`, {
@@ -836,6 +915,7 @@ export default function TaskPage() {
         updateTaskGroup={updateTaskGroup}
         updateTaskTags={updateTaskTags}
         updateTaskDescription={updateTaskDescription}
+        updateTaskTitle={updateTaskTitle}
       />
     </Layout>
   );
