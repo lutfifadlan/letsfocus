@@ -45,10 +45,6 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
           group,
         };
 
-        if (group) {
-          taskData.group = group;
-        }
-
         const newTask = await Task.create(taskData);
         res.status(201).json(newTask);
       } catch (error) {
