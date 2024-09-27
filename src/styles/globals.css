@@ -8,6 +8,8 @@
   --color-3: 210 100% 63%;
   --color-4: 195 100% 63%;
   --color-5: 90 100% 63%;
+  --green-500: 120 100% 25%; /* Add this line */
+  --red-500: 0 100% 50%; /* Add this line */
 }
 
 @layer utilities {

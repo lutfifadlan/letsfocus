@@ -31,7 +31,7 @@ const SignIn: React.FC = () => {
       });
     }
     if (status === 'authenticated') {
-      router.push('/home');
+      router.push('/todolists');
     }
   }, [verified, toast, status, router]);
 
@@ -58,7 +58,7 @@ const SignIn: React.FC = () => {
         if (callbackUrl && typeof callbackUrl === 'string') {
           router.push(callbackUrl);
         } else {
-          router.push('/home');
+          router.push('/todolists');
         }
       }
     } catch (error) {
@@ -78,7 +78,7 @@ const SignIn: React.FC = () => {
       await signIn('google', { 
         callbackUrl: callbackUrl && typeof callbackUrl === 'string' 
           ? callbackUrl 
-          : '/home' 
+          : '/todolists' 
       });
     } catch (error) {
       console.error(error);

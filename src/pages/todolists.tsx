@@ -7,15 +7,15 @@ import {
 } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { ScrollArea } from '@/components/ui/scroll-area';
 import { useSession } from 'next-auth/react';
 import { Task } from '@/interfaces';
 import Layout from '@/components/layout';
-import router from 'next/router';
-import { Plus, Check, Trash, Tag } from 'lucide-react'; // Import Tag icon
+import { Plus, Check, Trash, Tag, Folder, PlusCircle, Edit } from 'lucide-react'; // Removed unused 'Edit' icon
 import { useToast } from '@/hooks/use-toast';
 import { ToastAction } from '@/components/ui/toast';
 import { InputTags } from '@/components/ui/input-tags';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Badge } from '@/components/ui/badge'; // Import Badge component
 
 interface MainContentProps {
   tasks: Task[];
@@ -24,8 +24,16 @@ interface MainContentProps {
   addTask: () => void;
   toggleTaskCompletion: (id: string) => void;
   deleteTask: (id: string) => void;
-  tags: string[]; // Add tags prop
-  setTags: (value: string[]) => void; // Add setTags prop
+  tags: string[];
+  setTags: (value: string[]) => void;
+  groups: { _id: string; name: string }[];
+  selectedGroup: string | null;
+  setSelectedGroup: (value: string | null) => void;
+  createGroup: (name: string) => void;
+  deleteGroup: (name: string) => void;
+  updateGroup: (oldName: string, newName: string) => void;
+  updateTaskGroup: (taskId: string, groupName: string | null) => void;
+  updateTaskTags: (taskId: string, newTags: string[]) => void;
 }
 
 const MainContent: React.FC<MainContentProps> = ({
@@ -35,17 +43,20 @@ const MainContent: React.FC<MainContentProps> = ({
   addTask,
   toggleTaskCompletion,
   deleteTask,
-  tags, // Destructure tags
-  setTags, // Destructure setTags
+  tags,
+  setTags,
+  groups,
+  selectedGroup,
+  setSelectedGroup,
+  createGroup,
+  deleteGroup,
+  updateGroup,
+  updateTaskGroup,
+  updateTaskTags,
 }) => {
   const incompleteTasks = tasks.filter((task) => !task.isCompleted && !task.isDeleted);
-  const [showTagsInput, setShowTagsInput] = useState(false); // State to manage visibility
-  const [selected, setSelected] = useState(false); // State to track if the button is selected
-
-  const handleTagButtonClick = () => {
-    setShowTagsInput(!showTagsInput);
-    setSelected(!selected); // Toggle selected state
-  };
+  const [newGroupName, setNewGroupName] = useState('');
+  const [editingGroup, setEditingGroup] = useState<string | null>(null);
 
   return (
     <Card className="max-w-4xl mx-auto border-none shadow-none">
@@ -53,71 +64,235 @@ const MainContent: React.FC<MainContentProps> = ({
         <CardTitle className="text-center text-2xl">To-Do Lists</CardTitle>
       </CardHeader>
       <CardContent>
-        <div className="flex flex-row gap-2 mb-4">
-          <Input
-            placeholder="Add a new task title..."
-            className="flex-1 mr-2"
-            type="text"
-            value={newTask}
-            onChange={(e) => setNewTask(e.target.value)}
-            onKeyDown={(e) => {
-              if (e.key === 'Enter') {
-                addTask();
-              }
-            }}
-            aria-label="New Task"
-          />
-          <Button
-            onClick={addTask}
-            aria-label="Add Task"
-            variant="outline"
-            disabled={!newTask.trim()}
-          >
-            <Plus size={16} />
-          </Button>
-          <Button
-            onClick={handleTagButtonClick} // Use the handler function
-            aria-label="Add Tags"
-            variant={selected ? 'default' : 'outline'} // Change button variant when selected
-            className={selected ? 'bg-gray-900 text-white dark:bg-gray-100 dark:text-gray-900' : ''} // Conditionally apply styles
-          >
-            <Tag size={16} />
-          </Button>
+        <div className="flex flex-col gap-2 mb-4">
+          <div className="flex flex-row gap-2 items-center">
+            <Input
+              placeholder="Add a new task..."
+              className="flex-1"
+              type="text"
+              value={newTask}
+              onChange={(e) => setNewTask(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') {
+                  addTask();
+                }
+              }}
+              aria-label="New Task"
+            />
+            <Popover>
+              <PopoverTrigger asChild>
+              <Button aria-label="Select Group" variant="outline" size="icon">
+                <Folder size={16} />
+              </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-64">
+                <div className="space-y-2">
+                  <div className="font-medium">Select or create a group</div>
+                  <Button
+                    variant={selectedGroup === null ? "secondary" : "ghost"}
+                    className="w-full justify-start"
+                    onClick={() => setSelectedGroup(null)}
+                  >
+                    No Group
+                  </Button>
+                  {groups.map((group) => (
+                    <div key={group._id} className="flex items-center justify-between">
+                      {editingGroup === group.name ? (
+                        <Input
+                          type="text"
+                          value={newGroupName}
+                          onChange={(e) => setNewGroupName(e.target.value)}
+                          onBlur={() => {
+                            if (newGroupName.trim() && newGroupName !== group.name) {
+                              updateGroup(group.name, newGroupName);
+                            }
+                            setEditingGroup(null);
+                            setNewGroupName('');
+                          }}
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter') {
+                              if (newGroupName.trim() && newGroupName !== group.name) {
+                                updateGroup(group.name, newGroupName);
+                              }
+                              setEditingGroup(null);
+                              setNewGroupName('');
+                            }
+                          }}
+                          autoFocus
+                        />
+                      ) : (
+                        <>
+                          <Button
+                            variant={selectedGroup === group.name ? "secondary" : "ghost"}
+                            className="w-full justify-start"
+                            onClick={() => setSelectedGroup(group.name)}
+                          >
+                            {group.name}
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            onClick={() => {
+                              setEditingGroup(group.name);
+                              setNewGroupName(group.name);
+                            }}
+                          >
+                            <Edit size={12} />
+                          </Button>
+                        </>
+                      )}
+                      <Button size="sm" variant="ghost" onClick={() => deleteGroup(group.name)}>
+                        <Trash size={12} />
+                      </Button>
+                    </div>
+                  ))}
+                  <div className="flex items-center space-x-2">
+                    <Input
+                      type="text"
+                      placeholder="New group name"
+                      value={newGroupName}
+                      onChange={(e) => setNewGroupName(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter' && newGroupName.trim()) {
+                          createGroup(newGroupName);
+                          setNewGroupName('');
+                        }
+                      }}
+                    />
+                    <Button
+                      size="sm"
+                      onClick={() => {
+                        if (newGroupName.trim()) {
+                          createGroup(newGroupName);
+                          setNewGroupName('');
+                        }
+                      }}
+                    >
+                      <PlusCircle size={16} />
+                    </Button>
+                  </div>
+                </div>
+              </PopoverContent>
+            </Popover>
+            <Popover>
+              <PopoverTrigger asChild>
+              <Button aria-label="Add Tags" variant="outline" size="icon">
+                <Tag size={16} />
+              </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-64">
+                <div className="space-y-2">
+                  <div className="font-medium">Add tags</div>
+                  <InputTags
+                    type="text"
+                    value={tags}
+                    onChange={(value) => setTags(value as string[])}
+                    placeholder="Add tags..."
+                    className="w-full"
+                  />
+                </div>
+              </PopoverContent>
+            </Popover>
+            <Button
+                onClick={addTask}
+                aria-label="Add Task"
+                variant="outline"
+                size="icon"
+                disabled={!newTask.trim()}
+              >
+                <Plus size={16} />
+            </Button>
+          </div>
+          {(selectedGroup || tags.length > 0) && (
+            <div className="flex flex-wrap gap-1 mt-1">
+              {selectedGroup && (
+                <Badge variant="secondary">
+                  <Folder size={12} className="mr-1" />
+                  {selectedGroup}
+                </Badge>
+              )}
+              {tags.map((tag, index) => (
+                <Badge key={index} variant="outline">
+                  <Tag size={12} className="mr-1" />
+                  {tag}
+                </Badge>
+              ))}
+            </div>
+          )}
         </div>
-        {showTagsInput && (
-          <InputTags
-            type="text"
-            value={tags}
-            onChange={(value) => setTags(value as string[])}
-            placeholder="Add tags by pressing enter or comma after each tag..."
-            className="w-full mb-4"
-          />
-        )}
-        <ScrollArea className="h-[300px]">
+        <div className="space-y-2">
           {incompleteTasks.length > 0 ? (
             incompleteTasks.map((task) => (
-              <div
-                key={task._id}
-                className="flex items-center justify-between mb-2"
-              >
+              <div key={task._id} className="flex items-center justify-between p-2 rounded-md">
                 <div className="flex-1">
-                  <p>{task.title}</p>
-                  {task.tags && task.tags.length > 0 && (
-                    <div className="flex flex-wrap gap-1 mt-1">
-                      {task.tags.map((tag, index) => (
-                        <span
-                          key={index}
-                          className="bg-gray-200 text-gray-700 px-2 py-1 rounded"
-                        >
-                          {tag}
-                        </span>
-                      ))}
-                    </div>
-                  )}
+                  <p className="font-medium">{task.title}</p>
+                  <div className="flex flex-wrap gap-1 mt-1">
+                    {task.group && (
+                      <Badge variant="secondary">
+                        <Folder size={12} className="mr-1" />
+                        {task.group}
+                      </Badge>
+                    )}
+                    {task.tags && task.tags.map((tag, index) => (
+                      <Badge key={index} variant="outline">
+                        <Tag size={12} className="mr-1" />
+                        {tag}
+                      </Badge>
+                    ))}
+                  </div>
                 </div>
-                <div className="flex items-center">
+                <div className="flex items-center space-x-2">
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <Button variant="ghost" size="sm">
+                        <Folder size={16} />
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-48">
+                      <div className="space-y-2">
+                        <div className="font-medium">Change group</div>
+                        <Button
+                          variant="ghost"
+                          className="w-full justify-start"
+                          onClick={() => updateTaskGroup(task._id, null)}
+                        >
+                          No Group
+                        </Button>
+                        {groups.map((group) => (
+                          <Button
+                            key={group._id}
+                            variant="ghost"
+                            className="w-full justify-start"
+                            onClick={() => updateTaskGroup(task._id, group.name)}
+                          >
+                            {group.name}
+                          </Button>
+                        ))}
+                      </div>
+                    </PopoverContent>
+                  </Popover>
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <Button variant="ghost" size="sm">
+                        <Tag size={16} />
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-64">
+                      <div className="space-y-2">
+                        <div className="font-medium">Add tags</div>
+                        <InputTags
+                          type="text"
+                          value={task.tags || []}
+                          onChange={(value) => updateTaskTags(task._id, value as string[])}
+                          placeholder="Add tags..."
+                          className="w-full"
+                        />
+                      </div>
+                    </PopoverContent>
+                  </Popover>
                   <Button
                     variant="ghost"
+                    size="sm"
                     onClick={() => toggleTaskCompletion(task._id)}
                     aria-label="Complete Task"
                   >
@@ -125,6 +300,7 @@ const MainContent: React.FC<MainContentProps> = ({
                   </Button>
                   <Button
                     variant="ghost"
+                    size="sm"
                     onClick={() => deleteTask(task._id)}
                     aria-label="Delete Task"
                   >
@@ -134,11 +310,9 @@ const MainContent: React.FC<MainContentProps> = ({
               </div>
             ))
           ) : (
-            <p className="text-gray-500">
-              No tasks yet. Add one to get started!
-            </p>
+            <p className="text-gray-500 text-center">No tasks yet. Add one to get started!</p>
           )}
-        </ScrollArea>
+        </div>
       </CardContent>
     </Card>
   );
@@ -148,12 +322,15 @@ export default function TaskPage() {
   const { status } = useSession();
   const [tasks, setTasks] = useState<Task[]>([]);
   const [newTask, setNewTask] = useState('');
-  const [tags, setTags] = useState<string[]>([]); // State to manage tags
+  const [tags, setTags] = useState<string[]>([]);
+  const [groups, setGroups] = useState<{ _id: string; name: string }[]>([]);
+  const [selectedGroup, setSelectedGroup] = useState<string | null>(null);
   const { toast } = useToast();
 
   useEffect(() => {
     if (status === 'authenticated') {
       fetchTasks();
+      fetchGroups();
     }
   }, [status]);
 
@@ -161,32 +338,85 @@ export default function TaskPage() {
     try {
       const response = await fetch('/api/tasks');
       const data = await response.json();
-      // Filter out tasks where isDeleted is true
       setTasks(data.filter((task: Task) => !task.isDeleted));
     } catch (error) {
       console.error('Failed to fetch tasks:', error);
     }
   };
 
+  const fetchGroups = async () => {
+    try {
+      const response = await fetch('/api/groups');
+      const data = await response.json();
+      setGroups(data);
+    } catch (error) {
+      console.error('Failed to fetch groups:', error);
+    }
+  };
+
+  const createGroup = async (groupName: string) => {
+    try {
+      const response = await fetch('/api/groups', {
+        method: 'POST',
+        body: JSON.stringify({ name: groupName }),
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+      const newGroup = await response.json();
+      setGroups((prev) => [...prev, newGroup]);
+      // setSelectedGroup(newGroup.name); // Set the new group as the selected group
+    } catch (error) {
+      console.error('Failed to create group', error);
+    }
+  };
+
+  const deleteGroup = async (groupName: string) => {
+    try {
+      await fetch(`/api/groups/${groupName}`, {
+        method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+      setGroups((prev) => prev.filter((group) => group.name !== groupName));
+    } catch (error) {
+      console.error('Failed to delete group', error);
+    }
+  };
+
+  const updateGroup = async (oldName: string, newName: string) => {
+    try {
+      await fetch(`/api/groups/${oldName}`, {
+        method: 'PUT',
+        body: JSON.stringify({ newName }),
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+      setGroups((prev) => prev.map((group) => group.name === oldName ? { ...group, name: newName } : group));
+    } catch (error) {
+      console.error('Failed to update group', error);
+    }
+  };
+
   const addTask = async () => {
     if (newTask.trim()) {
       try {
-        console.log('tags', tags);
+        console.log('Adding task:', newTask, tags, selectedGroup);
         const response = await fetch('/api/tasks', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
           },
-          body: JSON.stringify({ title: newTask, tags }), // Include tags in the request body
+          body: JSON.stringify({ title: newTask, tags, group: selectedGroup }),
         });
         const data = await response.json();
-  
-        // Update tasks state using functional updater
+        console.log('Task added:', data);
         setTasks((prevTasks) => [...prevTasks, data]);
         setNewTask('');
-        setTags([]); // Clear tags after adding task
-  
-        // Toast after ensuring task is added
+        setTags([]);
+        // Don't reset selectedGroup here to keep the selection
         toast({
           title: 'Task Added',
           description: `Task "${data.title}" has been added.`,
@@ -194,7 +424,7 @@ export default function TaskPage() {
             <ToastAction
               altText="Undo"
               onClick={() => {
-                undoAdd(data._id); // Pass task id to undo
+                undoAdd(data._id);
               }}
             >
               Undo
@@ -213,7 +443,7 @@ export default function TaskPage() {
       }
     }
   };
-  
+
   const undoAdd = async (taskId: string) => {
     try {
       const response = await fetch(`/api/tasks/${taskId}`, {
@@ -228,7 +458,6 @@ export default function TaskPage() {
         throw new Error(errorData.message || 'Failed to undo add');
       }
   
-      // Remove task from state using functional updater
       setTasks((prevTasks) => prevTasks.filter((task) => task._id !== taskId));
   
       toast({
@@ -256,7 +485,6 @@ export default function TaskPage() {
       isCompleted: !tasks[taskIndex].isCompleted,
     };
 
-    // Update tasks state using functional updater
     setTasks((prevTasks) => {
       const newTasks = [...prevTasks];
       newTasks[taskIndex] = updatedTask;
@@ -301,7 +529,6 @@ export default function TaskPage() {
     const taskToDelete = tasks.find((task) => task._id === taskId);
     if (!taskToDelete) return;
   
-    // Update state to show deletion immediately
     setTasks((prevTasks) =>
       prevTasks.map((task) =>
         task._id === taskId ? { ...task, isDeleted: true } : task
@@ -342,7 +569,6 @@ export default function TaskPage() {
         variant: 'destructive',
       });
   
-      // Revert isDeleted if the API call fails
       setTasks((prevTasks) =>
         prevTasks.map((task) =>
           task._id === taskId ? { ...task, isDeleted: false } : task
@@ -366,7 +592,6 @@ export default function TaskPage() {
         throw new Error(errorData.message || 'Failed to undo delete');
       }
   
-      // Restore task to state
       setTasks((prevTasks) =>
         prevTasks.map((task) =>
           task._id === taskId ? { ...task, isDeleted: false } : task
@@ -387,11 +612,81 @@ export default function TaskPage() {
     }
   };  
 
-  if (status === 'loading') return <div>Loading...</div>;
-  if (status === 'unauthenticated') {
-    router.push('/signin');
-    return null;
-  }
+  const updateTaskGroup = async (taskId: string, groupName: string | null) => {
+    try {
+      const response = await fetch(`/api/tasks/${taskId}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ group: groupName }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Failed to update task group');
+      }
+
+      setTasks((prevTasks) =>
+        prevTasks.map((task) =>
+          task._id === taskId ? { ...task, group: groupName ?? '' } : task
+        )
+      );
+
+      toast({
+        title: 'Group Updated',
+        description: groupName
+          ? `Task has been assigned to group "${groupName}".`
+          : 'Task has been removed from its group.',
+        duration: 3000,
+      });
+    } catch (error) {
+      console.error('Failed to update task group:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to update task group.',
+        variant: 'destructive',
+        duration: 3000,
+      });
+    }
+  };
+
+  const updateTaskTags = async (taskId: string, newTags: string[]) => {
+    try {
+      const response = await fetch(`/api/tasks/${taskId}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ tags: newTags }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Failed to update task tags');
+      }
+
+      setTasks((prevTasks) =>
+        prevTasks.map((task) =>
+          task._id === taskId ? { ...task, tags: newTags } : task
+        )
+      );
+
+      toast({
+        title: 'Tags Updated',
+        description: 'Task tags have been updated.',
+        duration: 3000,
+      });
+    } catch (error) {
+      console.error('Failed to update task tags:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to update task tags.',
+        variant: 'destructive',
+        duration: 3000,
+      });
+    }
+  };
 
   return (
     <Layout>
@@ -402,8 +697,16 @@ export default function TaskPage() {
         addTask={addTask}
         toggleTaskCompletion={toggleTaskCompletion}
         deleteTask={deleteTask}
-        tags={tags} // Pass tags to MainContent
-        setTags={setTags} // Pass setTags to MainContent
+        tags={tags}
+        setTags={setTags}
+        groups={groups}
+        selectedGroup={selectedGroup}
+        setSelectedGroup={setSelectedGroup}
+        createGroup={createGroup}
+        deleteGroup={deleteGroup}
+        updateGroup={updateGroup}
+        updateTaskGroup={updateTaskGroup}
+        updateTaskTags={updateTaskTags}
       />
     </Layout>
   );

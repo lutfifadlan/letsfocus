@@ -58,6 +58,8 @@ const config: Config = {
         "color-3": "hsl(var(--color-3))",
         "color-4": "hsl(var(--color-4))",
         "color-5": "hsl(var(--color-5))",
+        "green-500": "hsl(var(--green-500))", /* Add this line */
+        "red-500": "hsl(var(--red-500))", /* Add this line */
   		},
   		borderRadius: {
   			lg: 'var(--radius)',

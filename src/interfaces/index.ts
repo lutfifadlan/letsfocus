@@ -7,6 +7,7 @@ export interface Task {
   createdAt: Date;
   updatedAt: Date;
   tags: string[];
+  group: string;
 }
 
 export interface Habit {

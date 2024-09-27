@@ -12,15 +12,10 @@ const UserSchema = new mongoose.Schema({
   isDeleted: { type: Boolean, default: false },
 }, { timestamps: true });
 
-const HabitSchema = new mongoose.Schema({
-  title: { type: String, required: true },
-  completed: { type: Boolean, default: false },
+const GroupSchema = new mongoose.Schema({
+  name: { type: String, required: true },
   userId: { type: String, required: true },
-}, { timestamps: true });
-
-const FocusTimeSchema = new mongoose.Schema({
-  duration: { type: Number, required: true },
-  userId: { type: String, required: true },
+  isDeleted: { type: Boolean, default: false },
 }, { timestamps: true });
 
 const TaskSchema = new mongoose.Schema({
@@ -28,10 +23,10 @@ const TaskSchema = new mongoose.Schema({
   isCompleted: { type: Boolean, default: false },
   userId: { type: String, required: true },
   isDeleted: { type: Boolean, default: false },
-  tags: { type: [String], default: [] }, // Add this line
+  tags: { type: [String], default: [] },
+  group: { type: mongoose.Schema.Types.ObjectId, ref: 'Group', default: null },
 }, { timestamps: true });
 
 export const User = mongoose.models.User || mongoose.model('User', UserSchema);
-export const Habit = mongoose.models.Habit || mongoose.model('Habit', HabitSchema);
-export const FocusTime = mongoose.models.FocusTime || mongoose.model('FocusTime', FocusTimeSchema);
 export const Task = mongoose.models.Task || mongoose.model('Task', TaskSchema);
+export const Group = mongoose.models.Group || mongoose.model('Group', GroupSchema);

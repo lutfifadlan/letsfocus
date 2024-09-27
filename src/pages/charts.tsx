@@ -1,8 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { useSession } from 'next-auth/react';
 import { Task } from '@/interfaces';
 import Layout from '@/components/layout';
-import { useRouter } from 'next/router';
 import {
   Card,
   CardContent,
@@ -24,22 +22,16 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { Loader, TrendingUp, TrendingDown } from 'lucide-react';
+import { TrendingUp, TrendingDown } from 'lucide-react';
 
 export default function StatsPage() {
-  const { status } = useSession();
   const [tasks, setTasks] = useState<Task[]>([]);
   const [selectedDateRange, setSelectedDateRange] = useState('all');
   const [selectedChartDateRange, setSelectedChartDateRange] = useState('2w');
-  const router = useRouter();
 
   useEffect(() => {
-    if (status === 'authenticated') {
-      fetchTasks();
-    } else if (status === 'unauthenticated') {
-      router.push('/signin');
-    }
-  }, [status]);
+    fetchTasks();
+  }, []);
 
   const fetchTasks = async () => {
     try {
@@ -53,17 +45,6 @@ export default function StatsPage() {
       console.error('Failed to fetch tasks:', error);
     }
   };
-
-  if (status === 'loading') {
-    return (
-      <Layout>
-        <div className="container mx-auto my-8 px-4 flex justify-center items-center h-64">
-          <Loader className="w-8 h-8 animate-spin text-gray-500" />
-        </div>
-      </Layout>
-    );
-  }
-
   // Helper function to get the date range based on the selected date range
   function getDateRange(range: string): { startDate: Date; endDate: Date } {
     const now = new Date();
@@ -158,6 +139,21 @@ export default function StatsPage() {
     count: tasksCompletedPerDay[date] || 0,
   }));
 
+  // Define chartConfig for the pie chart with updated colors
+  const chartConfig = {
+    value: {
+      label: 'Tasks',
+    },
+    Completed: {
+      label: 'Completed',
+      color: 'hsl(var(--green-500))', // Green for completed
+    },
+    Incomplete: {
+      label: 'Incomplete',
+      color: 'hsl(var(--red-500))', // Red for incomplete
+    },
+  } satisfies ChartConfig;
+
   // Prepare data for the pie chart (uses all-time data)
   const totalCompletedTasksAllTime = tasks.filter((task) => task.isCompleted)
     .length;
@@ -168,27 +164,14 @@ export default function StatsPage() {
     {
       name: 'Completed',
       value: totalCompletedTasksAllTime,
+      fill: chartConfig.Completed.color,
     },
     {
       name: 'Incomplete',
       value: totalIncompleteTasksAllTime,
+      fill: chartConfig.Incomplete.color,
     },
   ];
-
-  // Define chartConfig for the pie chart
-  const chartConfig = {
-    value: {
-      label: 'Tasks',
-    },
-    Completed: {
-      label: 'Completed',
-      color: 'hsl(var(--chart-1))',
-    },
-    Incomplete: {
-      label: 'Incomplete',
-      color: 'hsl(var(--chart-2))',
-    },
-  } satisfies ChartConfig;
 
   // Compute tasks created per day within the selected date range
   const tasksCreatedPerDay: { [date: string]: number } = {};
@@ -288,8 +271,6 @@ export default function StatsPage() {
                   </p>
                 </CardContent>
               </Card>
-
-              
             </div>
             <Card className="flex flex-col">
               <CardHeader className="items-center pb-0">
@@ -315,11 +296,9 @@ export default function StatsPage() {
                   <p className="text-gray-600">No tasks available.</p>
                 )}
               </CardContent>
-              {/* Optionally, you can add a CardFooter here if needed */}
             </Card>
           </div>
 
-          {/* Existing Bar Chart Card */}
           <Card>
             <CardHeader>
               <div className="flex justify-between items-center">
@@ -349,7 +328,7 @@ export default function StatsPage() {
                   config={{
                     count: {
                       label: 'Tasks Completed',
-                      color: 'var(--shadcn-color-primary)',
+                      color: 'hsl(var(--green-500))', // Green for bar chart
                     },
                   }}
                   className="h-64 w-full"
@@ -380,7 +359,7 @@ export default function StatsPage() {
                     />
                     <Bar
                       dataKey="count"
-                      fill="var(--shadcn-color-primary)"
+                      fill="hsl(var(--green-500))" // Green for bar chart
                       radius={8}
                     >
                       <LabelList
