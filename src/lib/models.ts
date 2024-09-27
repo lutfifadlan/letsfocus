@@ -20,11 +20,15 @@ const GroupSchema = new mongoose.Schema({
 
 const TaskSchema = new mongoose.Schema({
   title: { type: String, required: true },
-  isCompleted: { type: Boolean, default: false },
+  description: { type: String, default: null },
   userId: { type: String, required: true },
   isDeleted: { type: Boolean, default: false },
   tags: { type: [String], default: [] },
-  group: { type: mongoose.Schema.Types.ObjectId, ref: 'Group', default: null },
+  group: { type: String, ref: 'Group', default: null },
+  dueDate: { type: Date, default: null },
+  status: { type: String, default: 'PENDING' },
+  completedAt: { type: Date, default: null },
+  deletedAt: { type: Date, default: null },
 }, { timestamps: true });
 
 export const User = mongoose.models.User || mongoose.model('User', UserSchema);

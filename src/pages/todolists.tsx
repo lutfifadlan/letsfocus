@@ -10,12 +10,13 @@ import { Input } from '@/components/ui/input';
 import { useSession } from 'next-auth/react';
 import { Task } from '@/interfaces';
 import Layout from '@/components/layout';
-import { Plus, Check, Trash, Tag, Folder, PlusCircle, Edit } from 'lucide-react'; // Removed unused 'Edit' icon
+import { Plus, Check, Trash, Tag, Folder, PlusCircle, Edit, FileText } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { ToastAction } from '@/components/ui/toast';
 import { InputTags } from '@/components/ui/input-tags';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { Badge } from '@/components/ui/badge'; // Import Badge component
+import { Badge } from '@/components/ui/badge';
+import { Textarea } from '@/components/ui/textarea';
 
 interface MainContentProps {
   tasks: Task[];
@@ -31,9 +32,10 @@ interface MainContentProps {
   setSelectedGroup: (value: string | null) => void;
   createGroup: (name: string) => void;
   deleteGroup: (name: string) => void;
-  updateGroup: (oldName: string, newName: string) => void;
+  updateGroup: (groupId: string, newName: string) => void;
   updateTaskGroup: (taskId: string, groupName: string | null) => void;
   updateTaskTags: (taskId: string, newTags: string[]) => void;
+  updateTaskDescription: (taskId: string, newDescription: string) => void;
 }
 
 const MainContent: React.FC<MainContentProps> = ({
@@ -53,11 +55,16 @@ const MainContent: React.FC<MainContentProps> = ({
   updateGroup,
   updateTaskGroup,
   updateTaskTags,
+  updateTaskDescription,
 }) => {
-  const incompleteTasks = tasks.filter((task) => !task.isCompleted && !task.isDeleted);
+  const incompleteTasks = tasks.filter((task) => task.status !== 'COMPLETED' && !task.isDeleted);
   const [newGroupName, setNewGroupName] = useState('');
   const [editingGroup, setEditingGroup] = useState<string | null>(null);
-
+  const [isGroupPopoverOpen, setIsGroupPopoverOpen] = useState(false);
+  const [newTaskDescription, setNewTaskDescription] = useState('');
+  const [editingTaskId, setEditingTaskId] = useState<string | null>(null);
+  const [taskDescription, setTaskDescription] = useState<string>('');
+  const [isFileTextButtonClicked, setIsFileTextButtonClicked] = useState(false);
   return (
     <Card className="max-w-4xl mx-auto border-none shadow-none">
       <CardHeader>
@@ -65,25 +72,51 @@ const MainContent: React.FC<MainContentProps> = ({
       </CardHeader>
       <CardContent>
         <div className="flex flex-col gap-2 mb-4">
-          <div className="flex flex-row gap-2 items-center">
-            <Input
-              placeholder="Add a new task..."
-              className="flex-1"
-              type="text"
-              value={newTask}
-              onChange={(e) => setNewTask(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter') {
-                  addTask();
-                }
-              }}
-              aria-label="New Task"
-            />
-            <Popover>
+          <div className="flex flex-row gap-2">
+            <div className="flex flex-col gap-2 w-full">
+              <Input
+                placeholder="Task name"
+                className="w-full border-none shadow-none"
+                type="text"
+                value={newTask}
+                onChange={(e) => setNewTask(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    addTask();
+                  }
+                }}
+                aria-label="New Task"
+              />
+              {isFileTextButtonClicked && (
+                <Textarea
+                  placeholder="Task description"
+                  className="w-full border-none shadow-none resize-vertical"
+                  value={newTaskDescription}
+                  onChange={(e) => setNewTaskDescription(e.target.value)}
+                  aria-label="New Task Description"
+                  rows={1}
+                  style={{ minHeight: '2.5rem', overflow: 'hidden' }}
+                  onInput={(e) => {
+                    const target = e.target as HTMLTextAreaElement;
+                    target.style.height = 'auto';
+                    target.style.height = `${target.scrollHeight}px`;
+                  }}
+                />
+              )}
+            </div>
+            <Button
+              onClick={() => setIsFileTextButtonClicked(!isFileTextButtonClicked)}
+              aria-label="Add Description"
+              variant="ghost"
+              size="icon"
+            >
+              <FileText size={16} />
+            </Button>
+            <Popover open={isGroupPopoverOpen} onOpenChange={setIsGroupPopoverOpen}>
               <PopoverTrigger asChild>
-              <Button aria-label="Select Group" variant="outline" size="icon">
-                <Folder size={16} />
-              </Button>
+                <Button aria-label="Select Group" variant="ghost" size="icon">
+                  <Folder size={16} />
+                </Button>
               </PopoverTrigger>
               <PopoverContent className="w-64">
                 <div className="space-y-2">
@@ -104,18 +137,20 @@ const MainContent: React.FC<MainContentProps> = ({
                           onChange={(e) => setNewGroupName(e.target.value)}
                           onBlur={() => {
                             if (newGroupName.trim() && newGroupName !== group.name) {
-                              updateGroup(group.name, newGroupName);
+                              updateGroup(group._id, newGroupName);
                             }
                             setEditingGroup(null);
                             setNewGroupName('');
+                            setIsGroupPopoverOpen(false);
                           }}
                           onKeyDown={(e) => {
                             if (e.key === 'Enter') {
                               if (newGroupName.trim() && newGroupName !== group.name) {
-                                updateGroup(group.name, newGroupName);
+                                updateGroup(group._id, newGroupName);
                               }
                               setEditingGroup(null);
                               setNewGroupName('');
+                              setIsGroupPopoverOpen(false);
                             }
                           }}
                           autoFocus
@@ -130,7 +165,7 @@ const MainContent: React.FC<MainContentProps> = ({
                             {group.name}
                           </Button>
                           <Button
-                            size="sm"
+                            size="icon"
                             variant="ghost"
                             onClick={() => {
                               setEditingGroup(group.name);
@@ -141,7 +176,7 @@ const MainContent: React.FC<MainContentProps> = ({
                           </Button>
                         </>
                       )}
-                      <Button size="sm" variant="ghost" onClick={() => deleteGroup(group.name)}>
+                      <Button size="icon" variant="ghost" onClick={() => deleteGroup(group._id)}>
                         <Trash size={12} />
                       </Button>
                     </div>
@@ -160,7 +195,7 @@ const MainContent: React.FC<MainContentProps> = ({
                       }}
                     />
                     <Button
-                      size="sm"
+                      size="icon"
                       onClick={() => {
                         if (newGroupName.trim()) {
                           createGroup(newGroupName);
@@ -176,7 +211,7 @@ const MainContent: React.FC<MainContentProps> = ({
             </Popover>
             <Popover>
               <PopoverTrigger asChild>
-              <Button aria-label="Add Tags" variant="outline" size="icon">
+              <Button aria-label="Add Tags" variant="ghost" size="icon">
                 <Tag size={16} />
               </Button>
               </PopoverTrigger>
@@ -196,7 +231,7 @@ const MainContent: React.FC<MainContentProps> = ({
             <Button
                 onClick={addTask}
                 aria-label="Add Task"
-                variant="outline"
+                variant="ghost"
                 size="icon"
                 disabled={!newTask.trim()}
               >
@@ -223,89 +258,137 @@ const MainContent: React.FC<MainContentProps> = ({
         <div className="space-y-2">
           {incompleteTasks.length > 0 ? (
             incompleteTasks.map((task) => (
-              <div key={task._id} className="flex items-center justify-between p-2 rounded-md">
-                <div className="flex-1">
-                  <p className="font-medium">{task.title}</p>
-                  <div className="flex flex-wrap gap-1 mt-1">
-                    {task.group && (
-                      <Badge variant="secondary">
-                        <Folder size={12} className="mr-1" />
-                        {task.group}
-                      </Badge>
-                    )}
-                    {task.tags && task.tags.map((tag, index) => (
-                      <Badge key={index} variant="outline">
-                        <Tag size={12} className="mr-1" />
-                        {tag}
-                      </Badge>
-                    ))}
-                  </div>
-                </div>
-                <div className="flex items-center space-x-2">
-                  <Popover>
-                    <PopoverTrigger asChild>
-                      <Button variant="ghost" size="sm">
-                        <Folder size={16} />
-                      </Button>
-                    </PopoverTrigger>
-                    <PopoverContent className="w-48">
-                      <div className="space-y-2">
-                        <div className="font-medium">Change group</div>
+              <div key={task._id} className="flex flex-col rounded-md">
+                <div className="flex items-center justify-between">
+                  <div className="flex-1">
+                    <div className="flex items-center justify-between">
+                      <p className="font-medium">{task.title}</p>
+                      <div className="flex items-center">
                         <Button
                           variant="ghost"
-                          className="w-full justify-start"
-                          onClick={() => updateTaskGroup(task._id, null)}
+                          size="icon"
+                          onClick={() => {
+                            if (editingTaskId === task._id) {
+                              setEditingTaskId(null);
+                              setTaskDescription('');
+                            } else {
+                              setEditingTaskId(task._id);
+                              setTaskDescription(task.description || '');
+                            }
+                          }}
                         >
-                          No Group
+                          <FileText size={16} />
                         </Button>
-                        {groups.map((group) => (
-                          <Button
-                            key={group._id}
-                            variant="ghost"
-                            className="w-full justify-start"
-                            onClick={() => updateTaskGroup(task._id, group.name)}
-                          >
-                            {group.name}
-                          </Button>
-                        ))}
+                        <Popover>
+                          <PopoverTrigger asChild>
+                            <Button variant="ghost" size="icon">
+                              <Folder size={16} />
+                            </Button>
+                          </PopoverTrigger>
+                          <PopoverContent className="w-48">
+                            <div className="space-y-2">
+                              <div className="font-medium">Change group</div>
+                              <Button
+                                variant="ghost"
+                                className="w-full justify-start"
+                                onClick={() => updateTaskGroup(task._id, null)}
+                              >
+                                No Group
+                              </Button>
+                              {groups.map((group) => (
+                                <Button
+                                  key={group._id}
+                                  variant="ghost"
+                                  className="w-full justify-start"
+                                  onClick={() => updateTaskGroup(task._id, group.name)}
+                                >
+                                  {group.name}
+                                </Button>
+                              ))}
+                            </div>
+                          </PopoverContent>
+                        </Popover>
+                        <Popover>
+                          <PopoverTrigger asChild>
+                            <Button variant="ghost" size="icon">
+                              <Tag size={16} />
+                            </Button>
+                          </PopoverTrigger>
+                          <PopoverContent className="w-64">
+                            <div className="space-y-2">
+                              <div className="font-medium">Add tags</div>
+                              <InputTags
+                                type="text"
+                                value={task.tags || []}
+                                onChange={(value) => updateTaskTags(task._id, value as string[])}
+                                placeholder="Add tags..."
+                                className="w-full"
+                              />
+                            </div>
+                          </PopoverContent>
+                        </Popover>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => toggleTaskCompletion(task._id)}
+                          aria-label="Complete Task"
+                        >
+                          <Check size={16} />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => deleteTask(task._id)}
+                          aria-label="Delete Task"
+                        >
+                          <Trash size={16} />
+                        </Button>
                       </div>
-                    </PopoverContent>
-                  </Popover>
-                  <Popover>
-                    <PopoverTrigger asChild>
-                      <Button variant="ghost" size="sm">
-                        <Tag size={16} />
-                      </Button>
-                    </PopoverTrigger>
-                    <PopoverContent className="w-64">
-                      <div className="space-y-2">
-                        <div className="font-medium">Add tags</div>
-                        <InputTags
-                          type="text"
-                          value={task.tags || []}
-                          onChange={(value) => updateTaskTags(task._id, value as string[])}
-                          placeholder="Add tags..."
+                    </div>
+                    {editingTaskId === task._id && (
+                      <div className="mt-2">
+                        <Textarea
+                          placeholder="Update description..."
+                          value={taskDescription}
+                          onChange={(e) => setTaskDescription(e.target.value)}
                           className="w-full"
                         />
+                        <div className="flex space-x-2 mt-2">
+                          <Button
+                            onClick={() => {
+                              updateTaskDescription(task._id, taskDescription);
+                              setEditingTaskId(null);
+                            }}
+                          >
+                            Save
+                          </Button>
+                          <Button
+                            variant="outline"
+                            onClick={() => {
+                              setEditingTaskId(null);
+                              setTaskDescription('');
+                            }}
+                          >
+                            Cancel
+                          </Button>
+                        </div>
                       </div>
-                    </PopoverContent>
-                  </Popover>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => toggleTaskCompletion(task._id)}
-                    aria-label="Complete Task"
-                  >
-                    <Check size={16} />
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => deleteTask(task._id)}
-                    aria-label="Delete Task"
-                  >
-                    <Trash size={16} />
-                  </Button>
+                    )}
+                    <div className="flex flex-wrap gap-1 mt-1">
+                      {task.group && (
+                        <Badge variant="secondary">
+                          <Folder size={12} className="mr-1" />
+                          {task.group}
+                        </Badge>
+                      )}
+                      {task.tags && task.tags.map((tag, index) => (
+                        <Badge key={index} variant="outline">
+                          <Tag size={12} className="mr-1" />
+                          {tag}
+                        </Badge>
+                      ))}
+                    </div>
+                  </div>
                 </div>
               </div>
             ))
@@ -322,6 +405,7 @@ export default function TaskPage() {
   const { status } = useSession();
   const [tasks, setTasks] = useState<Task[]>([]);
   const [newTask, setNewTask] = useState('');
+  const [newTaskDescription, setNewTaskDescription] = useState('');
   const [tags, setTags] = useState<string[]>([]);
   const [groups, setGroups] = useState<{ _id: string; name: string }[]>([]);
   const [selectedGroup, setSelectedGroup] = useState<string | null>(null);
@@ -365,36 +449,36 @@ export default function TaskPage() {
       });
       const newGroup = await response.json();
       setGroups((prev) => [...prev, newGroup]);
-      // setSelectedGroup(newGroup.name); // Set the new group as the selected group
     } catch (error) {
       console.error('Failed to create group', error);
     }
   };
 
-  const deleteGroup = async (groupName: string) => {
+  const deleteGroup = async (groupId: string) => {
     try {
-      await fetch(`/api/groups/${groupName}`, {
+      await fetch(`/api/groups`, {
         method: 'DELETE',
         headers: {
           'Content-Type': 'application/json',
         },
+        body: JSON.stringify({ groupId }),
       });
-      setGroups((prev) => prev.filter((group) => group.name !== groupName));
+      setGroups((prev) => prev.filter((group) => group._id !== groupId));
     } catch (error) {
       console.error('Failed to delete group', error);
     }
   };
 
-  const updateGroup = async (oldName: string, newName: string) => {
+  const updateGroup = async (groupId: string, newName: string) => {
     try {
-      await fetch(`/api/groups/${oldName}`, {
+      await fetch(`/api/groups`, {
         method: 'PUT',
-        body: JSON.stringify({ newName }),
+        body: JSON.stringify({ groupId, newName }),
         headers: {
           'Content-Type': 'application/json',
         },
       });
-      setGroups((prev) => prev.map((group) => group.name === oldName ? { ...group, name: newName } : group));
+      setGroups((prev) => prev.map((group) => group._id === groupId ? { ...group, name: newName } : group));
     } catch (error) {
       console.error('Failed to update group', error);
     }
@@ -403,18 +487,18 @@ export default function TaskPage() {
   const addTask = async () => {
     if (newTask.trim()) {
       try {
-        console.log('Adding task:', newTask, tags, selectedGroup);
         const response = await fetch('/api/tasks', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
           },
-          body: JSON.stringify({ title: newTask, tags, group: selectedGroup }),
+          body: JSON.stringify({ title: newTask, tags, group: selectedGroup, description: newTaskDescription }),
         });
         const data = await response.json();
-        console.log('Task added:', data);
+
         setTasks((prevTasks) => [...prevTasks, data]);
         setNewTask('');
+        setNewTaskDescription('');
         setTags([]);
         // Don't reset selectedGroup here to keep the selection
         toast({
@@ -482,7 +566,7 @@ export default function TaskPage() {
 
     const updatedTask = {
       ...tasks[taskIndex],
-      isCompleted: !tasks[taskIndex].isCompleted,
+      status: tasks[taskIndex].status === 'COMPLETED' ? 'PENDING' : 'COMPLETED',
     };
 
     setTasks((prevTasks) => {
@@ -497,7 +581,7 @@ export default function TaskPage() {
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ isCompleted: updatedTask.isCompleted }),
+        body: JSON.stringify({ status: updatedTask.status }),
       });
 
       if (!response.ok) {
@@ -506,11 +590,11 @@ export default function TaskPage() {
       }
 
       toast({
-        title: updatedTask.isCompleted
+        title: updatedTask.status === 'COMPLETED'
           ? 'Task Completed'
           : 'Task Uncompleted',
           description: `Task "${updatedTask.title}" has been ${
-          updatedTask.isCompleted ? 'completed' : 'marked as incomplete'
+          updatedTask.status === 'COMPLETED' ? 'completed' : 'marked as incomplete'
         }`,
         duration: 3000,
       });
@@ -688,6 +772,43 @@ export default function TaskPage() {
     }
   };
 
+  const updateTaskDescription = async (taskId: string, newDescription: string) => {
+    try {
+      const response = await fetch(`/api/tasks/${taskId}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ description: newDescription }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Failed to update task description');
+      }
+
+      setTasks((prevTasks) =>
+        prevTasks.map((task) =>
+          task._id === taskId ? { ...task, description: newDescription } : task
+        )
+      );
+
+      toast({
+        title: 'Description Updated',
+        description: 'Task description has been updated.',
+        duration: 3000,
+      });
+    } catch (error) {
+      console.error('Failed to update task description:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to update task description.',
+        variant: 'destructive',
+        duration: 3000,
+      });
+    }
+  };
+
   return (
     <Layout>
       <MainContent
@@ -707,6 +828,7 @@ export default function TaskPage() {
         updateGroup={updateGroup}
         updateTaskGroup={updateTaskGroup}
         updateTaskTags={updateTaskTags}
+        updateTaskDescription={updateTaskDescription}
       />
     </Layout>
   );

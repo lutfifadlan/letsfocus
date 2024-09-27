@@ -102,12 +102,12 @@ export default function StatsPage() {
 
   // Compute statistics based on filtered tasks
   const totalTasks = filteredTasks.length;
-  const completedTasks = filteredTasks.filter((task) => task.isCompleted).length;
+  const completedTasks = filteredTasks.filter((task) => task.status === 'COMPLETED').length;
   const completionRate = totalTasks > 0 ? (completedTasks / totalTasks) * 100 : 0;
 
   // Compute tasks completed per day for the chart
   const tasksForChart = tasks
-    .filter((task) => task.isCompleted && task.updatedAt)
+    .filter((task) => task.status === 'COMPLETED' && task.updatedAt)
     .filter((task) => {
       const updatedAt = new Date(task.updatedAt);
       return updatedAt >= chartStartDate && updatedAt <= chartEndDate;
@@ -155,9 +155,9 @@ export default function StatsPage() {
   } satisfies ChartConfig;
 
   // Prepare data for the pie chart (uses all-time data)
-  const totalCompletedTasksAllTime = tasks.filter((task) => task.isCompleted)
+  const totalCompletedTasksAllTime = tasks.filter((task) => task.status === 'COMPLETED')
     .length;
-  const totalIncompleteTasksAllTime = tasks.filter((task) => !task.isCompleted)
+  const totalIncompleteTasksAllTime = tasks.filter((task) => task.status !== 'COMPLETED')
     .length;
 
   const pieData = [
@@ -192,7 +192,6 @@ export default function StatsPage() {
   );
 
   const tasksForPreviousPeriod = tasks
-    .filter((task) => task.isCompleted && task.updatedAt)
     .filter((task) => {
       const updatedAt = new Date(task.updatedAt);
       return (

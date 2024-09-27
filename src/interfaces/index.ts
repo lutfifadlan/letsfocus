@@ -1,6 +1,7 @@
 export interface Task {
   _id: string;
   title: string;
+  description: string;
   isCompleted: boolean;
   isDeleted: boolean;
   userId: string;
@@ -8,6 +9,9 @@ export interface Task {
   updatedAt: Date;
   tags: string[];
   group: string;
+  status: string;
+  completedAt: Date | null;
+  deletedAt: Date | null;
 }
 
 export interface Habit {
