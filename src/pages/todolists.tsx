@@ -10,15 +10,47 @@ import { Input } from '@/components/ui/input';
 import { useSession } from 'next-auth/react';
 import { Task } from '@/interfaces';
 import Layout from '@/components/layout';
-import { Plus, Check, Trash, Tag, Folder, PlusCircle, Edit, FileText, Save, X } from 'lucide-react';
+import { Plus, Check, Trash, Tag, Folder, PlusCircle, Edit, FileText, Save, X, CalendarIcon, Rocket } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { ToastAction } from '@/components/ui/toast';
 import { InputTags } from '@/components/ui/input-tags';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Badge } from '@/components/ui/badge';
 import { Textarea } from '@/components/ui/textarea';
+import { CalendarDatePicker } from "@/components/calendar-date-picker";
+import { format } from 'date-fns';
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { z } from "zod";
+import { Form } from "@/components/ui/form";
+import confetti from 'canvas-confetti';
+
+const FormSchema = z.object({
+  calendar: z.object({
+    from: z.date(),
+    to: z.date(),
+  }),
+  datePicker: z.object({
+    from: z.date(),
+    to: z.date(),
+  }),
+});
 
 export default function TaskPage() {
+  const form = useForm<z.infer<typeof FormSchema>>({
+    resolver: zodResolver(FormSchema),
+    defaultValues: {
+      calendar: {
+        from: new Date(new Date().getFullYear(), 0, 1),
+        to: new Date(),
+      },
+      datePicker: {
+        from: new Date(),
+        to: new Date(),
+      },
+    },
+  });
+
   const [tasks, setTasks] = useState<Task[]>([]);
   const [newTask, setNewTask] = useState('');
   const [tags, setTags] = useState<string[]>([]);
@@ -34,15 +66,22 @@ export default function TaskPage() {
   const [isFileTextButtonClicked, setIsFileTextButtonClicked] = useState(false);
   const [taskTitle, setTaskTitle] = useState<string>('');
   const [isLoading, setIsLoading] = useState(false);
-
+  const [dueDate, setDueDate] = useState<Date | null>(null);
+  const [isCalendarPickerOpen, setIsCalendarPickerOpen] = useState(false);
+  const [existingTaskDueDate, setExistingTaskDueDate] = useState<Date | null>(null);
+  const [editingTaskDueDateId, setEditingTaskDueDateId] = useState<string | null>(null);
+  const [editingTaskTagsId, setEditingTaskTagsId] = useState<string | null>(null);
+  const [editingTaskTags, setEditingTaskTags] = useState<string[]>([]);
+  
   const { status } = useSession();
   const { toast } = useToast();
   const incompleteTasks = tasks.filter((task) => task.status !== 'COMPLETED' && !task.isDeleted);
 
   const handleAddTask = (description: string) => {
-    addTask(description);
+    addTask(description, dueDate);
     setNewTaskDescription('');
     setIsFileTextButtonClicked(false);
+    setDueDate(null);
   };
 
   const fetchTasks = async () => {
@@ -151,7 +190,7 @@ export default function TaskPage() {
     setIsLoading(false);
   };
 
-  const addTask = async (description: string) => {
+  const addTask = async (description: string, dueDate: Date | null) => {
     if (newTask.trim()) {
       setIsLoading(true);
       try {
@@ -160,7 +199,7 @@ export default function TaskPage() {
           headers: {
             'Content-Type': 'application/json',
           },
-          body: JSON.stringify({ title: newTask, tags, group: selectedGroup, description }),
+          body: JSON.stringify({ title: newTask, tags, group: selectedGroup, description, dueDate }),
         });
         const data = await response.json();
 
@@ -258,6 +297,14 @@ export default function TaskPage() {
       if (!response.ok) {
         const errorData = await response.json();
         throw new Error(errorData.message || 'Failed to update task');
+      }
+
+      if (updatedTask.status === 'COMPLETED') {
+        confetti({
+          particleCount: 100,
+          spread: 70,
+          origin: { y: 0.6 },
+        });
       }
 
       toast({
@@ -528,6 +575,47 @@ export default function TaskPage() {
     }
   };
 
+  const updateTaskDueDate = async (taskId: string, newDueDate: Date | null) => {
+    setIsLoading(true);
+    try {
+      const response = await fetch(`/api/tasks/${taskId}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ dueDate: newDueDate }),
+      }); 
+  
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Failed to update task due date');
+      }
+
+      setTasks((prevTasks) =>
+        prevTasks.map((task) =>
+          task._id === taskId ? { ...task, dueDate: newDueDate } : task
+        )
+      );
+
+      toast({
+        title: 'Due Date Updated',
+        description: 'Task due date has been updated.',
+        duration: 3000,
+      });
+    } catch (error) {
+      console.error('Failed to update task due date:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to update task due date.',
+        variant: 'destructive',
+        duration: 3000,
+      });
+    } finally {
+      setEditingTaskDueDateId(null);
+      setIsLoading(false);
+    }
+  };
+
   useEffect(() => {
     if (status === 'authenticated') {
       fetchTasks();
@@ -550,12 +638,20 @@ export default function TaskPage() {
           <CardTitle className="text-center text-2xl">To-Do Lists</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="flex flex-col gap-2 mb-4">
-            <div className="flex flex-row gap-2">
-              <div className="flex flex-col gap-2 w-full">
+          <div className="flex flex-col gap-2 mb-2">
+            <div className={`flex flex-row gap-2 ${isFileTextButtonClicked ? 'items-start justify-start' : 'items-center justify-center'}`}>
+              <Button
+                variant="ghost"
+                size="icon"
+                aria-label="Complete Task"
+                className="hover:bg-transparent hover:cursor-default"
+              >
+                <Rocket size={16} />
+              </Button>
+              <div className="flex flex-col gap-2 w-full text-sm">
                 <Input
                   placeholder="Task name"
-                  className="w-full shadow-none"
+                  className="w-full shadow-none text-sm flex-1"
                   type="text"
                   value={newTask}
                   onChange={(e) => setNewTask(e.target.value)}
@@ -565,6 +661,7 @@ export default function TaskPage() {
                     }
                   }}
                   aria-label="New Task"
+                  autoFocus // Enable auto-focus
                 />
                 {isFileTextButtonClicked && (
                   <Textarea
@@ -672,6 +769,7 @@ export default function TaskPage() {
                             setNewGroupName('');
                           }
                         }}
+                        autoFocus
                       />
                       <Button
                         size="icon"
@@ -703,21 +801,86 @@ export default function TaskPage() {
                       onChange={(value) => setTags(value as string[])}
                       placeholder="Use enter or comma to add tag"
                       className="w-full text-xs"
+                      autoFocus
                     />
                   </div>
                 </PopoverContent>
               </Popover>
+              <Popover open={isCalendarPickerOpen} onOpenChange={setIsCalendarPickerOpen}>
+                <PopoverTrigger asChild>
+                  <Button
+                    onClick={() => setIsCalendarPickerOpen(!isCalendarPickerOpen)}
+                    aria-label="Add Due Date"
+                    variant="ghost"
+                    size="icon"
+                  >
+                    <CalendarIcon size={16} />
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-64 text-sm">
+                  <div className="flex flex-col space-y-1">
+                    <p className="text-center">Select Due Date</p>
+                    <div className="flex items-center justify-center space-x-4">
+                      <Form {...form}>
+                        <form
+                          onSubmit={form.handleSubmit((data) => {
+                            setDueDate(data.datePicker.to);
+                            setIsCalendarPickerOpen(false);
+                          })}
+                          className="flex flex-col justify-center text-center items-center space-y-2"
+                        >
+                          <CalendarDatePicker
+                            date={{ from: dueDate || new Date(), to: dueDate || new Date() }}
+                            onDateSelect={({ from, to }) => {
+                              form.setValue("datePicker", { from, to });
+                              setDueDate(from);
+                              setIsCalendarPickerOpen(false);
+                            }}
+                            variant="outline"
+                            numberOfMonths={1}
+                            className="min-w-[150px] border rounded-md p-2"
+                          />
+                          <div className="flex space-x-4">
+                            <Button
+                              variant="outline"
+                              type="button"
+                              onClick={() => {
+                                setDueDate(new Date());
+                                setIsCalendarPickerOpen(false);
+                              }}
+                              className="px-4 py-1"
+                            >
+                              Today
+                            </Button>
+                            <Button
+                              variant="outline"
+                              type="button"
+                              onClick={() => {
+                                setDueDate(null);
+                                setIsCalendarPickerOpen(false);
+                              }}
+                              className="px-4 py-1"
+                            >
+                              No Date
+                            </Button>
+                          </div>
+                        </form>
+                      </Form>
+                    </div>
+                  </div>
+                </PopoverContent>
+              </Popover>
               <Button
-                  onClick={() => handleAddTask(newTaskDescription)}
-                  aria-label="Add Task"
-                  variant="ghost"
-                  size="icon"
-                  disabled={!newTask.trim()}
-                >
-                  <Plus size={16} />
+                onClick={() => handleAddTask(newTaskDescription)}
+                aria-label="Add Task"
+                variant="ghost"
+                size="icon"
+                disabled={!newTask.trim()}
+              >
+                <Plus size={16} />
               </Button>
             </div>
-            {(selectedGroup || tags.length > 0) && (
+            {(selectedGroup || tags.length > 0 || dueDate) && (
               <div className="flex flex-wrap gap-1 mt-1">
                 {selectedGroup && (
                   <Badge variant="secondary">
@@ -731,183 +894,297 @@ export default function TaskPage() {
                     {tag}
                   </Badge>
                 ))}
+                {dueDate && (
+                  <Badge variant="outline">
+                    <CalendarIcon size={12} className="mr-1" />
+                    {format(dueDate, 'PPP')}
+                  </Badge>
+                )}
               </div>
             )}
           </div>
           <div className="space-y-2">
             {incompleteTasks.length > 0 ? (
               incompleteTasks.map((task) => (
-                <div key={task._id} className="flex flex-col rounded-md">
-                  <div className="flex items-center justify-between">
-                    <div className="flex-1">
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center justify-center space-x-2">
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            onClick={() => toggleTaskCompletion(task._id)}
-                            aria-label="Complete Task"
-                          >
-                            <Check size={16} className="text-green-500" />
-                          </Button>
-                          {editingTaskTitleId === task._id ? (
-                            <Input
-                              type="text"
-                              value={taskTitle}
-                              onChange={(e) => setTaskTitle(e.target.value)}
-                              onBlur={() => {
-                                if (taskTitle.trim() && taskTitle !== task.title) {
-                                  updateTaskTitle(task._id, taskTitle);
-                                }
-                                setEditingTaskTitleId(null);
-                                setTaskTitle('');
-                              }}
-                              onKeyDown={(e) => {
-                                if (e.key === 'Enter') {
-                                  if (taskTitle.trim() && taskTitle !== task.title) {
-                                    updateTaskTitle(task._id, taskTitle);
-                                  }
-                                  setEditingTaskTitleId(null);
-                                  setTaskTitle('');
-                                }
-                              }}
-                              autoFocus
-                            />
-                          ) : (
-                            <p className="font-medium" onClick={() => {
-                              setEditingTaskTitleId(task._id);
-                              setTaskTitle(task.title);
-                            }}>{task.title}</p>
-                          )}
-                        </div>
-                        <div className="flex items-center">
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            onClick={() => {
-                              if (editingTaskDescriptionId === task._id) {
-                                setEditingTaskDescriptionId(null);
-                                setTaskDescription('');
-                              } else {
-                                setEditingTaskDescriptionId(task._id);
-                                setTaskDescription(task.description || '');
+                <div key={task._id} className="rounded-md text-sm">
+                  <div className="flex flex-row gap-2 items-center">
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => toggleTaskCompletion(task._id)}
+                      aria-label="Complete Task"
+                    >
+                      <Check size={16} className="text-green-500" />
+                    </Button>
+
+                    <div className="flex flex-col gap-2 w-full">
+                      {editingTaskTitleId === task._id ? (
+                        <Input
+                          className="flex-1 border"
+                          type="text"
+                          value={taskTitle}
+                          onChange={(e) => setTaskTitle(e.target.value)}
+                          onBlur={() => {
+                            if (taskTitle.trim() && taskTitle !== task.title) {
+                              updateTaskTitle(task._id, taskTitle);
+                            }
+                            setEditingTaskTitleId(null);
+                            setTaskTitle('');
+                          }}
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter') {
+                              if (taskTitle.trim() && taskTitle !== task.title) {
+                                updateTaskTitle(task._id, taskTitle);
                               }
-                            }}
-                          >
-                            <FileText size={16} />
-                          </Button>
-                          <Popover>
-                            <PopoverTrigger asChild>
-                              <Button variant="ghost" size="icon">
-                                <Folder size={16} />
-                              </Button>
-                            </PopoverTrigger>
-                            <PopoverContent className="w-48">
-                              <div className="space-y-2">
-                                <div className="font-medium">Change group</div>
-                                <Button
-                                  variant="ghost"
-                                  className="w-full justify-start"
-                                  onClick={() => updateTaskGroup(task._id, null)}
-                                >
-                                  No Group
-                                </Button>
-                                {groups.map((group) => (
-                                  <Button
-                                    key={group._id}
-                                    variant="ghost"
-                                    className="w-full justify-start"
-                                    onClick={() => updateTaskGroup(task._id, group.name)}
-                                  >
-                                    {group.name}
-                                  </Button>
-                                ))}
-                              </div>
-                            </PopoverContent>
-                          </Popover>
-                          <Popover>
-                            <PopoverTrigger asChild>
-                              <Button variant="ghost" size="icon">
-                                <Tag size={16} />
-                              </Button>
-                            </PopoverTrigger>
-                            <PopoverContent className="w-64 text-sm">
-                              <div className="space-y-2">
-                                <div className="font-medium">Add tags</div>
-                                <InputTags
-                                  type="text"
-                                  value={task.tags || []}
-                                  onChange={(value) => updateTaskTags(task._id, value as string[])}
-                                  placeholder="Use enter or comma to add tag"
-                                  className="w-full text-xs"
-                                />
-                              </div>
-                            </PopoverContent>
-                          </Popover>
+                              setEditingTaskTitleId(null);
+                              setTaskTitle('');
+                            }
+                          }}
+                          autoFocus
+                        />
+                      ) : (
+                        <p
+                          className="flex-1 font-medium text-sm hover:cursor-text"
+                          onClick={() => {
+                            setEditingTaskTitleId(task._id);
+                            setTaskTitle(task.title);
+                          }}
+                        >
+                          {task.title}
+                        </p>
+                      )}
+                    </div>
+
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => {
+                        setEditingTaskDescriptionId(
+                          editingTaskDescriptionId === task._id ? null : task._id
+                        );
+                        setTaskDescription(editingTaskDescriptionId ? '' : task.description || '');
+                      }}
+                    >
+                      <FileText size={16} />
+                    </Button>
+
+                    <Popover>
+                      <PopoverTrigger asChild>
+                        <Button variant="ghost" size="icon">
+                          <Folder size={16} />
+                        </Button>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-48">
+                        <div className="space-y-2 text-sm">
+                          <p>Change group</p>
                           <Button
                             variant="ghost"
-                            size="icon"
-                            onClick={() => deleteTask(task._id)}
-                            aria-label="Delete Task"
+                            className="w-full justify-start"
+                            onClick={() => updateTaskGroup(task._id, null)}
                           >
-                            <Trash size={16} />
+                            No Group
                           </Button>
-                        </div>
-                      </div>
-                      {editingTaskDescriptionId === task._id && (
-                        <div className="mt-2">
-                          <Textarea
-                            placeholder="Update description..."
-                            value={taskDescription}
-                            onChange={(e) => setTaskDescription(e.target.value)}
-                            className="w-full resize-vertical"
-                            style={{ minHeight: '2.5rem', overflow: 'hidden' }}
-                            onInput={(e) => {
-                              const target = e.target as HTMLTextAreaElement;
-                              target.style.height = 'auto';
-                              target.style.height = `${target.scrollHeight}px`;
-                            }}
-                          />
-                          <div className="flex justify-end mt-1">
+                          {groups.map((group) => (
                             <Button
+                              key={group._id}
                               variant="ghost"
-                              size="icon"
-                              onClick={() => {
-                                updateTaskDescription(task._id, taskDescription);
-                                setEditingTaskDescriptionId(null);
-                                setTaskDescription('');
-                              }}
+                              className="w-full justify-start"
+                              onClick={() => updateTaskGroup(task._id, group.name)}
                             >
-                              <Save size={16} />
+                              {group.name}
                             </Button>
+                          ))}
+                        </div>
+                      </PopoverContent>
+                    </Popover>
+
+                    <Popover
+                      open={editingTaskTagsId === task._id}
+                      onOpenChange={(isOpen) => {
+                        if (isOpen) {
+                          setEditingTaskTagsId(task._id);
+                          setEditingTaskTags(task.tags || []);
+                        } else {
+                          setEditingTaskTagsId(null);
+                          setEditingTaskTags([]);
+                        }
+                      }}
+                    >
+                      <PopoverTrigger asChild>
+                        <Button variant="ghost" size="icon">
+                          <Tag size={16} />
+                        </Button>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-64 text-sm">
+                        <div className="space-y-2">
+                          <div className="font-medium">Add tags</div>
+                          <InputTags
+                            type="text"
+                            value={editingTaskTags}
+                            onChange={(value) => setEditingTaskTags(value as string[])}
+                            placeholder="Use enter or comma to add tag"
+                            className="w-full text-xs"
+                            autoFocus
+                          />
+                          <div className="flex justify-end mt-2 space-x-2">
                             <Button
                               variant="ghost"
-                              size="icon"
+                              size="sm"
                               onClick={() => {
-                                setEditingTaskDescriptionId(null);
-                                setTaskDescription('');
+                                setEditingTaskTagsId(null);
+                                setEditingTaskTags([]);
                               }}
                             >
                               <X size={16} />
                             </Button>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => {
+                                updateTaskTags(task._id, editingTaskTags);
+                                setEditingTaskTagsId(null);
+                                setEditingTaskTags([]);
+                              }}
+                            >
+                              <Save size={16} />
+                            </Button>
                           </div>
                         </div>
-                      )}
-                      <div className="flex flex-wrap gap-1 mt-1">
-                        {task.group && (
-                          <Badge variant="secondary">
-                            <Folder size={12} className="mr-1" />
-                            {task.group}
-                          </Badge>
-                        )}
-                        {task.tags && task.tags.map((tag, index) => (
-                          <Badge key={index} variant="outline">
-                            <Tag size={12} className="mr-1" />
-                            {tag}
-                          </Badge>
-                        ))}
+                      </PopoverContent>
+                    </Popover>
+
+                    <Popover>
+                      <PopoverTrigger asChild>
+                        <Button
+                          variant="ghost"
+                          aria-label="Update Task Due Date"
+                          size="icon"
+                          onClick={() => {
+                            setEditingTaskDueDateId(
+                              editingTaskDueDateId === task._id ? null : task._id
+                            );
+                            setExistingTaskDueDate(
+                              editingTaskDueDateId ? null : task.dueDate || null
+                            );
+                          }}
+                        >
+                          <CalendarIcon size={16} />
+                        </Button>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-64 text-sm">
+                        <div className="flex flex-col justify-center text-center items-center space-y-2">
+                          <p className="text-center">Select Due Date</p>
+                          <CalendarDatePicker
+                            date={{
+                              from: existingTaskDueDate
+                                ? new Date(existingTaskDueDate)
+                                : new Date(),
+                              to: existingTaskDueDate
+                                ? new Date(existingTaskDueDate)
+                                : new Date(),
+                            }}
+                            onDateSelect={({ from }) => {
+                              setExistingTaskDueDate(from);
+                              updateTaskDueDate(task._id, from);
+                            }}
+                            variant="outline"
+                            numberOfMonths={1}
+                            className="min-w-[150px] border rounded-md p-2"
+                          />
+                          <div className="flex space-x-4 justify-center">
+                            <Button
+                              variant="outline"
+                              onClick={() => {
+                                setExistingTaskDueDate(new Date());
+                                updateTaskDueDate(task._id, new Date());
+                              }}
+                              className="px-4 py-1"
+                            >
+                              Today
+                            </Button>
+                            <Button
+                              variant="outline"
+                              onClick={() => {
+                                setExistingTaskDueDate(null);
+                                updateTaskDueDate(task._id, null);
+                              }}
+                              className="px-4 py-1"
+                            >
+                              No Date
+                            </Button>
+                          </div>
+                        </div>
+                      </PopoverContent>
+                    </Popover>
+
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => deleteTask(task._id)}
+                      aria-label="Delete Task"
+                    >
+                      <Trash size={16} />
+                    </Button>
+                  </div>
+
+                  {editingTaskDescriptionId === task._id && (
+                    <div className="mt-2">
+                      <Textarea
+                        placeholder="Update description..."
+                        value={taskDescription}
+                        onChange={(e) => setTaskDescription(e.target.value)}
+                        className="w-full resize-vertical"
+                        onInput={(e) => {
+                          const target = e.target as HTMLTextAreaElement;
+                          target.style.height = 'auto';
+                          target.style.height = `${target.scrollHeight}px`;
+                        }}
+                      />
+                      <div className="flex justify-end mt-1 gap-2">
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => {
+                            updateTaskDescription(task._id, taskDescription);
+                            setEditingTaskDescriptionId(null);
+                            setTaskDescription('');
+                          }}
+                        >
+                          <Save size={16} />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => {
+                            setEditingTaskDescriptionId(null);
+                            setTaskDescription('');
+                          }}
+                        >
+                          <X size={16} />
+                        </Button>
                       </div>
                     </div>
+                  )}
+
+                  <div className="flex flex-wrap gap-1 mt-1">
+                    {task.group && (
+                      <Badge variant="secondary">
+                        <Folder size={12} className="mr-1" />
+                        {task.group}
+                      </Badge>
+                    )}
+                    {task.tags?.map((tag, index) => (
+                      <Badge key={index} variant="outline">
+                        <Tag size={12} className="mr-1" />
+                        {tag}
+                      </Badge>
+                    ))}
+                    {task.dueDate && (
+                      <Badge variant="outline">
+                        <CalendarIcon size={12} className="mr-1" />
+                        {format(new Date(task.dueDate), 'PPP')}
+                      </Badge>
+                    )}
                   </div>
                 </div>
               ))
