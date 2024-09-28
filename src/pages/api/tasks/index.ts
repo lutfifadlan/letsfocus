@@ -54,8 +54,20 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         res.status(500).json({ error: 'Error creating task' });
       }
       break;
+
+    case 'DELETE':
+      try {
+        const { taskIds } = req.body;
+        await Task.updateMany({ _id: { $in: taskIds } }, { isDeleted: true });
+        res.status(200).json({ message: 'Tasks deleted successfully' });
+      } catch (error) {
+        console.error(error);
+        res.status(500).json({ error: 'Error deleting tasks' });
+      }
+      break;
+    
     default:
-      res.setHeader('Allow', ['GET', 'POST']);
+      res.setHeader('Allow', ['GET', 'POST', 'DELETE']);
       res.status(405).end(`Method ${req.method} Not Allowed`);
   }
 }

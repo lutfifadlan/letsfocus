@@ -11,6 +11,8 @@ const config: Config = {
   	extend: {
 			fontFamily: {
         poppins: ['Poppins', 'sans-serif'],
+        grapeNuts: ['Grape Nuts', 'sans-serif'],
+        workSans: ['Work Sans', 'sans-serif'],
       },
   		colors: {
   			background: 'hsl(var(--background))',
