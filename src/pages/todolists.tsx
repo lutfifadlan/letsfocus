@@ -1093,309 +1093,332 @@ export default function TodolistsPage() {
             </div>
           )}
 
-          {incompleteTasks.length > 0 ? (
-            incompleteTasks.map((task) => (
-              <div key={task._id} className="rounded-md text-sm">
-                <div className="flex flex-row gap-2 items-center">
-                  {showBulkDeleteActions && (
-                    <Checkbox
-                      checked={selectedTaskIds.includes(task._id)}
-                      onCheckedChange={(checked) => {
-                        if (checked) {
-                          setSelectedTaskIds([...selectedTaskIds, task._id]);
-                        } else {
-                          setSelectedTaskIds(selectedTaskIds.filter((id) => id !== task._id));
-                        }
-                      }}
-                    />
-                  )}
-                  {
-                    !showBulkDeleteActions && (
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={() => toggleTaskCompletion(task._id)}
-                        aria-label="Complete Task"
-                      >
-                        <SquareCheck size={16} />
-                      </Button>
-                    )
-                  }
-
-                  <div className="flex flex-col gap-2 w-full">
-                    {editingTaskTitleId === task._id ? (
-                      <Input
-                        className="flex-1 border"
-                        type="text"
-                        value={taskTitle}
-                        onChange={(e) => setTaskTitle(e.target.value)}
-                        onBlur={() => {
-                          if (taskTitle.trim() && taskTitle !== task.title) {
-                            updateTaskTitle(task._id, taskTitle);
-                          }
-                          setEditingTaskTitleId(null);
-                          setTaskTitle('');
-                        }}
-                        onKeyDown={(e) => {
-                          if (e.key === 'Enter') {
-                            if (taskTitle.trim() && taskTitle !== task.title) {
-                              updateTaskTitle(task._id, taskTitle);
-                            }
-                            setEditingTaskTitleId(null);
-                            setTaskTitle('');
+          <div className="space-y-2">
+            {incompleteTasks.length > 0 ? (
+              incompleteTasks.map((task) => (
+                <div key={task._id} className="rounded-md text-sm">
+                  <div className="flex flex-row gap-2 items-center">
+                    {showBulkDeleteActions && (
+                      <Checkbox
+                        checked={selectedTaskIds.includes(task._id)}
+                        onCheckedChange={(checked) => {
+                          if (checked) {
+                            setSelectedTaskIds([...selectedTaskIds, task._id]);
+                          } else {
+                            setSelectedTaskIds(selectedTaskIds.filter((id) => id !== task._id));
                           }
                         }}
-                        autoFocus
                       />
-                    ) : (
-                      <p
-                        className="flex-1 font-medium text-sm hover:cursor-text"
-                        onClick={() => {
-                          setEditingTaskTitleId(task._id);
-                          setTaskTitle(task.title);
-                        }}
-                      >
-                        {task.title}
-                      </p>
                     )}
-                  </div>
-
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    onClick={() => {
-                      setEditingTaskDescriptionId(
-                        editingTaskDescriptionId === task._id ? null : task._id
-                      );
-                      setTaskDescription(editingTaskDescriptionId ? '' : task.description || '');
-                    }}
-                  >
-                    <FileText size={16} />
-                  </Button>
-
-                  <Popover>
-                    <PopoverTrigger asChild>
-                      <Button variant="ghost" size="icon">
-                        <Folder size={16} />
-                      </Button>
-                    </PopoverTrigger>
-                    <PopoverContent className="w-48">
-                      <div className="space-y-2 text-sm">
-                        <p>Change group</p>
+                    {
+                      !showBulkDeleteActions && (
                         <Button
                           variant="ghost"
-                          className="w-full justify-start"
-                          onClick={() => updateTaskGroup(task._id, null)}
+                          size="icon"
+                          onClick={() => toggleTaskCompletion(task._id)}
+                          aria-label="Complete Task"
                         >
-                          No Group
+                          <SquareCheck size={16} />
                         </Button>
-                        {groups.map((group) => (
-                          <Button
-                            key={group._id}
-                            variant="ghost"
-                            className="w-full justify-start"
-                            onClick={() => updateTaskGroup(task._id, group.name)}
-                          >
-                            {group.name}
-                          </Button>
-                        ))}
-                      </div>
-                    </PopoverContent>
-                  </Popover>
+                      )
+                    }
 
-                  <Popover
-                    open={editingTaskTagsId === task._id}
-                    onOpenChange={(isOpen) => {
-                      if (isOpen) {
-                        setEditingTaskTagsId(task._id);
-                        setEditingTaskTags(task.tags || []);
-                      } else {
-                        setEditingTaskTagsId(null);
-                        setEditingTaskTags([]);
-                      }
-                    }}
-                  >
-                    <PopoverTrigger asChild>
-                      <Button variant="ghost" size="icon">
-                        <Tag size={16} />
-                      </Button>
-                    </PopoverTrigger>
-                    <PopoverContent className="w-64 text-sm">
-                      <div className="space-y-2">
-                        <div className="font-medium">Add tags</div>
-                        <InputTags
-                          type="text"
-                          value={editingTaskTags}
-                          onChange={(value) => setEditingTaskTags(value as string[])}
-                          placeholder="Use enter or comma to add tag"
-                          className="w-full text-xs"
-                          autoFocus
-                        />
-                        <div className="flex justify-end mt-2 space-x-2">
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => {
-                              setEditingTaskTagsId(null);
-                              setEditingTaskTags([]);
+                    <div className="flex flex-col gap-2 w-full">
+                      {editingTaskTitleId === task._id ? (
+                        <div className="flex items-center">
+                          <Input
+                            className="flex-1 border mr-1"
+                            type="text"
+                            value={taskTitle}
+                            onChange={(e) => setTaskTitle(e.target.value)}
+                            onKeyDown={(e) => {
+                              if (e.key === 'Enter') {
+                                if (taskTitle.trim() && taskTitle !== task.title) {
+                                  updateTaskTitle(task._id, taskTitle);
+                                }
+                                setEditingTaskTitleId(null);
+                                setTaskTitle('');
+                              } else if (e.key === 'Escape') {
+                                setEditingTaskTitleId(null);
+                                setTaskTitle('');
+                              }
                             }}
-                          >
-                            <X size={16} />
-                          </Button>
+                            autoFocus
+                          />
                           <Button
                             variant="ghost"
-                            size="sm"
+                            size="icon"
                             onClick={() => {
-                              updateTaskTags(task._id, editingTaskTags);
-                              setEditingTaskTagsId(null);
-                              setEditingTaskTags([]);
+                              if (taskTitle.trim() && taskTitle !== task.title) {
+                                updateTaskTitle(task._id, taskTitle);
+                              }
+                              setEditingTaskTitleId(null);
+                              setTaskTitle('');
                             }}
                           >
                             <Save size={16} />
                           </Button>
-                        </div>
-                      </div>
-                    </PopoverContent>
-                  </Popover>
-
-                  <Popover>
-                    <PopoverTrigger asChild>
-                      <Button
-                        variant="ghost"
-                        aria-label="Update Task Due Date"
-                        size="icon"
-                        onClick={() => {
-                          setEditingTaskDueDateId(
-                            editingTaskDueDateId === task._id ? null : task._id
-                          );
-                          setExistingTaskDueDate(
-                            editingTaskDueDateId ? null : task.dueDate || null
-                          );
-                        }}
-                      >
-                        <CalendarIcon size={16} />
-                      </Button>
-                    </PopoverTrigger>
-                    <PopoverContent className="w-64 text-sm">
-                      <div className="flex flex-col justify-center text-center items-center space-y-2">
-                        <p className="text-center">Select Due Date</p>
-                        <CalendarDatePicker
-                          date={{
-                            from: existingTaskDueDate
-                              ? new Date(existingTaskDueDate)
-                              : new Date(),
-                            to: existingTaskDueDate
-                              ? new Date(existingTaskDueDate)
-                              : new Date(),
-                          }}
-                          onDateSelect={({ from }) => {
-                            setExistingTaskDueDate(from);
-                            updateTaskDueDate(task._id, from);
-                          }}
-                          variant="outline"
-                          numberOfMonths={1}
-                          className="min-w-[150px] border rounded-md p-2"
-                        />
-                        <div className="flex space-x-4 justify-center">
                           <Button
-                            variant="outline"
+                            variant="ghost"
+                            size="icon"
                             onClick={() => {
-                              setExistingTaskDueDate(new Date());
-                              updateTaskDueDate(task._id, new Date());
+                              setEditingTaskTitleId(null);
+                              setTaskTitle('');
                             }}
-                            className="px-4 py-1"
                           >
-                            Today
-                          </Button>
-                          <Button
-                            variant="outline"
-                            onClick={() => {
-                              setExistingTaskDueDate(null);
-                              updateTaskDueDate(task._id, null);
-                            }}
-                            className="px-4 py-1"
-                          >
-                            No Date
+                            <X size={16} />
                           </Button>
                         </div>
-                      </div>
-                    </PopoverContent>
-                  </Popover>
-
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    onClick={() => deleteTask(task._id)}
-                    aria-label="Delete Task"
-                  >
-                    <Trash size={16} />
-                  </Button>
-                </div>
-
-                {editingTaskDescriptionId === task._id && (
-                  <div className="mt-2">
-                    <Textarea
-                      placeholder="Update description..."
-                      value={taskDescription}
-                      onChange={(e) => setTaskDescription(e.target.value)}
-                      className="w-full resize-vertical"
-                      onInput={(e) => {
-                        const target = e.target as HTMLTextAreaElement;
-                        target.style.height = 'auto';
-                        target.style.height = `${target.scrollHeight}px`;
-                      }}
-                    />
-                    <div className="flex justify-end mt-1 gap-2">
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={() => {
-                          updateTaskDescription(task._id, taskDescription);
-                          setEditingTaskDescriptionId(null);
-                          setTaskDescription('');
-                        }}
-                      >
-                        <Save size={16} />
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={() => {
-                          setEditingTaskDescriptionId(null);
-                          setTaskDescription('');
-                        }}
-                      >
-                        <X size={16} />
-                      </Button>
+                      ) : (
+                        <p
+                          className="flex-1 font-medium text-sm hover:cursor-text"
+                          onClick={() => {
+                            setEditingTaskTitleId(task._id);
+                            setTaskTitle(task.title);
+                          }}
+                        >
+                          {task.title}
+                        </p>
+                      )}
                     </div>
-                  </div>
-                )}
 
-                <div className="flex flex-wrap gap-1 mt-1">
-                  {task.group && (
-                    <Badge variant="secondary">
-                      <Folder size={12} className="mr-1" />
-                      {task.group}
-                    </Badge>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => {
+                        setEditingTaskDescriptionId(
+                          editingTaskDescriptionId === task._id ? null : task._id
+                        );
+                        setTaskDescription(editingTaskDescriptionId ? '' : task.description || '');
+                      }}
+                    >
+                      <FileText size={16} />
+                    </Button>
+
+                    <Popover>
+                      <PopoverTrigger asChild>
+                        <Button variant="ghost" size="icon">
+                          <Folder size={16} />
+                        </Button>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-48">
+                        <div className="space-y-2 text-sm">
+                          <p>Change group</p>
+                          <Button
+                            variant="ghost"
+                            className="w-full justify-start"
+                            onClick={() => updateTaskGroup(task._id, null)}
+                          >
+                            No Group
+                          </Button>
+                          {groups.map((group) => (
+                            <Button
+                              key={group._id}
+                              variant="ghost"
+                              className="w-full justify-start"
+                              onClick={() => updateTaskGroup(task._id, group.name)}
+                            >
+                              {group.name}
+                            </Button>
+                          ))}
+                        </div>
+                      </PopoverContent>
+                    </Popover>
+
+                    <Popover
+                      open={editingTaskTagsId === task._id}
+                      onOpenChange={(isOpen) => {
+                        if (isOpen) {
+                          setEditingTaskTagsId(task._id);
+                          setEditingTaskTags(task.tags || []);
+                        } else {
+                          setEditingTaskTagsId(null);
+                          setEditingTaskTags([]);
+                        }
+                      }}
+                    >
+                      <PopoverTrigger asChild>
+                        <Button variant="ghost" size="icon">
+                          <Tag size={16} />
+                        </Button>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-64 text-sm">
+                        <div className="space-y-2">
+                          <div className="font-medium">Add tags</div>
+                          <InputTags
+                            type="text"
+                            value={editingTaskTags}
+                            onChange={(value) => setEditingTaskTags(value as string[])}
+                            placeholder="Use enter or comma to add tag"
+                            className="w-full text-xs"
+                            autoFocus
+                          />
+                          <div className="flex justify-end mt-2 space-x-2">
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => {
+                                setEditingTaskTagsId(null);
+                                setEditingTaskTags([]);
+                              }}
+                            >
+                              <X size={16} />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => {
+                                updateTaskTags(task._id, editingTaskTags);
+                                setEditingTaskTagsId(null);
+                                setEditingTaskTags([]);
+                              }}
+                            >
+                              <Save size={16} />
+                            </Button>
+                          </div>
+                        </div>
+                      </PopoverContent>
+                    </Popover>
+
+                    <Popover>
+                      <PopoverTrigger asChild>
+                        <Button
+                          variant="ghost"
+                          aria-label="Update Task Due Date"
+                          size="icon"
+                          onClick={() => {
+                            setEditingTaskDueDateId(
+                              editingTaskDueDateId === task._id ? null : task._id
+                            );
+                            setExistingTaskDueDate(
+                              editingTaskDueDateId ? null : task.dueDate || null
+                            );
+                          }}
+                        >
+                          <CalendarIcon size={16} />
+                        </Button>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-64 text-sm">
+                        <div className="flex flex-col justify-center text-center items-center space-y-2">
+                          <p className="text-center">Select Due Date</p>
+                          <CalendarDatePicker
+                            date={{
+                              from: existingTaskDueDate
+                                ? new Date(existingTaskDueDate)
+                                : new Date(),
+                              to: existingTaskDueDate
+                                ? new Date(existingTaskDueDate)
+                                : new Date(),
+                            }}
+                            onDateSelect={({ from }) => {
+                              setExistingTaskDueDate(from);
+                              updateTaskDueDate(task._id, from);
+                            }}
+                            variant="outline"
+                            numberOfMonths={1}
+                            className="min-w-[150px] border rounded-md p-2"
+                          />
+                          <div className="flex space-x-4 justify-center">
+                            <Button
+                              variant="outline"
+                              onClick={() => {
+                                setExistingTaskDueDate(new Date());
+                                updateTaskDueDate(task._id, new Date());
+                              }}
+                              className="px-4 py-1"
+                            >
+                              Today
+                            </Button>
+                            <Button
+                              variant="outline"
+                              onClick={() => {
+                                setExistingTaskDueDate(null);
+                                updateTaskDueDate(task._id, null);
+                              }}
+                              className="px-4 py-1"
+                            >
+                              No Date
+                            </Button>
+                          </div>
+                        </div>
+                      </PopoverContent>
+                    </Popover>
+
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => deleteTask(task._id)}
+                      aria-label="Delete Task"
+                    >
+                      <Trash size={16} />
+                    </Button>
+                  </div>
+
+                  {editingTaskDescriptionId === task._id && (
+                    <div className="mt-2">
+                      <Textarea
+                        placeholder="Update description..."
+                        value={taskDescription}
+                        onChange={(e) => setTaskDescription(e.target.value)}
+                        className="w-full resize-vertical"
+                        onInput={(e) => {
+                          const target = e.target as HTMLTextAreaElement;
+                          target.style.height = 'auto';
+                          target.style.height = `${target.scrollHeight}px`;
+                        }}
+                      />
+                      <div className="flex flex-row gap-2 mt-1">
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => {
+                            updateTaskDescription(task._id, taskDescription);
+                            setEditingTaskDescriptionId(null);
+                            setTaskDescription('');
+                          }}
+                        >
+                          <Save size={16} />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => {
+                            setEditingTaskDescriptionId(null);
+                            setTaskDescription('');
+                          }}
+                        >
+                          <X size={16} />
+                        </Button>
+                      </div>
+                    </div>
                   )}
-                  {task.tags?.map((tag, index) => (
-                    <Badge key={index} variant="outline">
-                      <Tag size={12} className="mr-1" />
-                      {tag}
-                    </Badge>
-                  ))}
-                  {task.dueDate && (
-                    <Badge variant="outline">
-                      <CalendarIcon size={12} className="mr-1" />
-                      {format(new Date(task.dueDate), 'PPP')}
-                    </Badge>
-                  )}
+
+                  <div className="flex flex-wrap gap-1 mt-1">
+                    {task.group && (
+                      <Badge variant="secondary">
+                        <Folder size={12} className="mr-1" />
+                        {task.group}
+                      </Badge>
+                    )}
+                    {task.tags?.map((tag, index) => (
+                      <Badge key={index} variant="outline">
+                        <Tag size={12} className="mr-1" />
+                        {tag}
+                      </Badge>
+                    ))}
+                    {task.dueDate && (
+                      <Badge variant="outline">
+                        <CalendarIcon size={12} className="mr-1" />
+                        {format(new Date(task.dueDate), 'PPP')}
+                      </Badge>
+                    )}
+                  </div>
                 </div>
-              </div>
-            ))
-          ) : (
-            <p className="text-gray-500 text-center">No tasks yet. Add one to get started!</p>
-          )}
+              ))
+            ) : (
+              <p className="text-gray-500 text-center">No tasks yet. Add one to get started!</p>
+            )}
+          </div>
         </CardContent>
       </Card>
     </Layout>
