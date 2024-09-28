@@ -90,10 +90,10 @@ export default function Home() {
               {/* Feature Card 5 */}
               <div className="text-center">
                 <h3 className="text-2xl font-medium text-gray-800 dark:text-gray-200">
-                  Completed & Deleted Tasks
+                  Review Tasks Performance
                 </h3>
                 <p className="mt-4 text-gray-600 dark:text-gray-400">
-                  Review completed or deleted tasks anytime with ease.
+                  Check the time taken to complete a task.
                 </p>
               </div>
               {/* Feature Card 6 */}

@@ -41,9 +41,10 @@ export default async function handler(
 
     case 'PUT':
       try {
-        const { status, isDeleted, description, tags, group, dueDate } = req.body;
+        const { title, status, isDeleted, description, tags, group, dueDate } = req.body;
 
-        const updateFields: Partial<{ status: string; isDeleted: boolean; description: string; tags: string[]; group: string; dueDate: Date; completedAt: Date; deletedAt: Date }> = {};
+        const updateFields: Partial<{ title: string; status: string; isDeleted: boolean; description: string; tags: string[]; group: string; dueDate: Date; completedAt: Date; deletedAt: Date }> = {};
+        if (title !== undefined) updateFields.title = title;
         if (status !== undefined) updateFields.status = status;
         if (isDeleted !== undefined) updateFields.isDeleted = isDeleted;
         if (description !== undefined) updateFields.description = description;

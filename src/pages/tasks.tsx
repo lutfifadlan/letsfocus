@@ -66,6 +66,8 @@ export default function TasksPage() {
   const { toast } = useToast();
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
+  const [isEditMode, setIsEditMode] = useState(false);
+  const [taskFormData, setTaskFormData] = useState<Partial<Task>>({});
 
   useEffect(() => {
     fetchTasks();
@@ -148,24 +150,32 @@ export default function TasksPage() {
             task.description.toLowerCase().includes(searchTerm.toLowerCase()))
       );
     }
+
     filtered = filtered.sort((a, b) => {
-      let valueA: string | number | boolean | Date | string[] | null;
-      let valueB: string | number | boolean | Date | string[] | null;
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      let valueA: any;
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      let valueB: any;
   
       if (sortField === 'timeTaken') {
         valueA =
           a.completedAt && a.createdAt
             ? new Date(a.completedAt).getTime() - new Date(a.createdAt).getTime()
-            : 0;
+            : null;
         valueB =
           b.completedAt && b.createdAt
             ? new Date(b.completedAt).getTime() - new Date(b.createdAt).getTime()
-            : 0;
+            : null;
       } else {
         valueA = a[sortField];
         valueB = b[sortField];
-      }  
-
+      }
+  
+      // Handle nulls
+      if (valueA == null && valueB == null) return 0;
+      if (valueA == null) return sortOrder === 'asc' ? -1 : 1;
+      if (valueB == null) return sortOrder === 'asc' ? 1 : -1;
+  
       if (
         sortField === 'title' ||
         sortField === 'group' ||
@@ -179,11 +189,24 @@ export default function TasksPage() {
         const tagsA = Array.isArray(valueA) ? valueA.join(', ').toLowerCase() : '';
         const tagsB = Array.isArray(valueB) ? valueB.join(', ').toLowerCase() : '';
         return sortOrder === 'asc' ? tagsA.localeCompare(tagsB) : tagsB.localeCompare(tagsA);
+      } else if (sortField === 'dueDate' || sortField === 'completedAt' || sortField === 'createdAt') {
+        const dateA = new Date(valueA);
+        const dateB = new Date(valueB);
+        if (isNaN(dateA.getTime()) && isNaN(dateB.getTime())) {
+            return 0;
+        } else if (isNaN(dateA.getTime())) {
+            return sortOrder === 'asc' ? -1 : 1;
+        } else if (isNaN(dateB.getTime())) {
+            return sortOrder === 'asc' ? 1 : -1;
+        } else {
+            return sortOrder === 'asc'
+                ? dateA.getTime() - dateB.getTime()
+                : dateB.getTime() - dateA.getTime();
+        }
       } else {
-        const numA =
-          typeof valueA === 'number' ? valueA : valueA instanceof Date ? valueA.getTime() : 0;
-        const numB =
-          typeof valueB === 'number' ? valueB : valueB instanceof Date ? valueB.getTime() : 0;
+        // For numbers
+        const numA = typeof valueA === 'number' ? valueA : 0;
+        const numB = typeof valueB === 'number' ? valueB : 0;
         return sortOrder === 'asc' ? numA - numB : numB - numA;
       }
     });
@@ -233,6 +256,86 @@ export default function TasksPage() {
   const handleTaskClick = (task: Task) => {
     setSelectedTask(task);
     setIsDialogOpen(true);
+    setIsEditMode(false);
+  };
+
+  const handleEditClick = () => {
+    setIsEditMode(true);
+    setTaskFormData(selectedTask || {});
+  };
+
+  const handleDeleteClick = async () => {
+    if (selectedTask) {
+      try {
+        const response = await fetch(`/api/tasks/${selectedTask._id}`, {
+          method: 'DELETE',
+        });
+        if (response.ok) {
+          setTasks(tasks.filter((task) => task._id !== selectedTask._id));
+          setFilteredTasks(filteredTasks.filter((task) => task._id !== selectedTask._id));
+          setIsDialogOpen(false);
+          toast({
+            title: 'Success',
+            description: 'Task deleted successfully.',
+            duration: 3000,
+          });
+        } else {
+          throw new Error('Failed to delete task');
+        }
+      } catch (error) {
+        console.error('Failed to delete task:', error);
+        toast({
+          title: 'Error',
+          description: 'Failed to delete task.',
+          variant: 'destructive',
+          duration: 3000,
+        });
+      }
+    }
+  };
+
+  const handleFormChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+    const { name, value } = e.target;
+    setTaskFormData({ ...taskFormData, [name]: value });
+  };
+
+  const handleFormSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (selectedTask) {
+      try {
+        const response = await fetch(`/api/tasks/${selectedTask._id}`, {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(taskFormData),
+        });
+        if (response.ok) {
+          const updatedTask = await response.json();
+          setTasks(tasks.map((task) => (task._id === updatedTask._id ? updatedTask : task)));
+          setFilteredTasks(
+            filteredTasks.map((task) => (task._id === updatedTask._id ? updatedTask : task))
+          );
+          setIsDialogOpen(false);
+          toast({
+            title: 'Success',
+            description: 'Task updated successfully.',
+            duration: 3000,
+          });
+        } else {
+          throw new Error('Failed to update task');
+        }
+      } catch (error) {
+        console.error('Failed to update task:', error);
+        toast({
+          title: 'Error',
+          description: 'Failed to update task.',
+          variant: 'destructive',
+          duration: 3000,
+        });
+      }
+      fetchTasks();
+    }
   };
 
   return (
@@ -504,9 +607,9 @@ export default function TasksPage() {
                       Title
                       {sortField === 'title' ? (
                         sortOrder === 'asc' ? (
-                          <ArrowUp size={16} />
-                        ) : (
                           <ArrowDown size={16} />
+                        ) : (
+                          <ArrowUp size={16} />
                         )
                       ) : (
                         <ArrowUpDown size={16} />
@@ -523,9 +626,9 @@ export default function TasksPage() {
                         Group
                         {sortField === 'group' ? (
                           sortOrder === 'asc' ? (
-                            <ArrowUp size={16} />
-                          ) : (
                             <ArrowDown size={16} />
+                          ) : (
+                            <ArrowUp size={16} />
                           )
                         ) : (
                           <ArrowUpDown size={16} />
@@ -542,9 +645,9 @@ export default function TasksPage() {
                         Tags
                         {sortField === 'tags' ? (
                           sortOrder === 'asc' ? (
-                            <ArrowUp size={16} />
-                          ) : (
                             <ArrowDown size={16} />
+                          ) : (
+                            <ArrowUp size={16} />
                           )
                         ) : (
                           <ArrowUpDown size={16} />
@@ -560,9 +663,9 @@ export default function TasksPage() {
                       Due Date
                       {sortField === 'dueDate' ? (
                         sortOrder === 'asc' ? (
-                          <ArrowUp size={16} />
-                        ) : (
                           <ArrowDown size={16} />
+                        ) : (
+                          <ArrowUp size={16} />
                         )
                       ) : (
                         <ArrowUpDown size={16} />
@@ -578,9 +681,9 @@ export default function TasksPage() {
                         Created At
                         {sortField === 'createdAt' ? (
                           sortOrder === 'asc' ? (
-                            <ArrowUp size={16} />
-                          ) : (
                             <ArrowDown size={16} />
+                          ) : (
+                            <ArrowUp size={16} />
                           )
                         ) : (
                           <ArrowUpDown size={16} />
@@ -596,9 +699,9 @@ export default function TasksPage() {
                       Completed At
                       {sortField === 'completedAt' ? (
                         sortOrder === 'asc' ? (
-                          <ArrowUp size={16} />
-                        ) : (
                           <ArrowDown size={16} />
+                        ) : (
+                          <ArrowUp size={16} />
                         )
                       ) : (
                         <ArrowUpDown size={16} />
@@ -613,9 +716,9 @@ export default function TasksPage() {
                       Time Taken
                       {sortField === 'timeTaken' ? (
                         sortOrder === 'asc' ? (
-                          <ArrowUp size={16} />
-                        ) : (
                           <ArrowDown size={16} />
+                        ) : (
+                          <ArrowUp size={16} />
                         )
                       ) : (
                         <ArrowUpDown size={16} />
@@ -630,9 +733,9 @@ export default function TasksPage() {
                       Status
                       {sortField === 'status' ? (
                         sortOrder === 'asc' ? (
-                          <ArrowUp size={16} />
-                        ) : (
                           <ArrowDown size={16} />
+                        ) : (
+                          <ArrowUp size={16} />
                         )
                       ) : (
                         <ArrowUpDown size={16} />
@@ -702,97 +805,228 @@ export default function TasksPage() {
           <DialogContent className="max-w-xl">
             <DialogHeader>
               <DialogTitle className="text-2xl font-bold flex items-center space-x-2">
-                <span>{selectedTask.title}</span>
+                <span>{isEditMode ? 'Edit Task' : selectedTask.title}</span>
               </DialogTitle>
               <DialogClose />
             </DialogHeader>
             <div className="p-2 space-y-3">
-              {/* Description */}
-              {selectedTask.description && (
-                <div>
-                  <Label className="text-base font-medium">Description</Label>
-                  <p className="text-sm text-gray-700 mt-1">{selectedTask.description}</p>
-                </div>
-              )}
-
-              {/* Group and Tags */}
-              <div className="flex flex-wrap space-x-6">
-                {selectedTask.group && (
+              {isEditMode ? (
+                // Render the edit form
+                <form onSubmit={handleFormSubmit} className="space-y-4">
                   <div>
-                    <Label className="text-base font-medium">Group</Label>
-                    <p className="text-sm text-gray-700 mt-1">{selectedTask.group}</p>
+                    <Label htmlFor="title" className="text-base font-medium">
+                      Title
+                    </Label>
+                    <Input
+                      id="title"
+                      name="title"
+                      type="text"
+                      value={taskFormData.title || ''}
+                      onChange={handleFormChange}
+                      required
+                      className="mt-1"
+                    />
                   </div>
-                )}
-                {selectedTask.tags && selectedTask.tags.length > 0 && (
+                  {/* Description */}
                   <div>
-                    <Label className="text-base font-medium">Tags</Label>
-                    <div className="flex flex-wrap mt-1">
-                      {selectedTask.tags.map((tag, idx) => (
-                        <Badge key={idx} variant="outline" className="text-sm mr-1 mb-1">
-                          {tag}
-                        </Badge>
-                      ))}
+                    <Label
+                      htmlFor="description"
+                      className="text-base font-medium"
+                    >
+                      Description
+                    </Label>
+                    <textarea
+                      id="description"
+                      name="description"
+                      value={taskFormData.description || ''}
+                      onChange={handleFormChange}
+                      className="mt-1 w-full border rounded p-2"
+                    />
+                  </div>
+                  {/* Group */}
+                  <div>
+                    <Label htmlFor="group" className="text-base font-medium">
+                      Group
+                    </Label>
+                    <Input
+                      id="group"
+                      name="group"
+                      type="text"
+                      value={taskFormData.group || ''}
+                      onChange={handleFormChange}
+                      className="mt-1"
+                    />
+                  </div>
+                  {/* Tags */}
+                  <div>
+                    <Label htmlFor="tags" className="text-base font-medium">
+                      Tags
+                    </Label>
+                    <InputTags
+                      type="text"
+                      id="tags"
+                      name="tags"
+                      value={taskFormData.tags || []}
+                      onChange={(value) =>
+                        setTaskFormData({ ...taskFormData, tags: value as string[] })
+                      }
+                    />
+                  </div>
+                  {/* Due Date */}
+                  <div>
+                    <Label htmlFor="dueDate" className="text-base font-medium">
+                      Due Date
+                    </Label>
+                    <CalendarDatePicker
+                      date={
+                        taskFormData.dueDate
+                          ? {
+                              from: new Date(taskFormData.dueDate),
+                              to: new Date(taskFormData.dueDate),
+                            }
+                          : { from: undefined, to: undefined }
+                      }
+                      onDateSelect={(date) =>
+                        setTaskFormData({
+                          ...taskFormData,
+                          dueDate: date.from
+                            ? new Date(date.from)
+                            : null,
+                        })
+                      }
+                      className="text-sm"
+                      numberOfMonths={1}
+                    />
+                  </div>
+                  {/* Status */}
+                  <div className="flex items-center">
+                    <Checkbox
+                      id="status"
+                      checked={taskFormData.status === 'COMPLETED'}
+                      onCheckedChange={(checked: boolean) =>
+                        setTaskFormData({
+                          ...taskFormData,
+                          status: checked ? 'COMPLETED' : 'PENDING',
+                        })
+                      }
+                    />
+                    <Label htmlFor="status" className="ml-2 text-base font-medium">
+                      Completed
+                    </Label>
+                  </div>
+                  {/* Action Buttons */}
+                  <div className="flex justify-end space-x-2 pt-4 border-t">
+                    <Button variant="outline" onClick={() => setIsEditMode(false)}>
+                      Cancel
+                    </Button>
+                    <Button type="submit">Save</Button>
+                  </div>
+                </form>
+              ) : (
+                // Render the task details
+                <>
+                  {/* Description */}
+                  {selectedTask.description && (
+                    <div>
+                      <Label className="text-base font-medium">Description</Label>
+                      <p className="text-sm text-gray-700 mt-1">
+                        {selectedTask.description}
+                      </p>
+                    </div>
+                  )}
+
+                  {/* Group and Tags */}
+                  <div className="flex flex-wrap space-x-6">
+                    {selectedTask.group && (
+                      <div>
+                        <Label className="text-base font-medium">Group</Label>
+                        <p className="text-sm text-gray-700 mt-1">
+                          {selectedTask.group}
+                        </p>
+                      </div>
+                    )}
+                    {selectedTask.tags && selectedTask.tags.length > 0 && (
+                      <div>
+                        <Label className="text-base font-medium">Tags</Label>
+                        <div className="flex flex-wrap mt-1">
+                          {selectedTask.tags.map((tag, idx) => (
+                            <Badge
+                              key={idx}
+                              variant="outline"
+                              className="text-sm mr-1 mb-1"
+                            >
+                              {tag}
+                            </Badge>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Dates and Time Taken */}
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <Label className="text-base font-medium">Created At</Label>
+                      <p className="text-sm text-gray-700 mt-1">
+                        {selectedTask.createdAt
+                          ? format(new Date(selectedTask.createdAt), 'PPpp')
+                          : 'N/A'}
+                      </p>
+                    </div>
+                    <div>
+                      <Label className="text-base font-medium">Due Date</Label>
+                      <p className="text-sm text-gray-700 mt-1">
+                        {selectedTask.dueDate
+                          ? format(new Date(selectedTask.dueDate), 'PPpp')
+                          : 'N/A'}
+                      </p>
+                    </div>
+                    <div>
+                      <Label className="text-base font-medium">Completed At</Label>
+                      <p className="text-sm text-gray-700 mt-1">
+                        {selectedTask.completedAt
+                          ? format(new Date(selectedTask.completedAt), 'PPpp')
+                          : 'N/A'}
+                      </p>
+                    </div>
+                    <div>
+                      <Label className="text-base font-medium">Time Taken</Label>
+                      <p className="text-sm text-gray-700 mt-1">
+                        {selectedTask.completedAt && selectedTask.createdAt
+                          ? formatTimeTaken(
+                              new Date(selectedTask.createdAt),
+                              new Date(selectedTask.completedAt)
+                            )
+                          : 'N/A'}
+                      </p>
                     </div>
                   </div>
-                )}
-              </div>
 
-              {/* Dates and Time Taken */}
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <Label className="text-base font-medium">Created At</Label>
-                  <p className="text-sm text-gray-700 mt-1">
-                    {selectedTask.createdAt ? format(new Date(selectedTask.createdAt), 'PPpp') : 'N/A'}
-                  </p>
-                </div>
-                <div>
-                  <Label className="text-base font-medium">Due Date</Label>
-                  <p className="text-sm text-gray-700 mt-1">
-                    {selectedTask.dueDate ? format(new Date(selectedTask.dueDate), 'PPpp') : 'N/A'}
-                  </p>
-                </div>
-                <div>
-                  <Label className="text-base font-medium">Completed At</Label>
-                  <p className="text-sm text-gray-700 mt-1">
-                    {selectedTask.completedAt ? format(new Date(selectedTask.completedAt), 'PPpp') : 'N/A'}
-                  </p>
-                </div>
-                <div>
-                  <Label className="text-base font-medium">Time Taken</Label>
-                  <p className="text-sm text-gray-700 mt-1">
-                    {selectedTask.completedAt && selectedTask.createdAt
-                      ? formatTimeTaken(
-                          new Date(selectedTask.createdAt),
-                          new Date(selectedTask.completedAt)
-                        )
-                      : 'N/A'}
-                  </p>
-                </div>
-              </div>
+                  {/* Status */}
+                  <div className="flex items-center space-x-2">
+                    <Label className="text-base font-medium">Status:</Label>
+                    {selectedTask.status === 'COMPLETED' ? (
+                      <Badge variant="outline" className="flex items-center">
+                        <Check size={16} className="mr-1" /> Completed
+                      </Badge>
+                    ) : (
+                      <Badge variant="outline" className="flex items-center">
+                        <Clock size={16} className="mr-1" /> Pending
+                      </Badge>
+                    )}
+                  </div>
 
-              {/* Status */}
-              <div className="flex items-center space-x-2">
-                <Label className="text-base font-medium">Status:</Label>
-                {selectedTask.status === 'COMPLETED' ? (
-                  <Badge variant="outline" className="flex items-center">
-                    <Check size={16} className="mr-1" /> Completed
-                  </Badge>
-                ) : (
-                  <Badge variant="outline" className="flex items-center">
-                    <Clock size={16} className="mr-1" /> Pending
-                  </Badge>
-                )}
-              </div>
-
-              {/* Action Buttons */}
-              <div className="flex justify-end space-x-2 pt-4 border-t">
-                <Button variant="ghost" onClick={() => {/* Handle Edit */}}>
-                  <Edit size={16} />
-                </Button>
-                <Button variant="ghost" onClick={() => {/* Handle Delete */}}>
-                  <Trash size={16} />
-                </Button>
-              </div>
+                  {/* Action Buttons */}
+                  <div className="flex justify-end space-x-2 pt-4 border-t">
+                    <Button variant="ghost" onClick={handleEditClick}>
+                      <Edit size={16} />
+                    </Button>
+                    <Button variant="ghost" onClick={handleDeleteClick}>
+                      <Trash size={16} />
+                    </Button>
+                  </div>
+                </>
+              )}
             </div>
           </DialogContent>
         </Dialog>
