@@ -36,7 +36,7 @@ const FormSchema = z.object({
   }),
 });
 
-export default function TaskPage() {
+export default function TodolistsPage() {
   const form = useForm<z.infer<typeof FormSchema>>({
     resolver: zodResolver(FormSchema),
     defaultValues: {
