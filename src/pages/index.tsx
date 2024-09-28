@@ -3,6 +3,8 @@ import confetti from "canvas-confetti";
 import { useCallback } from "react";
 import Layout from "@/components/layout";
 import { RainbowButton } from "@/components/magicui/rainbow-button";
+import DummyTodolistsPage from "@/components/dummy-todolists";
+import { Card, CardContent } from "@/components/ui/card";
 
 export default function Home() {
   const router = useRouter();
@@ -19,6 +21,11 @@ export default function Home() {
 
   return (
     <Layout>
+      <Card className="max-w-4xl mx-auto p-2 mt-2 border-none shadow-none">
+        <CardContent>
+          <DummyTodolistsPage />
+        </CardContent>
+      </Card>
       <main className="flex flex-col items-center justify-center min-h-screen px-4">
         {/* Hero Section */}
         <section className="text-center mt-4">

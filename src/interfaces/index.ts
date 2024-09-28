@@ -2,7 +2,6 @@ export interface Task {
   _id: string;
   title: string;
   description: string;
-  isCompleted: boolean;
   isDeleted: boolean;
   userId: string;
   createdAt: Date;
