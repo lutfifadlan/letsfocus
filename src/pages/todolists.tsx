@@ -10,7 +10,7 @@ import { Input } from '@/components/ui/input';
 import { useSession } from 'next-auth/react';
 import { Task } from '@/interfaces';
 import Layout from '@/components/layout';
-import { Plus, Check, Trash, Tag, Folder, PlusCircle, Edit, FileText, Save, X, CalendarIcon, Rocket } from 'lucide-react';
+import { Plus, Trash, Tag, Folder, PlusCircle, Edit, FileText, Save, X, CalendarIcon, Rocket, SquareCheck } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { ToastAction } from '@/components/ui/toast';
 import { InputTags } from '@/components/ui/input-tags';
@@ -914,7 +914,7 @@ export default function TodolistsPage() {
                       onClick={() => toggleTaskCompletion(task._id)}
                       aria-label="Complete Task"
                     >
-                      <Check size={16} className="text-green-500" />
+                      <SquareCheck size={16} />
                     </Button>
 
                     <div className="flex flex-col gap-2 w-full">

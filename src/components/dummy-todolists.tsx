@@ -10,7 +10,7 @@ import { Input } from '@/components/ui/input';
 import { Task } from '@/interfaces';
 import {
   Plus,
-  Check,
+  SquareCheck,
   Trash,
   Tag,
   Folder,
@@ -57,7 +57,7 @@ const userId = generateId();
 const defaultTasks: Task[] = [
   {
     _id: generateId(),
-    title: 'Click the check button on the task to mark task as completed',
+    title: 'Click the check button on the left side to mark task as completed',
     tags: ['welcome'],
     group: 'Getting Started',
     description: '',
@@ -72,7 +72,7 @@ const defaultTasks: Task[] = [
   },
   {
     _id: generateId(),
-    title: "Try out Let's Focus",
+    title: "Try out Let's Focus!",
     tags: ['welcome'],
     group: 'Getting Started',
     description: '',
@@ -838,7 +838,7 @@ export default function DummyTodolists() {
                     onClick={() => toggleTaskCompletion(task._id)}
                     aria-label="Complete Task"
                   >
-                    <Check size={16} className="text-green-500" />
+                    <SquareCheck size={16} />
                   </Button>
 
                   <div className="flex flex-col gap-2 w-full">
