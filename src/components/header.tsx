@@ -5,7 +5,7 @@ import { useRouter } from 'next/router';
 import { Button } from "@/components/ui/button";
 import { motion } from "framer-motion";
 import Image from 'next/image';
-import { Menu, LogIn, LogOut, List, BarChart2 } from 'lucide-react'; // Importing new icon
+import { Menu, LogIn, LogOut, List, BarChart2, ListChecks } from 'lucide-react'; // Importing new icon
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover"
 import { ThemeToggle } from "@/components/ui/theme-toggle"
@@ -48,16 +48,25 @@ const Header: React.FC = () => {
               variant="ghost"
               className="border-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
             >
-              <List className="w-5 h-5" />
+              <ListChecks className="w-5 h-5" />
             </Button>
             {!isLandingPage && (
-              <Button
-                onClick={() => router.push('/charts')}
-                variant="ghost"
-                className="border-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
-              >
-                <BarChart2 className="w-5 h-5" />
-              </Button>
+              <>
+                <Button
+                  onClick={() => router.push('/charts')}
+                  variant="ghost"
+                  className="border-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
+                >
+                  <BarChart2 className="w-5 h-5" />
+                </Button>
+                <Button
+                  onClick={() => router.push('/tasks')}
+                  variant="ghost"
+                  className="border-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
+                >
+                  <List className="w-5 h-5" />
+                </Button>
+              </>
             )}
             <ThemeToggle />
             {!isLandingPage && (
@@ -115,16 +124,25 @@ const Header: React.FC = () => {
                 variant="ghost"
                 className="w-full mt-2 border-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
               >
-                <List className="w-5 h-5" />
+                <ListChecks className="w-5 h-5" />
               </Button>
               {!isLandingPage && (
-                <Button
-                  onClick={() => router.push('/charts')}
-                  variant="ghost"
-                  className="w-full mt-2 border-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
-                >
-                  <BarChart2 className="w-5 h-5" />
-                </Button>
+                <>
+                  <Button
+                    onClick={() => router.push('/charts')}
+                    variant="ghost"
+                    className="w-full mt-2 border-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
+                  >
+                    <BarChart2 className="w-5 h-5" />
+                  </Button>
+                  <Button
+                    onClick={() => router.push('/tasks')}
+                    variant="ghost"
+                    className="w-full mt-2 border-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
+                  >
+                    <List className="w-5 h-5" />
+                  </Button>
+                </>
               )}
               <ThemeToggle />
               {!isLandingPage && (
