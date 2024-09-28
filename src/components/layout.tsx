@@ -35,7 +35,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
       <div 
         onMouseEnter={handleMouseEnter} 
         onMouseLeave={handleMouseLeave}
-        className={`transition-all duration-300 ease-in-out ${
+        className={`${
           isHeaderVisible || router.pathname === '/' ? 'opacity-100' : 'opacity-0'
         }`}
       >
