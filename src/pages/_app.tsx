@@ -4,17 +4,21 @@ import type { AppProps } from 'next/app';
 import { NextUIProvider} from "@nextui-org/react";
 import { Toaster } from '@/components/ui/toaster';
 import { SessionProvider } from 'next-auth/react';
+import { SpeedInsights } from '@vercel/speed-insights/next';
 
 function MyApp({ Component, pageProps }: AppProps) {
   return (
-    <ThemeProvider attribute="class">
-      <SessionProvider session={pageProps.session}>
-        <NextUIProvider>
-          <Component {...pageProps} />
-          <Toaster />
-        </NextUIProvider>
-      </SessionProvider>
-    </ThemeProvider>
+    <>
+      <ThemeProvider attribute="class">
+        <SessionProvider session={pageProps.session}>
+          <NextUIProvider>
+            <Component {...pageProps} />
+            <Toaster />
+          </NextUIProvider>
+        </SessionProvider>
+      </ThemeProvider>
+      <SpeedInsights />
+    </>
   );
 }
 
