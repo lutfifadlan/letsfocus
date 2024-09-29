@@ -12,6 +12,7 @@ export interface Task {
   completedAt: Date | null;
   deletedAt: Date | null;
   dueDate: Date | null;
+  ignoredAt: Date | null;
 }
 
 export interface Habit {

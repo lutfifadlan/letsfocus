@@ -4,14 +4,18 @@ const { MONGODB_DEV_URI } = process.env;
 
 const uri = process.env.NODE_ENV === 'production' ? MONGODB_URI : MONGODB_DEV_URI;
 
+let isConnected = false;
+
 export const connectDB = async () => {
+  if (isConnected) {
+    return;
+  }
+
   try {
-    const { connection } = await mongoose.connect(uri as string);
-    if (connection.readyState === 1) {
-      return Promise.resolve(true);
-    }
+    const db = await mongoose.connect(uri as string);
+    isConnected = db.connections[0].readyState === 1;
   } catch (error) {
-    console.error(error);
-    return Promise.reject(error);
+    console.error('Error connecting to database:', error);
+    throw error;
   }
 };

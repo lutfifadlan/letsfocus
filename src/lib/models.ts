@@ -26,9 +26,10 @@ const TaskSchema = new mongoose.Schema({
   tags: { type: [String], default: [] },
   group: { type: String, ref: 'Group', default: null },
   dueDate: { type: Date, default: null },
-  status: { type: String, default: 'PENDING' },
+  status: { type: String, enum: ['PENDING', 'COMPLETED', 'IGNORED'], default: 'PENDING' },
   completedAt: { type: Date, default: null },
   deletedAt: { type: Date, default: null },
+  ignoredAt: { type: Date, default: null },
 }, { timestamps: true });
 
 export const User = mongoose.models.User || mongoose.model('User', UserSchema);

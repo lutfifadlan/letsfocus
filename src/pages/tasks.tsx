@@ -46,13 +46,15 @@ export default function TasksPage() {
   const [filteredTasks, setFilteredTasks] = useState<Task[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [filterCriteria, setFilterCriteria] = useState({
-    createdDate: null as Date | null,
-    completedDate: null as Date | null,
-    dueDate: null as Date | null,
+    createdDate: { from: null as Date | null, to: null as Date | null }, // Update to handle date range
+    completedDate: { from: null as Date | null, to: null as Date | null }, // Update to handle date range
+    dueDate: { from: null as Date | null, to: null as Date | null }, // Update to handle date range
     showCompleted: false,
     showPending: false,
+    showIgnored: false, // Add showIgnored to filter criteria
     tags: [] as string[],
     group: '',
+    ignoredDate: { from: null as Date | null, to: null as Date | null }, // Update to handle date range
   });
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
   const [sortField, setSortField] = useState<keyof Task | 'timeTaken' | 'status'>('createdAt');
@@ -62,6 +64,7 @@ export default function TasksPage() {
     group: false,
     tags: false,
     createdAt: false,
+    ignoredAt: false, // Add ignoredAt to visible columns
   });
   const { toast } = useToast();
   const [isDialogOpen, setIsDialogOpen] = useState(false);
@@ -97,36 +100,39 @@ export default function TasksPage() {
   const applyFilters = () => {
     let filtered = tasks;
 
-    if (filterCriteria.createdDate) {
+    if (filterCriteria.createdDate.from && filterCriteria.createdDate.to) {
       filtered = filtered.filter(
         (task) =>
-          new Date(task.createdAt).toDateString() ===
-          new Date(filterCriteria.createdDate!).toDateString()
+          new Date(task.createdAt) >= new Date(filterCriteria.createdDate.from!) &&
+          new Date(task.createdAt) <= new Date(filterCriteria.createdDate.to!)
       );
     }
-    if (filterCriteria.completedDate) {
+    if (filterCriteria.completedDate.from && filterCriteria.completedDate.to) {
       filtered = filtered.filter(
         (task) =>
           task.status === 'COMPLETED' &&
           task.completedAt &&
-          new Date(task.completedAt).toDateString() ===
-            new Date(filterCriteria.completedDate!).toDateString()
+          new Date(task.completedAt) >= new Date(filterCriteria.completedDate.from!) &&
+          new Date(task.completedAt) <= new Date(filterCriteria.completedDate.to!)
       );
     }
-    if (filterCriteria.dueDate) {
+    if (filterCriteria.dueDate.from && filterCriteria.dueDate.to) {
       filtered = filtered.filter(
         (task) =>
           task.dueDate &&
-          new Date(task.dueDate).toDateString() ===
-            new Date(filterCriteria.dueDate!).toDateString()
+          new Date(task.dueDate) >= new Date(filterCriteria.dueDate.from!) &&
+          new Date(task.dueDate) <= new Date(filterCriteria.dueDate.to!)
       );
     }
 
-    if (filterCriteria.showCompleted && !filterCriteria.showPending) {
+    if (filterCriteria.showCompleted && !filterCriteria.showPending && !filterCriteria.showIgnored) {
       filtered = filtered.filter((task) => task.status === 'COMPLETED');
     }
-    if (filterCriteria.showPending && !filterCriteria.showCompleted) {
-      filtered = filtered.filter((task) => task.status !== 'COMPLETED');
+    if (filterCriteria.showPending && !filterCriteria.showCompleted && !filterCriteria.showIgnored) {
+      filtered = filtered.filter((task) => task.status === 'PENDING');
+    }
+    if (filterCriteria.showIgnored && !filterCriteria.showCompleted && !filterCriteria.showPending) {
+      filtered = filtered.filter((task) => task.status === 'IGNORED');
     }
 
     // Always exclude deleted tasks
@@ -140,6 +146,16 @@ export default function TasksPage() {
 
     if (filterCriteria.group) {
       filtered = filtered.filter((task) => task.group === filterCriteria.group);
+    }
+
+    if (filterCriteria.ignoredDate.from && filterCriteria.ignoredDate.to) {
+      filtered = filtered.filter(
+        (task) =>
+          task.status === 'IGNORED' &&
+          task.ignoredAt &&
+          new Date(task.ignoredAt) >= new Date(filterCriteria.ignoredDate.from!) &&
+          new Date(task.ignoredAt) <= new Date(filterCriteria.ignoredDate.to!)
+      );
     }
 
     if (searchTerm) {
@@ -216,13 +232,15 @@ export default function TasksPage() {
 
   const resetFilters = () => {
     setFilterCriteria({
-      createdDate: null,
-      completedDate: null,
-      dueDate: null,
+      createdDate: { from: null, to: null },
+      completedDate: { from: null, to: null },
+      dueDate: { from: null, to: null },
       showCompleted: false,
       showPending: false,
+      showIgnored: false,
       tags: [],
       group: '',
+      ignoredDate: { from: null, to: null },
     });
     setSearchTerm('');
     setSortOrder('asc');
@@ -388,21 +406,17 @@ export default function TasksPage() {
                     <Label className="text-sm">Created Date</Label>
                     <div className="flex items-center">
                       <CalendarDatePicker
-                        date={
-                          filterCriteria.createdDate
-                            ? { from: filterCriteria.createdDate, to: filterCriteria.createdDate }
-                            : { from: undefined, to: undefined }
-                        }
+                        date={{ from: filterCriteria.createdDate.from || undefined, to: filterCriteria.createdDate.to || undefined }}
                         onDateSelect={(date) =>
-                          setFilterCriteria({ ...filterCriteria, createdDate: date.from })
+                          setFilterCriteria({ ...filterCriteria, createdDate: date })
                         }
                         className="text-sm"
-                        numberOfMonths={1}
+                        numberOfMonths={2}
                       />
                       <Button
                         variant="ghost"
                         size="icon"
-                        onClick={() => setFilterCriteria({ ...filterCriteria, createdDate: null })}
+                        onClick={() => setFilterCriteria({ ...filterCriteria, createdDate: { from: null, to: null } })}
                       >
                         <X size={16} />
                       </Button>
@@ -412,22 +426,18 @@ export default function TasksPage() {
                     <Label className="text-sm">Completed Date</Label>
                     <div className="flex items-center">
                       <CalendarDatePicker
-                        date={
-                          filterCriteria.completedDate
-                            ? { from: filterCriteria.completedDate, to: filterCriteria.completedDate }
-                            : { from: undefined, to: undefined }
-                        }
+                        date={{ from: filterCriteria.completedDate.from || undefined, to: filterCriteria.completedDate.to || undefined }}
                         onDateSelect={(date) =>
-                          setFilterCriteria({ ...filterCriteria, completedDate: date.from })
+                          setFilterCriteria({ ...filterCriteria, completedDate: date })
                         }
                         className="text-sm"
-                        numberOfMonths={1}
+                        numberOfMonths={2}
                       />
                       <Button
                         variant="ghost"
                         size="icon"
                         onClick={() =>
-                          setFilterCriteria({ ...filterCriteria, completedDate: null })
+                          setFilterCriteria({ ...filterCriteria, completedDate: { from: null, to: null } })
                         }
                       >
                         <X size={16} />
@@ -438,13 +448,29 @@ export default function TasksPage() {
                     <Label className="text-sm">Due Date</Label>
                     <div className="flex items-center">
                       <CalendarDatePicker
-                        date={
-                          filterCriteria.dueDate
-                            ? { from: filterCriteria.dueDate, to: filterCriteria.dueDate }
-                            : { from: undefined, to: undefined }
-                        }
+                        date={{ from: filterCriteria.dueDate.from || undefined, to: filterCriteria.dueDate.to || undefined }}
                         onDateSelect={(date) =>
-                          setFilterCriteria({ ...filterCriteria, dueDate: date.from })
+                          setFilterCriteria({ ...filterCriteria, dueDate: date })
+                        }
+                        className="text-sm"
+                        numberOfMonths={2}
+                      />
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => setFilterCriteria({ ...filterCriteria, dueDate: { from: null, to: null } })}
+                      >
+                        <X size={16} />
+                      </Button>
+                    </div>
+                  </div>
+                  <div className="space-y-2">
+                    <Label className="text-sm">Ignored Date</Label>
+                    <div className="flex items-center">
+                      <CalendarDatePicker
+                        date={{ from: filterCriteria.ignoredDate.from || undefined, to: filterCriteria.ignoredDate.to || undefined }}
+                        onDateSelect={(date) =>
+                          setFilterCriteria({ ...filterCriteria, ignoredDate: date })
                         }
                         className="text-sm"
                         numberOfMonths={1}
@@ -452,40 +478,35 @@ export default function TasksPage() {
                       <Button
                         variant="ghost"
                         size="icon"
-                        onClick={() => setFilterCriteria({ ...filterCriteria, dueDate: null })}
+                        onClick={() => setFilterCriteria({ ...filterCriteria, ignoredDate: { from: null, to: null } })}
                       >
                         <X size={16} />
                       </Button>
                     </div>
                   </div>
 
-                  {/* Status Filters */}
-                  <div className="flex items-center space-x-4">
-                    <div className="flex items-center">
-                      <Checkbox
-                        id="showCompleted"
-                        checked={filterCriteria.showCompleted as boolean}
-                        onCheckedChange={(checked: boolean) =>
-                          setFilterCriteria({ ...filterCriteria, showCompleted: checked })
-                        }
-                      />
-                      <Label htmlFor="showCompleted" className="ml-2 text-sm">
-                        Completed
-                      </Label>
-                    </div>
-                    <div className="flex items-center">
-                      <Checkbox
-                        id="showPending"
-                        checked={filterCriteria.showPending as boolean}
-                        onCheckedChange={(checked: boolean) =>
-                          setFilterCriteria({ ...filterCriteria, showPending: checked })
-                        }
-                      />
-                      <Label htmlFor="showPending" className="ml-2 text-sm">
-                        Pending
-                      </Label>
-                    </div>
+                  <div className="flex flex-col space-y-4 p-4">
+                    {[
+                      { id: "showCompleted", label: "Completed", checked: filterCriteria.showCompleted },
+                      { id: "showPending", label: "Pending", checked: filterCriteria.showPending },
+                      { id: "showIgnored", label: "Ignored", checked: filterCriteria.showIgnored }
+                    ].map((item) => (
+                      <div key={item.id} className="flex items-center space-x-2">
+                        <Checkbox
+                          id={item.id}
+                          checked={item.checked as boolean}
+                          onCheckedChange={(checked: boolean) =>
+                            setFilterCriteria({ ...filterCriteria, [item.id]: checked })
+                          }
+                          className="rounded border-gray-300 focus:ring-emerald-400" // Improves the checkbox design
+                        />
+                        <Label htmlFor={item.id} className="text-sm font-medium">
+                          {item.label}
+                        </Label>
+                      </div>
+                    ))}
                   </div>
+
 
                   {/* Tags Filter */}
                   <div>
@@ -584,6 +605,18 @@ export default function TasksPage() {
                     />
                     <Label htmlFor="createdAt" className="ml-2 text-sm">
                       Created At
+                    </Label>
+                  </div>
+                  <div className="flex items-center">
+                    <Checkbox
+                      id="ignoredAt"
+                      checked={!!visibleColumns.ignoredAt}
+                      onCheckedChange={(checked: boolean) =>
+                        setVisibleColumns({ ...visibleColumns, ignoredAt: checked })
+                      }
+                    />
+                    <Label htmlFor="ignoredAt" className="ml-2 text-sm">
+                      Ignored At
                     </Label>
                   </div>
                 </div>
@@ -742,6 +775,25 @@ export default function TasksPage() {
                       )}
                     </div>
                   </TableHead>
+                  {visibleColumns.ignoredAt && (
+                    <TableHead
+                      className="cursor-pointer select-none hover:bg-gray-100"
+                      onClick={() => handleSort('ignoredAt')}
+                    >
+                      <div className="flex flex-row items-center gap-2">
+                        Ignored At
+                        {sortField === 'ignoredAt' ? (
+                          sortOrder === 'asc' ? (
+                            <ArrowDown size={16} />
+                          ) : (
+                            <ArrowUp size={16} />
+                          )
+                        ) : (
+                          <ArrowUpDown size={16} />
+                        )}
+                      </div>
+                    </TableHead>
+                  )}
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -785,10 +837,17 @@ export default function TasksPage() {
                     <TableCell>
                       {task.status === 'COMPLETED' ? (
                         <Check size={16} />
+                      ) : task.status === 'IGNORED' ? (
+                        <X size={16} />
                       ) : (
                         <Clock size={16} />
                       )}
                     </TableCell>
+                    {visibleColumns.ignoredAt && (
+                      <TableCell>
+                        {task.ignoredAt ? format(new Date(task.ignoredAt), 'PPP') : '-'}
+                      </TableCell>
+                    )}
                   </TableRow>
                 ))}
               </TableBody>
@@ -914,6 +973,21 @@ export default function TasksPage() {
                       Completed
                     </Label>
                   </div>
+                  <div className="flex items-center">
+                    <Checkbox
+                      id="ignored"
+                      checked={taskFormData.status === 'IGNORED'}
+                      onCheckedChange={(checked: boolean) =>
+                        setTaskFormData({
+                          ...taskFormData,
+                          status: checked ? 'IGNORED' : 'PENDING',
+                        })
+                      }
+                    />
+                    <Label htmlFor="ignored" className="ml-2 text-base font-medium">
+                      Ignored
+                    </Label>
+                  </div>
                   {/* Action Buttons */}
                   <div className="flex justify-end space-x-2 pt-4 border-t">
                     <Button variant="outline" onClick={() => setIsEditMode(false)}>
@@ -990,6 +1064,14 @@ export default function TasksPage() {
                       </p>
                     </div>
                     <div>
+                      <Label className="text-base font-medium">Ignored At</Label>
+                      <p className="text-sm text-gray-700 mt-1">
+                        {selectedTask.ignoredAt
+                          ? format(new Date(selectedTask.ignoredAt), 'PPpp')
+                          : 'N/A'}
+                      </p>
+                    </div>
+                    <div>
                       <Label className="text-base font-medium">Time Taken</Label>
                       <p className="text-sm text-gray-700 mt-1">
                         {selectedTask.completedAt && selectedTask.createdAt
@@ -1008,6 +1090,10 @@ export default function TasksPage() {
                     {selectedTask.status === 'COMPLETED' ? (
                       <Badge variant="outline" className="flex items-center">
                         <Check size={16} className="mr-1" /> Completed
+                      </Badge>
+                    ) : selectedTask.status === 'IGNORED' ? (
+                      <Badge variant="outline" className="flex items-center">
+                        <X size={16} className="mr-1" /> Ignored
                       </Badge>
                     ) : (
                       <Badge variant="outline" className="flex items-center">

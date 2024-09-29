@@ -43,7 +43,7 @@ export default async function handler(
       try {
         const { title, status, isDeleted, description, tags, group, dueDate } = req.body;
 
-        const updateFields: Partial<{ title: string; status: string; isDeleted: boolean; description: string; tags: string[]; group: string; dueDate: Date; completedAt: Date; deletedAt: Date }> = {};
+        const updateFields: Partial<{ title: string; status: string; isDeleted: boolean; description: string; tags: string[]; group: string; dueDate: Date; completedAt: Date; ignoredAt: Date; deletedAt: Date }> = {};
         if (title !== undefined) updateFields.title = title;
         if (status !== undefined) updateFields.status = status;
         if (isDeleted !== undefined) updateFields.isDeleted = isDeleted;
@@ -54,6 +54,8 @@ export default async function handler(
 
         if (status === 'COMPLETED') {
           updateFields.completedAt = new Date();
+        } else if (status === 'IGNORED') {
+          updateFields.ignoredAt = new Date();
         }
 
         if (isDeleted) {
