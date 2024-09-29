@@ -42,7 +42,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
         <Header />
       </div>
       <main className="flex-grow w-full mx-auto overflow-y-auto">  {/* Updated this line */}
-        {router.pathname === '/todolists' || router.pathname === '/charts' ? (
+        {router.pathname === '/todolists' || router.pathname === '/stats' || router.pathname === '/tasks' ? (
           <div className="flex">
             <div className="flex-grow p-4">
               {children}

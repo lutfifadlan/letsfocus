@@ -47,7 +47,7 @@ const Header: React.FC = () => {
             {!isLandingPage && (
               <>
                 <Button
-                  onClick={() => router.push('/charts')}
+                  onClick={() => router.push('/stats')}
                   variant="ghost"
                   className="border-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
                 >
@@ -118,7 +118,7 @@ const Header: React.FC = () => {
               {!isLandingPage && (
                 <>
                   <Button
-                    onClick={() => router.push('/charts')}
+                    onClick={() => router.push('/stats')}
                     variant="ghost"
                     className="w-full mt-2 border-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
                   >
