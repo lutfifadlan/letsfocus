@@ -88,10 +88,11 @@ export default function TodolistsPage() {
   const [selectedTaskIds, setSelectedTaskIds] = useState<string[]>([]);
   const [lastDeletedTaskIds, setLastDeletedTaskIds] = useState<string[]>([]);
   const [showBulkDeleteActions, setShowBulkDeleteActions] = useState(false);
+  const [isFetchLoading, setIsFetchLoading] = useState(false);
   
   const { status } = useSession();
   const { toast } = useToast();
-  const incompleteTasks = tasks.filter((task) => task.status !== 'COMPLETED' && !task.isDeleted);
+  const incompleteTasks = tasks.filter((task) => task.status !== 'COMPLETED' && !task.isDeleted && task.status !== 'IGNORED');
 
   const handleAddTask = (description: string) => {
     addTask(description, dueDate);
@@ -740,14 +741,55 @@ export default function TodolistsPage() {
     }
   };
 
+  const updateTaskStatus = async (taskId: string, status: string) => {
+    setIsLoading(true);
+    try {
+      const response = await fetch(`/api/tasks/${taskId}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ status }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Failed to update task status');
+      }
+
+      setTasks((prevTasks) =>
+        prevTasks.map((task) =>
+          task._id === taskId ? { ...task, status } : task
+        )
+      );
+
+      toast({
+        title: 'Task Ignored',
+        description: `Task status has been updated to ${status.toLowerCase()}.`,
+        duration: 3000,
+      });
+    } catch (error) {
+      console.error('Failed to update task status:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to update task status.',
+        variant: 'destructive',
+        duration: 3000,
+      });
+    }
+    setIsLoading(false);
+  };
+
   useEffect(() => {
     if (status === 'authenticated') {
+      setIsFetchLoading(true);
       fetchTasks();
       fetchGroups();
+      setIsFetchLoading(false);
     }
   }, [status]);
 
-  if (status === 'loading') {
+  if (status === 'loading' || isFetchLoading) {
     return (
       <div className="py-16 flex justify-center items-center h-full">
         <div className="animate-spin h-8 w-8 border-4 border-t-transparent dark:border-t-black border-black dark:border-white rounded-full"></div>
@@ -1344,6 +1386,15 @@ export default function TodolistsPage() {
                         </div>
                       </PopoverContent>
                     </Popover>
+
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => updateTaskStatus(task._id, 'IGNORED')}
+                      aria-label="Ignore Task"
+                    >
+                      <X size={16} />
+                    </Button>
 
                     <Button
                       variant="ghost"
