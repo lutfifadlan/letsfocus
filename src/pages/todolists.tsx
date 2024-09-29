@@ -77,6 +77,7 @@ export default function TodolistsPage() {
   const [taskDescription, setTaskDescription] = useState<string>('');
   const [isFileTextButtonClicked, setIsFileTextButtonClicked] = useState(false);
   const [taskTitle, setTaskTitle] = useState<string>('');
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [isLoading, setIsLoading] = useState(false);
   const [dueDate, setDueDate] = useState<Date | null>(null);
   const [isCalendarPickerOpen, setIsCalendarPickerOpen] = useState(false);
@@ -104,7 +105,7 @@ export default function TodolistsPage() {
     try {
       const response = await fetch('/api/tasks');
       const data = await response.json();
-      setTasks(data.filter((task: Task) => !task.isDeleted));
+      setTasks(data.filter((task: Task) => !task.isDeleted && task.status !== 'COMPLETED'));
     } catch (error) {
       console.error('Failed to fetch tasks:', error);
       toast({
@@ -746,7 +747,7 @@ export default function TodolistsPage() {
     }
   }, [status]);
 
-  if (status === 'loading' || isLoading) {
+  if (status === 'loading') {
     return (
       <div className="py-16 flex justify-center items-center h-full">
         <div className="animate-spin h-8 w-8 border-4 border-t-transparent dark:border-t-black border-black dark:border-white rounded-full"></div>
@@ -1043,15 +1044,15 @@ export default function TodolistsPage() {
                  {/* Checkbox to select/deselect all tasks */}
                 <Checkbox
                   checked={
-                    selectedTaskIds.length === tasks.length && tasks.length > 0
-                      ? true
+                    selectedTaskIds.length === incompleteTasks.length && incompleteTasks.length > 0
+                    ? true
                       : selectedTaskIds.length === 0
                       ? false
                       : 'indeterminate'
                   }
                   onCheckedChange={(checked) => {
                     if (checked) {
-                      setSelectedTaskIds(tasks.map((task) => task._id));
+                      setSelectedTaskIds(incompleteTasks.map((task) => task._id));
                     } else {
                       setSelectedTaskIds([]);
                     }
