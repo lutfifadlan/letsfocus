@@ -30,6 +30,7 @@ const TaskSchema = new mongoose.Schema({
   completedAt: { type: Date, default: null },
   deletedAt: { type: Date, default: null },
   ignoredAt: { type: Date, default: null },
+  completionStatus: { type: String },
 }, { timestamps: true });
 
 export const User = mongoose.models.User || mongoose.model('User', UserSchema);
