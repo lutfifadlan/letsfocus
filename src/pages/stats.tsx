@@ -35,7 +35,12 @@ import {
 } from '@/components/ui/select';
 import { TrendingUp, TrendingDown } from 'lucide-react';
 import { CalendarDatePicker } from '@/components/calendar-date-picker';
-import { subDays, startOfDay, endOfDay } from 'date-fns';
+import {
+  subDays,
+  startOfDay,
+  endOfDay,
+  differenceInCalendarDays,
+} from 'date-fns';
 
 export default function StatsPage() {
   const [tasks, setTasks] = useState<Task[]>([]);
@@ -201,24 +206,53 @@ export default function StatsPage() {
       ? (completedOnTimeTasks / totalTasksWithDueDateExcludingIgnored) * 100
       : 0;
 
-  // Compute tasks completed per day for the chart
-  const tasksForChart = tasks
-    .filter(
-      (task) => task.status === 'COMPLETED' && task.completedAt !== null
-    )
-    .filter((task) => {
-      const completedAt = task.completedAt
-        ? new Date(task.completedAt)
-        : null;
-      return (
-        completedAt &&
-        completedAt >= chartStartDate &&
-        completedAt <= chartEndDate
-      );
+  // Helper function to get completed tasks between two dates
+  function getCompletedTasksBetween(
+    tasks: Task[],
+    startDate: Date,
+    endDate: Date
+  ) {
+    return tasks.filter((task) => {
+      if (task.status !== 'COMPLETED' || !task.completedAt) return false;
+      const completedAt = new Date(task.completedAt);
+      return completedAt >= startDate && completedAt <= endDate;
     });
+  }
 
+  // Calculate percentage change compared to previous period
+  const durationInDays =
+    differenceInCalendarDays(chartEndDate, chartStartDate) + 1; // Include both start and end dates
+
+  const previousPeriodEndDate = endOfDay(subDays(chartStartDate, 1));
+  const previousPeriodStartDate = startOfDay(
+    subDays(chartStartDate, durationInDays)
+  );
+
+  const tasksForCurrentPeriod = getCompletedTasksBetween(
+    tasks,
+    chartStartDate,
+    chartEndDate
+  );
+  const tasksForPreviousPeriod = getCompletedTasksBetween(
+    tasks,
+    previousPeriodStartDate,
+    previousPeriodEndDate
+  );
+
+  const totalCompletedInPeriod = tasksForCurrentPeriod.length;
+  const totalCompletedInPreviousPeriod = tasksForPreviousPeriod.length;
+
+  let percentageChange = 0;
+  if (totalCompletedInPreviousPeriod > 0) {
+    percentageChange =
+      ((totalCompletedInPeriod - totalCompletedInPreviousPeriod) /
+        totalCompletedInPreviousPeriod) *
+      100;
+  }
+
+  // Compute tasks completed per day for the chart
   const tasksCompletedPerDay: { [date: string]: number } = {};
-  tasksForChart.forEach((task) => {
+  tasksForCurrentPeriod.forEach((task) => {
     if (task.completedAt) {
       const date = new Date(task.completedAt).toISOString().split('T')[0];
       tasksCompletedPerDay[date] =
@@ -316,39 +350,6 @@ export default function StatsPage() {
     .sort((a, b) => b[1] - a[1])
     .slice(0, 5)
     .map(([tag, count]) => ({ tag, count }));
-
-  // Calculate percentage change compared to previous period
-  const durationInDays = Math.ceil(
-    (chartEndDate.getTime() - chartStartDate.getTime()) /
-      (1000 * 60 * 60 * 24)
-  ) + 1; // Include both start and end dates
-
-  const previousPeriodEndDate = endOfDay(subDays(chartStartDate, 1));
-  const previousPeriodStartDate = startOfDay(
-    subDays(chartStartDate, durationInDays)
-  );
-
-  const tasksForPreviousPeriod = tasks
-    .filter((task) => task.status === 'COMPLETED' && task.completedAt)
-    .filter((task) => {
-      if (!task.completedAt) return false;
-      const completedAt = new Date(task.completedAt);
-      return (
-        completedAt >= previousPeriodStartDate &&
-        completedAt <= previousPeriodEndDate
-      );
-    });
-
-  const totalCompletedInPeriod = tasksForChart.length;
-  const totalCompletedInPreviousPeriod = tasksForPreviousPeriod.length;
-
-  let percentageChange = 0;
-  if (totalCompletedInPreviousPeriod > 0) {
-    percentageChange =
-      ((totalCompletedInPeriod - totalCompletedInPreviousPeriod) /
-        totalCompletedInPreviousPeriod) *
-      100;
-  }
 
   // Date range options
   const dateRanges = [
@@ -476,9 +477,7 @@ export default function StatsPage() {
               </p>
               <p className="text-sm text-gray-500 mt-2">
                 (
-                {percentageCompletedOnTimeOfAllTasksExcludingIgnored.toFixed(
-                  2
-                )}
+                {percentageCompletedOnTimeOfAllTasksExcludingIgnored.toFixed(2)}
                 % of tasks with due dates)
               </p>
             </CardContent>
