@@ -1,0 +1,45 @@
+import { NextApiRequest, NextApiResponse } from 'next';
+import { Task, User } from '@/lib/models';
+import { getServerSession } from 'next-auth';
+import { authOptions } from '@/lib/auth';
+import { connectDB } from '@/lib/mongodb';
+
+export default async function handler(req: NextApiRequest, res: NextApiResponse) {
+  const session = await getServerSession(req, res, authOptions);
+  if (!session || !session.user) {
+    return res.status(401).json({ message: 'Unauthorized' });
+  }
+
+  await connectDB();
+
+  const user = await User.findOne({ nextAuthUserId: session.user.id });
+
+  if (!user) {
+    return res.status(404).json({ message: 'User not found' });
+  }
+
+  const { taskIds, tags, dueDate, priority, group, status } = req.body;
+  let completedAt = null;
+  let ignoredAt = null;
+  let deletedAt = null;
+
+  if (req.method === 'PUT') {
+    if (status === 'COMPLETED') {
+      completedAt = new Date();
+    } else if (status === 'IGNORED') {
+      ignoredAt = new Date();
+    } else if (status === 'DELETED') {
+      deletedAt = new Date();
+    }
+
+    try {
+      const updatedTasks = await Task.updateMany({ _id: { $in: taskIds }, userId: user._id }, { tags, dueDate, priority, group, status, completedAt, ignoredAt, deletedAt }, { new: true });
+      res.status(200).json({ message: 'Tags updated successfully', updatedTasks });
+    } catch (error) {
+    console.error(error);
+      res.status(500).json({ error: 'Error updating tags' });
+    }
+  } else {
+    res.status(405).json({ error: 'Method not allowed' });
+  }
+}

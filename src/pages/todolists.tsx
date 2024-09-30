@@ -13,7 +13,8 @@ import Layout from '@/components/layout';
 import {
   Plus, Trash, Tag, Folder, PlusCircle, Edit, FileText, Save, X,
   CalendarIcon, Rocket, SquareCheck, Trash2, ChevronsUp, ChevronUp,
-  ChevronDown, Flag, CalendarArrowDown, ChevronsDown
+  ChevronDown, Flag, CalendarArrowDown, ArrowDownUp,
+  CopyCheck
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { ToastAction } from '@/components/ui/toast';
@@ -68,6 +69,20 @@ export default function TodolistsPage() {
   });
 
   const [tasks, setTasks] = useState<Task[]>([]);
+  const [sortOptions, setSortOptions] = useState({
+    createdAt: true,
+    priority: false,
+    dueDate: false,
+    group: false,
+    title: false,
+  });
+  const [sortDirection, setSortDirection] = useState({
+    createdAt: 'desc',
+    priority: 'asc',
+    dueDate: 'asc',
+    group: 'asc',
+    title: 'asc',
+  });
   const [newTask, setNewTask] = useState('');
   const [tags, setTags] = useState<string[]>([]);
   const [groups, setGroups] = useState<{ _id: string; name: string }[]>([]);
@@ -91,11 +106,10 @@ export default function TodolistsPage() {
   const [editingTaskTags, setEditingTaskTags] = useState<string[]>([]);
   const [selectedTaskIds, setSelectedTaskIds] = useState<string[]>([]);
   const [lastDeletedTaskIds, setLastDeletedTaskIds] = useState<string[]>([]);
-  const [showBulkDeleteActions, setShowBulkDeleteActions] = useState(false);
+  const [showBulkActions, setShowBulkActions] = useState(false);
   const [isFetchLoading, setIsFetchLoading] = useState(false);
   const [priority, setPriority] = useState('');
   const [showPriorityDropdown, setShowPriorityDropdown] = useState(false);
-  const [sortType, setSortType] = useState<'date' | 'priority'>('date');
   
   const { status } = useSession();
   const { toast } = useToast();
@@ -110,12 +124,66 @@ export default function TodolistsPage() {
   };
 
   const sortTasks = (tasks: Task[]) => {
-    if (sortType === 'date') {
-      return [...tasks].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
-    } else if (sortType === 'priority') {
-      const priorityOrder = { High: 1, Medium: 2, Low: 3, None: 4 };
-      return [...tasks].sort((a, b) => (priorityOrder[a.priority as keyof typeof priorityOrder] ?? 4) - (priorityOrder[b.priority as keyof typeof priorityOrder] ?? 4));
-    }
+    const sortedTasks = [...tasks];
+    const priorityOrder = { High: 1, Medium: 2, Low: 3, None: 4 };
+
+    (Object.keys(sortOptions) as Array<keyof typeof sortOptions>).forEach((key) => {
+      if (sortOptions[key]) {
+        const direction = sortDirection[key] === 'asc' ? 1 : -1;
+
+        switch (key) {
+          case 'createdAt':
+            sortedTasks.sort((a, b) =>
+              direction * (new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime())
+            );
+            break;
+          case 'priority':
+            sortedTasks.sort((a, b) =>
+              direction *
+              ((priorityOrder[a.priority as keyof typeof priorityOrder] ?? 4) -
+                (priorityOrder[b.priority as keyof typeof priorityOrder] ?? 4))
+            );
+            break;
+          case 'dueDate':
+            sortedTasks.sort((a, b) =>
+              direction * ((new Date(a.dueDate || 0).getTime()) - (new Date(b.dueDate || 0).getTime()))
+            );
+            break;
+          case 'group':
+            sortedTasks.sort((a, b) =>
+              direction * (a.group?.localeCompare(b.group ?? '') ?? 0)
+            );
+            break;
+          case 'title':
+            sortedTasks.sort((a, b) =>
+              direction * a.title.localeCompare(b.title)
+            );
+            break;
+          default:
+            break;
+        }
+      }
+    });
+
+    return sortedTasks;
+  };
+
+  const handleSortChange = (key: keyof typeof sortOptions) => {
+    // Set all other sort options to false, and toggle the selected one
+    setSortOptions((prev) => {
+      const newSortOptions = Object.keys(prev).reduce((acc, currKey) => {
+        acc[currKey as keyof typeof sortOptions] = currKey === key ? true : false;
+        return acc;
+      }, {} as typeof sortOptions);
+
+      return newSortOptions;
+    });
+
+    // Toggle the sort direction for the selected option
+    setSortDirection((prev) => ({
+      ...prev,
+      [key]: prev[key] === 'asc' ? 'desc' : 'asc',
+    }));
   };
 
   const fetchTasksAndGroups = async () => {
@@ -404,7 +472,7 @@ export default function TodolistsPage() {
     }
     setIsLoading(false);
     setSelectedTaskIds([]);
-    setShowBulkDeleteActions(false);
+    setShowBulkActions(false);
     setLastDeletedTaskIds([]);
   };
   
@@ -506,7 +574,7 @@ export default function TodolistsPage() {
         )
       );
     }
-    setShowBulkDeleteActions(false);
+    setShowBulkActions(false);
     setLastDeletedTaskIds([]);
     setIsLoading(false);
   };
@@ -826,6 +894,138 @@ export default function TodolistsPage() {
     setIsLoading(false);
   };
 
+  // Bulk assign group
+  const bulkAssignGroup = async (groupName: string) => {
+    setIsLoading(true);
+    try {
+      const response = await fetch('/api/tasks/bulk', {
+        method: 'PUT',
+        body: JSON.stringify({ taskIds: selectedTaskIds, group: groupName }),
+        headers: { 'Content-Type': 'application/json' },
+      });
+      if (!response.ok) throw new Error('Failed to bulk assign group');
+      setTasks((prevTasks) =>
+        prevTasks.map((task) =>
+          selectedTaskIds.includes(task._id) ? { ...task, group: groupName } : task
+        )
+      );
+      setSelectedTaskIds([]);
+    } catch (error) {
+      console.error(error);
+    }
+    setIsLoading(false);
+  };
+
+  // Bulk assign tags
+  const bulkAssignTags = async (newTags: string[]) => {
+    setIsLoading(true);
+    try {
+      const response = await fetch('/api/tasks/bulk', {
+        method: 'PUT',
+        body: JSON.stringify({ taskIds: selectedTaskIds, tags: newTags }),
+        headers: { 'Content-Type': 'application/json' },
+      });
+      if (!response.ok) throw new Error('Failed to bulk assign tags');
+      setTasks((prevTasks) =>
+        prevTasks.map((task) =>
+          selectedTaskIds.includes(task._id) ? { ...task, tags: newTags } : task
+        )
+      );
+      setSelectedTaskIds([]);
+    } catch (error) {
+      console.error(error);
+    }
+    setIsLoading(false);
+  };
+
+  // Bulk assign due date
+  const bulkAssignDueDate = async (dueDate: Date | null) => {
+    setIsLoading(true);
+    try {
+      const response = await fetch('/api/tasks/bulk', {
+        method: 'PUT',
+        body: JSON.stringify({ taskIds: selectedTaskIds, dueDate }),
+        headers: { 'Content-Type': 'application/json' },
+      });
+      if (!response.ok) throw new Error('Failed to bulk assign due date');
+      setTasks((prevTasks) =>
+        prevTasks.map((task) =>
+          selectedTaskIds.includes(task._id) ? { ...task, dueDate } : task
+        )
+      );
+      setSelectedTaskIds([]);
+    } catch (error) {
+      console.error(error);
+    }
+    setIsLoading(false);
+  };
+
+  // Bulk assign priority
+  const bulkAssignPriority = async (priority: string) => {
+    setIsLoading(true);
+    try {
+      const response = await fetch('/api/tasks/bulk', {
+        method: 'PUT',
+        body: JSON.stringify({ taskIds: selectedTaskIds, priority }),
+        headers: { 'Content-Type': 'application/json' },
+      });
+      if (!response.ok) throw new Error('Failed to bulk assign priority');
+      setTasks((prevTasks) =>
+        prevTasks.map((task) =>
+          selectedTaskIds.includes(task._id) ? { ...task, priority } : task
+        )
+      );
+      setSelectedTaskIds([]);
+    } catch (error) {
+      console.error(error);
+    }
+    setIsLoading(false);
+  };
+
+  // Bulk mark as completed
+  const bulkMarkAsCompleted = async () => {
+    setIsLoading(true);
+    try {
+      const response = await fetch('/api/tasks/bulk', {
+        method: 'PUT',
+        body: JSON.stringify({ taskIds: selectedTaskIds, status: 'COMPLETED' }),
+        headers: { 'Content-Type': 'application/json' },
+      });
+      if (!response.ok) throw new Error('Failed to bulk complete tasks');
+      setTasks((prevTasks) =>
+        prevTasks.map((task) =>
+          selectedTaskIds.includes(task._id) ? { ...task, status: 'COMPLETED' } : task
+        )
+      );
+      setSelectedTaskIds([]);
+    } catch (error) {
+      console.error(error);
+    }
+    setIsLoading(false);
+  };
+
+  // Bulk mark as ignored
+  const bulkMarkAsIgnored = async () => {
+    setIsLoading(true);
+    try {
+      const response = await fetch('/api/tasks/bulk', {
+        method: 'PUT',
+        body: JSON.stringify({ taskIds: selectedTaskIds, status: 'IGNORED' }),
+        headers: { 'Content-Type': 'application/json' },
+      });
+      if (!response.ok) throw new Error('Failed to bulk ignore tasks');
+      setTasks((prevTasks) =>
+        prevTasks.map((task) =>
+          selectedTaskIds.includes(task._id) ? { ...task, status: 'IGNORED' } : task
+        )
+      );
+      setSelectedTaskIds([]);
+    } catch (error) {
+      console.error(error);
+    }
+    setIsLoading(false);
+  };
+
   useEffect(() => {
     if (status === 'authenticated') {
       setIsFetchLoading(true);
@@ -839,7 +1039,7 @@ export default function TodolistsPage() {
       const sortedTasks = sortTasks(prevTasks);
       return sortedTasks ? sortedTasks : prevTasks;
     });
-  }, [sortType]);
+  }, [sortOptions]);
 
   if (status === 'loading' || isFetchLoading || isLoading) {
     return (
@@ -855,28 +1055,93 @@ export default function TodolistsPage() {
         <CardHeader>
           <div className="flex justify-between items-center space-x-1">
             <CardTitle className="text-center text-2xl">To-Do Lists</CardTitle>
-            {
-              incompleteTasks && incompleteTasks.length > 0 && (
-              <div className="flex justify-between items-center space-x-1">
-                <Button
-                  onClick={() => setSortType(sortType === 'date' ? 'priority' : 'date')}
-                  variant="ghost"
-                  size="icon"
-                  aria-label={`Sort by ${sortType === 'date' ? 'Priority' : 'Date'}`}
-                >
-                  {sortType === 'date' ? <ChevronsDown size={16} /> : <CalendarArrowDown size={16} />}
-                </Button>
-                <Button
-                  onClick={() => setShowBulkDeleteActions(!showBulkDeleteActions)}
-                  aria-label={showBulkDeleteActions ? 'Hide Bulk Actions' : 'Show Bulk Actions'}
-                  variant="ghost"
-                  size="icon"
-                  disabled={incompleteTasks.length === 0}
-                >
-                  <Trash2 size={16} />
-                </Button>
-              </div>
-            )}
+            <div className="flex justify-center items-center space-x-1 text-sm">
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    aria-label="Sort Tasks"
+                  >
+                    <ArrowDownUp size={16} />
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-48 p-2 text-sm">
+                  <p className="mb-2">Sort By</p>
+                  <div className="space-y-2">
+                    <div className="flex items-center space-x-2">
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        aria-label="Sort by createdAt"
+                        onClick={() => handleSortChange('createdAt')}
+                      >
+                        {sortDirection['createdAt'] === 'asc' ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+                        <CalendarArrowDown size={16} />
+                      </Button>
+                      <span>Date Created</span>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        aria-label="Sort by Priority"
+                        onClick={() => handleSortChange('priority')}
+                      >
+                        {sortDirection['priority'] === 'asc' ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+                        <Flag size={16} />
+                      </Button>
+                      <span>Priority</span>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        aria-label="Sort by Due Date"
+                        onClick={() => handleSortChange('dueDate')}
+                      >
+                        {sortDirection['dueDate'] === 'asc' ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+                        <CalendarIcon size={16} />
+                      </Button>
+                      <span>Due Date</span>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        aria-label="Sort by Group"
+                        onClick={() => handleSortChange('group')}
+                      >
+                        {sortDirection['group'] === 'asc' ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+                        <Folder size={16} />
+                      </Button>
+                      <span>Group</span>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        aria-label="Sort by Title"
+                        onClick={() => handleSortChange('title')}
+                      >
+                        {sortDirection['title'] === 'asc' ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+                        <FileText size={16} />
+                      </Button>
+                      <span>Title</span>
+                    </div>
+                  </div>
+                </PopoverContent>
+              </Popover>
+              <Button
+                onClick={() => setShowBulkActions(!showBulkActions)}
+                aria-label={showBulkActions ? 'Hide Bulk Actions' : 'Show Bulk Actions'}
+                variant="ghost"
+                size="icon"
+                disabled={incompleteTasks.length === 0}
+              >
+                <CopyCheck size={16} />
+              </Button>
+            </div>
           </div>
         </CardHeader>
         <CardContent>
@@ -1062,7 +1327,7 @@ export default function TodolistsPage() {
                 </PopoverTrigger>
                 <PopoverContent className="w-52 text-sm">
                   <div className="flex flex-col space-y-1">
-                    <p className="text-center">Select Due Date</p>
+                    <p className="flex justify-start items-center">Select Due Date</p>
                     <div className="flex items-center justify-center space-x-1">
                       <Form {...form}>
                         <form
@@ -1159,9 +1424,10 @@ export default function TodolistsPage() {
                     )}
                   </Button>
                 </PopoverTrigger>
-                <PopoverContent className="w-36">
+                <PopoverContent className="w-36 text-sm">
+                  <p className="flex justify-start items-center mb-2">Select Priority</p>
                   <div
-                    className="flex items-center space-x-2 p-2 rounded-md cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-900 text-sm"
+                    className="flex items-center space-x-2 p-2 rounded-md cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-900"
                     onClick={() => {
                       setPriority('High');
                       setShowPriorityDropdown(false);
@@ -1171,7 +1437,7 @@ export default function TodolistsPage() {
                     <span>High</span>
                   </div>
                   <div
-                    className="flex items-center space-x-2 p-2 rounded-md cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-900 text-sm"
+                    className="flex items-center space-x-2 p-2 rounded-md cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-900"
                     onClick={() => {
                       setPriority('Medium');
                       setShowPriorityDropdown(false);
@@ -1181,7 +1447,7 @@ export default function TodolistsPage() {
                     <span>Medium</span>
                   </div>
                   <div
-                    className="flex items-center space-x-2 p-2 rounded-md cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-900 text-sm"
+                    className="flex items-center space-x-2 p-2 rounded-md cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-900"
                     onClick={() => {
                       setPriority('Low');
                       setShowPriorityDropdown(false);
@@ -1191,7 +1457,7 @@ export default function TodolistsPage() {
                     <span>Low</span>
                   </div>
                   <div
-                    className="flex items-center space-x-2 p-2 rounded-md cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-900 text-sm"
+                    className="flex items-center space-x-2 p-2 rounded-md cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-900"
                     onClick={() => {
                       setPriority('');
                       setShowPriorityDropdown(false);
@@ -1246,14 +1512,13 @@ export default function TodolistsPage() {
             )}
           </div>
 
-          {showBulkDeleteActions && (
+          {showBulkActions && (
             <div className="flex items-center mb-2 space-x-2 text-sm">
-              <div className="flex items-center justify-center">
-                 {/* Checkbox to select/deselect all tasks */}
+              <div className="flex items-center justify-center text-sm">
                 <Checkbox
                   checked={
                     selectedTaskIds.length === incompleteTasks.length && incompleteTasks.length > 0
-                    ? true
+                      ? true
                       : selectedTaskIds.length === 0
                       ? false
                       : 'indeterminate'
@@ -1268,8 +1533,7 @@ export default function TodolistsPage() {
                   aria-label="Select All Tasks"
                   className="mr-1"
                 />
-
-                {/* Trash2 icon to delete selected tasks */}
+                    {/* Trash2 icon to delete selected tasks */}
                 <AlertDialog>
                   <AlertDialogTrigger asChild>
                     <Button
@@ -1298,6 +1562,146 @@ export default function TodolistsPage() {
                     </AlertDialogFooter>
                   </AlertDialogContent>
                 </AlertDialog>
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button aria-label="Bulk Assign Group" variant="ghost" size="icon" disabled={selectedTaskIds.length === 0}>
+                      <Folder size={16} />
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-52">
+                    <div className="space-y-2 text-sm">
+                      <p>Select a group for selected tasks</p>
+                      {groups.map((group) => (
+                        <Button
+                          key={group._id}
+                          variant="ghost"
+                          className="w-full justify-start"
+                          onClick={() => bulkAssignGroup(group.name)}
+                        >
+                          {group.name}
+                        </Button>
+                      ))}
+                    </div>
+                  </PopoverContent>
+                </Popover>
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button aria-label="Bulk Assign Tags" variant="ghost" size="icon" disabled={selectedTaskIds.length === 0}>
+                      <Tag size={16} />
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-52 text-sm">
+                    <InputTags
+                      type="text"
+                      value={tags}
+                      onChange={(newTags) => bulkAssignTags(newTags as string[])}
+                      placeholder="Assign tags"
+                    />
+                  </PopoverContent>
+                </Popover>
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button aria-label="Bulk Assign Due Date" variant="ghost" size="icon" disabled={selectedTaskIds.length === 0}>
+                      <CalendarIcon size={16} />
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-52">
+                    <div className="flex flex-col space-y-1 text-sm">
+                      <p className="flex justify-start items-center">Select Due Date</p>
+                      <div className="flex items-center justify-center space-x-1">
+                        <div className="flex flex-col justify-center text-center items-center space-y-2">
+                          <div className="flex justify-center items-center space-x-1">
+                            <CalendarDatePicker
+                              date={{
+                                from: dueDate || new Date(),
+                                to: dueDate || new Date(),
+                              }}
+                              onDateSelect={({ from }) => bulkAssignDueDate(from)}
+                              variant="outline"
+                              numberOfMonths={1}
+                              className="min-w-[150px] border rounded-md ml-3 mt-2 justify-center items-center"
+                            />
+                            <Button
+                              variant="outline"
+                              onClick={() => {
+                                bulkAssignDueDate(null);
+                              }}
+                              className="px-2 py-1 mt-2"
+                            >
+                              <X size={16} />
+                            </Button>
+                          </div>
+                          <div className="grid grid-cols-2 gap-2 mt-2">
+                            <Button
+                              variant="outline"
+                              onClick={() => {
+                                bulkAssignDueDate(new Date());
+                              }}
+                              className="px-2 py-1"
+                            >
+                              Today
+                            </Button>
+                            <Button
+                              variant="outline"
+                              onClick={() => {
+                                const tomorrow = new Date();
+                                tomorrow.setDate(tomorrow.getDate() + 1);
+                                bulkAssignDueDate(tomorrow);
+                              }}
+                              className="px-2 py-1"
+                            >
+                              Tomorrow
+                            </Button>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </PopoverContent>
+                </Popover>
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button aria-label="Bulk Assign Priority" variant="ghost" size="icon" disabled={selectedTaskIds.length === 0}>
+                      <Flag size={16} />
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-36 text-sm">
+                    <p className="flex justify-start items-center mb-2">Select Priority</p>
+                    <div
+                      className="flex items-center space-x-2 p-2 rounded-md cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-900"
+                      onClick={() => bulkAssignPriority('High')}
+                    >
+                      <ChevronsUp size={16} className="text-red-500" />
+                      <span>High</span>
+                    </div>
+                    <div
+                      className="flex items-center space-x-2 p-2 rounded-md cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-900"
+                      onClick={() => bulkAssignPriority('Medium')}
+                    >
+                      <ChevronUp size={16} />
+                      <span>Medium</span>
+                    </div>
+                    <div
+                      className="flex items-center space-x-2 p-2 rounded-md cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-900"
+                      onClick={() => bulkAssignPriority('Low')}
+                    >
+                      <ChevronDown size={16} />
+                      <span>Low</span>
+                    </div>
+                    <div
+                      className="flex items-center space-x-2 p-2 rounded-md cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-900"
+                      onClick={() => bulkAssignPriority('')}
+                    >
+                      <Flag size={16} />
+                      <span>No Priority</span>
+                    </div>
+                  </PopoverContent>
+                </Popover>
+                <Button onClick={() => bulkMarkAsCompleted()} aria-label="Mark as Completed" variant="ghost" size="icon" disabled={selectedTaskIds.length === 0}>
+                  <SquareCheck size={16} />
+                </Button>
+                <Button onClick={() => bulkMarkAsIgnored()} aria-label="Mark as Ignored" variant="ghost" size="icon" disabled={selectedTaskIds.length === 0}>
+                  <X size={16} />
+                </Button>
               </div>
             </div>
           )}
@@ -1307,7 +1711,7 @@ export default function TodolistsPage() {
               incompleteTasks.map((task) => (
                 <div key={task._id} className="rounded-md text-sm">
                   <div className="flex flex-row gap-2 items-center">
-                    {showBulkDeleteActions && (
+                    {showBulkActions && (
                       <Checkbox
                         checked={selectedTaskIds.includes(task._id)}
                         onCheckedChange={(checked) => {
@@ -1320,7 +1724,7 @@ export default function TodolistsPage() {
                       />
                     )}
                     {
-                      !showBulkDeleteActions && (
+                      !showBulkActions && (
                         <Button
                           variant="ghost"
                           size="icon"
