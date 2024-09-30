@@ -10,7 +10,11 @@ import { Input } from '@/components/ui/input';
 import { useSession } from 'next-auth/react';
 import { Task } from '@/interfaces';
 import Layout from '@/components/layout';
-import { Plus, Trash, Tag, Folder, PlusCircle, Edit, FileText, Save, X, CalendarIcon, Rocket, SquareCheck, Trash2, ChevronsUp, ChevronUp, ChevronDown, Flag } from 'lucide-react';
+import {
+  Plus, Trash, Tag, Folder, PlusCircle, Edit, FileText, Save, X,
+  CalendarIcon, Rocket, SquareCheck, Trash2, ChevronsUp, ChevronUp,
+  ChevronDown, Flag, CalendarArrowDown, ChevronsDown
+} from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { ToastAction } from '@/components/ui/toast';
 import { InputTags } from '@/components/ui/input-tags';
@@ -91,6 +95,7 @@ export default function TodolistsPage() {
   const [isFetchLoading, setIsFetchLoading] = useState(false);
   const [priority, setPriority] = useState('');
   const [showPriorityDropdown, setShowPriorityDropdown] = useState(false);
+  const [sortType, setSortType] = useState<'date' | 'priority'>('date');
   
   const { status } = useSession();
   const { toast } = useToast();
@@ -104,13 +109,23 @@ export default function TodolistsPage() {
     setPriority('');
   };
 
+  const sortTasks = (tasks: Task[]) => {
+    if (sortType === 'date') {
+      return [...tasks].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+    } else if (sortType === 'priority') {
+      const priorityOrder = { High: 1, Medium: 2, Low: 3, None: 4 };
+      return [...tasks].sort((a, b) => (priorityOrder[a.priority as keyof typeof priorityOrder] ?? 4) - (priorityOrder[b.priority as keyof typeof priorityOrder] ?? 4));
+    }
+  };
+
   const fetchTasksAndGroups = async () => {
     setIsLoading(true);
     try {
       const response = await fetch('/api/tasks-groups');
       const data = await response.json();
-      setTasks(data.tasks.filter((task: Task) => !task.isDeleted && task.status !== 'COMPLETED'));
-      setGroups(data.groups);
+      const fetchedTasks = data.tasks?.filter((task: Task) => !task.isDeleted && task.status !== 'COMPLETED') || [];
+      setTasks(sortTasks(fetchedTasks) || []);
+      setGroups(data.groups || []);
     } catch (error) {
       console.error('Failed to fetch tasks and groups:', error);
       toast({
@@ -206,7 +221,12 @@ export default function TodolistsPage() {
         });
         const data = await response.json();
 
-        setTasks((prevTasks) => [...prevTasks, data]);
+        setTasks((prevTasks) => {
+          if (!prevTasks) return [];
+          const updatedTasks = [...prevTasks, data];
+          const sortedTasks = sortTasks(updatedTasks);
+          return sortedTasks ? sortedTasks : updatedTasks;
+        });
         setNewTask('');
         setTags([]);
 
@@ -814,6 +834,13 @@ export default function TodolistsPage() {
     }
   }, [status]);
 
+  useEffect(() => {
+    setTasks((prevTasks) => {
+      const sortedTasks = sortTasks(prevTasks);
+      return sortedTasks ? sortedTasks : prevTasks;
+    });
+  }, [sortType]);
+
   if (status === 'loading' || isFetchLoading || isLoading) {
     return (
       <div className="py-16 flex justify-center items-center h-full">
@@ -826,7 +853,17 @@ export default function TodolistsPage() {
     <Layout>
       <Card className="max-w-4xl mx-auto border-none shadow-none">
         <CardHeader>
-          <CardTitle className="text-center text-2xl">To-Do Lists</CardTitle>
+          <div className="flex justify-center items-center space-x-2">
+            <CardTitle className="text-center text-2xl">To-Do Lists</CardTitle>
+            <Button
+              onClick={() => setSortType(sortType === 'date' ? 'priority' : 'date')}
+              variant="ghost"
+              size="icon"
+              aria-label={`Sort by ${sortType === 'date' ? 'Priority' : 'Date'}`}
+            >
+              {sortType === 'date' ? <ChevronsDown size={16} /> : <CalendarArrowDown size={16} />}
+            </Button>
+          </div>
         </CardHeader>
         <CardContent>
           <div className="flex flex-col gap-0 mb-2">
@@ -1081,7 +1118,7 @@ export default function TodolistsPage() {
                   >
                     {priority === 'High' && (
                       <div className="flex items-center">
-                        <ChevronsUp size={16} />
+                        <ChevronsUp size={16} className="text-red-500" />
                       </div>
                     )}
                     {priority === 'Medium' && (
@@ -1109,7 +1146,7 @@ export default function TodolistsPage() {
                       setShowPriorityDropdown(false);
                     }}
                   >
-                    <ChevronsUp size={16} />
+                    <ChevronsUp size={16} className="text-red-500" />
                     <span>High</span>
                   </div>
                   <div
@@ -1270,7 +1307,7 @@ export default function TodolistsPage() {
                       <Popover>
                         <PopoverTrigger asChild>
                           <Button variant="ghost" size="icon">
-                            {task.priority === 'High' && <ChevronsUp size={16} />}
+                            {task.priority === 'High' && <ChevronsUp size={16} className="text-red-500" />}
                             {task.priority === 'Medium' && <ChevronUp size={16} />}
                             {task.priority === 'Low' && <ChevronDown size={16} />}
                             {!task.priority && <Flag size={16} />}
@@ -1374,7 +1411,7 @@ export default function TodolistsPage() {
                       <Popover>
                         <PopoverTrigger asChild>
                           <Button variant="ghost" size="icon">
-                            {task.priority === 'High' && <ChevronsUp size={16} />}
+                            {task.priority === 'High' && <ChevronsUp size={16} className="text-red-500" />}
                             {task.priority === 'Medium' && <ChevronUp size={16} />}
                             {task.priority === 'Low' && <ChevronDown size={16} />}
                             {!task.priority && <Flag size={16} />}
@@ -1385,7 +1422,7 @@ export default function TodolistsPage() {
                             className="flex items-center space-x-2 p-2 rounded-md cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-900 text-sm"
                             onClick={() => updateTaskPriority(task._id, 'High')}
                           >
-                            <ChevronsUp size={16} />
+                            <ChevronsUp size={16} className="text-red-500" />
                             <span>High</span>
                           </div>
                           <div
