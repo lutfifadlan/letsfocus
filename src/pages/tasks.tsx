@@ -72,7 +72,9 @@ export default function TasksPage() {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
   const [isEditMode, setIsEditMode] = useState(false);
-  const [taskFormData, setTaskFormData] = useState<Partial<Task>>({});
+  const [taskFormData, setTaskFormData] = useState<Partial<Task>>({
+    priority: 'Medium', // Add default priority
+  });
 
   useEffect(() => {
     fetchTasks();
@@ -351,7 +353,7 @@ export default function TasksPage() {
     }
   };
 
-  const handleFormChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+  const handleFormChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
     setTaskFormData({ ...taskFormData, [name]: value });
   };
@@ -1046,6 +1048,23 @@ export default function TasksPage() {
                       numberOfMonths={1}
                     />
                   </div>
+                  {/* Priority */}
+                  <div>
+                    <Label htmlFor="priority" className="text-base font-medium">
+                      Priority
+                    </Label>
+                    <select
+                      id="priority"
+                      name="priority"
+                      value={taskFormData.priority || 'Medium'}
+                      onChange={handleFormChange}
+                      className="border rounded p-1"
+                    >
+                      <option value="Low">Low</option>
+                      <option value="Medium">Medium</option>
+                      <option value="High">High</option>
+                    </select>
+                  </div>
                   {/* Status */}
                   <div className="flex items-center">
                     <Checkbox
@@ -1171,6 +1190,14 @@ export default function TasksPage() {
                           : 'N/A'}
                       </p>
                     </div>
+                  </div>
+
+                  {/* Priority */}
+                  <div>
+                    <Label className="text-base font-medium">Priority</Label>
+                    <p className="text-sm text-gray-700 mt-1">
+                      {selectedTask.priority}
+                    </p>
                   </div>
 
                   {/* Status */}

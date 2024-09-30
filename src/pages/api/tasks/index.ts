@@ -35,7 +35,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
     case 'POST':
       try {
-        const { title, tags, group, description, dueDate } = req.body;
+        const { title, tags, group, description, dueDate, priority } = req.body;
         const userId = user._id;
 
         const taskData = {
@@ -45,6 +45,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
           group,
           description,
           dueDate,
+          priority,
         };
 
         const newTask = await Task.create(taskData);
