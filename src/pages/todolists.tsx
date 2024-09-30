@@ -22,7 +22,7 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { Badge } from '@/components/ui/badge';
 import { Textarea } from '@/components/ui/textarea';
 import { CalendarDatePicker } from "@/components/calendar-date-picker";
-import { format } from 'date-fns';
+import { format, isSameDay } from 'date-fns';
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -853,16 +853,30 @@ export default function TodolistsPage() {
     <Layout>
       <Card className="max-w-4xl mx-auto border-none shadow-none">
         <CardHeader>
-          <div className="flex justify-center items-center space-x-2">
+          <div className="flex justify-between items-center space-x-1">
             <CardTitle className="text-center text-2xl">To-Do Lists</CardTitle>
-            <Button
-              onClick={() => setSortType(sortType === 'date' ? 'priority' : 'date')}
-              variant="ghost"
-              size="icon"
-              aria-label={`Sort by ${sortType === 'date' ? 'Priority' : 'Date'}`}
-            >
-              {sortType === 'date' ? <ChevronsDown size={16} /> : <CalendarArrowDown size={16} />}
-            </Button>
+            {
+              incompleteTasks && incompleteTasks.length > 0 && (
+              <div className="flex justify-between items-center space-x-1">
+                <Button
+                  onClick={() => setSortType(sortType === 'date' ? 'priority' : 'date')}
+                  variant="ghost"
+                  size="icon"
+                  aria-label={`Sort by ${sortType === 'date' ? 'Priority' : 'Date'}`}
+                >
+                  {sortType === 'date' ? <ChevronsDown size={16} /> : <CalendarArrowDown size={16} />}
+                </Button>
+                <Button
+                  onClick={() => setShowBulkDeleteActions(!showBulkDeleteActions)}
+                  aria-label={showBulkDeleteActions ? 'Hide Bulk Actions' : 'Show Bulk Actions'}
+                  variant="ghost"
+                  size="icon"
+                  disabled={incompleteTasks.length === 0}
+                >
+                  <Trash2 size={16} />
+                </Button>
+              </div>
+            )}
           </div>
         </CardHeader>
         <CardContent>
@@ -1046,10 +1060,10 @@ export default function TodolistsPage() {
                     <CalendarIcon size={16} />
                   </Button>
                 </PopoverTrigger>
-                <PopoverContent className="w-64 text-sm">
+                <PopoverContent className="w-52 text-sm">
                   <div className="flex flex-col space-y-1">
                     <p className="text-center">Select Due Date</p>
-                    <div className="flex items-center justify-center space-x-4">
+                    <div className="flex items-center justify-center space-x-1">
                       <Form {...form}>
                         <form
                           onSubmit={form.handleSubmit((data) => {
@@ -1058,18 +1072,32 @@ export default function TodolistsPage() {
                           })}
                           className="flex flex-col justify-center text-center items-center space-y-2"
                         >
-                          <CalendarDatePicker
-                            date={{ from: dueDate || new Date(), to: dueDate || new Date() }}
-                            onDateSelect={({ from, to }) => {
-                              form.setValue("datePicker", { from, to });
-                              setDueDate(from);
-                              setIsCalendarPickerOpen(false);
-                            }}
-                            variant="outline"
-                            numberOfMonths={1}
-                            className="min-w-[150px] border rounded-md p-2"
-                          />
-                          <div className="flex space-x-4">
+                          <div className="flex justify-center items-center space-x-1">
+                            <CalendarDatePicker
+                              date={{ from: dueDate || new Date(), to: dueDate || new Date() }}
+                              onDateSelect={({ from, to }) => {
+                                form.setValue("datePicker", { from, to });
+                                setDueDate(from);
+                                setIsCalendarPickerOpen(false);
+                              }}
+                              variant="outline"
+                              numberOfMonths={1}
+                              className="min-w-[150px] border rounded-md p-2"
+                            />
+
+                            <Button
+                              variant="outline"
+                              type="button"
+                                onClick={() => {
+                                  setDueDate(null);
+                                  setIsCalendarPickerOpen(false);
+                                }}
+                                className="px-2 py-1"
+                              >
+                                <X size={16} />
+                            </Button>
+                          </div>
+                          <div className="grid grid-cols-2 gap-2 mt-2">
                             <Button
                               variant="outline"
                               type="button"
@@ -1077,7 +1105,7 @@ export default function TodolistsPage() {
                                 setDueDate(new Date());
                                 setIsCalendarPickerOpen(false);
                               }}
-                              className="px-4 py-1"
+                              className="px-2 py-1"
                             >
                               Today
                             </Button>
@@ -1085,12 +1113,14 @@ export default function TodolistsPage() {
                               variant="outline"
                               type="button"
                               onClick={() => {
-                                setDueDate(null);
+                                const tomorrow = new Date();
+                                tomorrow.setDate(tomorrow.getDate() + 1);
+                                setDueDate(tomorrow);
                                 setIsCalendarPickerOpen(false);
                               }}
-                              className="px-4 py-1"
+                              className="px-2 py-1"
                             >
-                              No Date
+                              Tomorrow
                             </Button>
                           </div>
                         </form>
@@ -1099,15 +1129,6 @@ export default function TodolistsPage() {
                   </div>
                 </PopoverContent>
               </Popover>
-              <Button
-                onClick={() => setShowBulkDeleteActions(!showBulkDeleteActions)}
-                aria-label={showBulkDeleteActions ? 'Hide Bulk Actions' : 'Show Bulk Actions'}
-                variant="ghost"
-                size="icon"
-                disabled={incompleteTasks.length === 0}
-              >
-                <Trash2 size={16} />
-              </Button>
               <Popover open={showPriorityDropdown} onOpenChange={setShowPriorityDropdown}>
                 <PopoverTrigger asChild>
                   <Button
@@ -1206,10 +1227,19 @@ export default function TodolistsPage() {
                     {tag}
                   </Badge>
                 ))}
-                {dueDate && (
-                  <Badge variant="outline">
+               {dueDate && (
+                  <Badge
+                    variant="outline"
+                    className={
+                      dueDate < new Date() && !isSameDay(dueDate, new Date())
+                        ? 'bg-red-400 text-black'
+                        : isSameDay(dueDate, new Date())
+                        ? 'bg-yellow-200 text-black'
+                        : 'bg-green-200 text-black'
+                    }
+                  >
                     <CalendarIcon size={12} className="mr-1" />
-                    {format(dueDate, 'PPP')}
+                    {isSameDay(dueDate, new Date()) ? 'Today' : format(dueDate, 'PPP')}
                   </Badge>
                 )}
               </div>
@@ -1566,7 +1596,7 @@ export default function TodolistsPage() {
                           <CalendarIcon size={16} />
                         </Button>
                       </PopoverTrigger>
-                      <PopoverContent className="w-64 text-sm">
+                      <PopoverContent className="w-72 text-sm">
                         <div className="flex flex-col justify-center text-center items-center space-y-2">
                           <p className="text-center">Select Due Date</p>
                           <CalendarDatePicker
@@ -1584,18 +1614,30 @@ export default function TodolistsPage() {
                             }}
                             variant="outline"
                             numberOfMonths={1}
-                            className="min-w-[150px] border rounded-md p-2"
+                            className="min-w-[150px] border rounded-md ml-3 mt-2 justify-center items-center"
                           />
-                          <div className="flex space-x-4 justify-center">
+                          <div className="grid grid-cols-3 gap-2 mt-2">
                             <Button
                               variant="outline"
                               onClick={() => {
                                 setExistingTaskDueDate(new Date());
                                 updateTaskDueDate(task._id, new Date());
                               }}
-                              className="px-4 py-1"
+                              className="px-2 py-1"
                             >
                               Today
+                            </Button>
+                            <Button
+                              variant="outline"
+                              onClick={() => {
+                                const tomorrow = new Date();
+                                tomorrow.setDate(tomorrow.getDate() + 1);
+                                setExistingTaskDueDate(tomorrow);
+                                updateTaskDueDate(task._id, tomorrow);
+                              }}
+                              className="px-2 py-1"
+                            >
+                              Tomorrow
                             </Button>
                             <Button
                               variant="outline"
@@ -1603,7 +1645,7 @@ export default function TodolistsPage() {
                                 setExistingTaskDueDate(null);
                                 updateTaskDueDate(task._id, null);
                               }}
-                              className="px-4 py-1"
+                              className="px-2 py-1"
                             >
                               No Date
                             </Button>

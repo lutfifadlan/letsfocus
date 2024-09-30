@@ -611,11 +611,20 @@ export default function StatsPage() {
                     <Pie
                       data={pieData}
                       dataKey="value"
-                      label
                       nameKey="name"
                       outerRadius={80}
                       innerRadius={40}
-                    />
+                    >
+                      <LabelList
+                        dataKey="value"
+                        className="fill-foreground"
+                        stroke="none"
+                        fontSize={12}
+                        formatter={(value: number) =>
+                          chartConfig[value]?.label ?? value // Adjust how you format the value here
+                        }
+                      />
+                    </Pie>
                   </PieChart>
                 </ChartContainer>
               ) : (
