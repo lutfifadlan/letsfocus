@@ -14,6 +14,7 @@ export interface Task {
   dueDate: Date | null;
   ignoredAt: Date | null;
   completionStatus?: string;
+  priority?: string;
 }
 
 export interface Habit {
@@ -37,4 +38,3 @@ export interface Tag {
   id: string;
   text: string;
 }
-

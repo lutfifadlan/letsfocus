@@ -24,13 +24,14 @@ const TaskSchema = new mongoose.Schema({
   userId: { type: String, required: true },
   isDeleted: { type: Boolean, default: false },
   tags: { type: [String], default: [] },
-  group: { type: String, ref: 'Group', default: null },
+  group: { type: String, default: null },
   dueDate: { type: Date, default: null },
   status: { type: String, enum: ['PENDING', 'COMPLETED', 'IGNORED'], default: 'PENDING' },
   completedAt: { type: Date, default: null },
   deletedAt: { type: Date, default: null },
   ignoredAt: { type: Date, default: null },
   completionStatus: { type: String },
+  priority: { type: String, default: null },
 }, { timestamps: true });
 
 export const User = mongoose.models.User || mongoose.model('User', UserSchema);

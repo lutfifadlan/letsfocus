@@ -10,7 +10,7 @@ import { Input } from '@/components/ui/input';
 import { useSession } from 'next-auth/react';
 import { Task } from '@/interfaces';
 import Layout from '@/components/layout';
-import { Plus, Trash, Tag, Folder, PlusCircle, Edit, FileText, Save, X, CalendarIcon, Rocket, SquareCheck, Trash2 } from 'lucide-react';
+import { Plus, Trash, Tag, Folder, PlusCircle, Edit, FileText, Save, X, CalendarIcon, Rocket, SquareCheck, Trash2, ChevronsUp, ChevronUp, ChevronDown, Flag } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { ToastAction } from '@/components/ui/toast';
 import { InputTags } from '@/components/ui/input-tags';
@@ -89,47 +89,33 @@ export default function TodolistsPage() {
   const [lastDeletedTaskIds, setLastDeletedTaskIds] = useState<string[]>([]);
   const [showBulkDeleteActions, setShowBulkDeleteActions] = useState(false);
   const [isFetchLoading, setIsFetchLoading] = useState(false);
+  const [priority, setPriority] = useState('');
+  const [showPriorityDropdown, setShowPriorityDropdown] = useState(false);
   
   const { status } = useSession();
   const { toast } = useToast();
   const incompleteTasks = tasks.filter((task) => task.status !== 'COMPLETED' && !task.isDeleted && task.status !== 'IGNORED');
 
   const handleAddTask = (description: string) => {
-    addTask(description, dueDate);
+    addTask(description, dueDate, priority);
     setNewTaskDescription('');
     setIsFileTextButtonClicked(false);
     setDueDate(null);
+    setPriority('');
   };
 
-  const fetchTasks = async () => {
+  const fetchTasksAndGroups = async () => {
     setIsLoading(true);
     try {
-      const response = await fetch('/api/tasks');
+      const response = await fetch('/api/tasks-groups');
       const data = await response.json();
-      setTasks(data.filter((task: Task) => !task.isDeleted && task.status !== 'COMPLETED'));
+      setTasks(data.tasks.filter((task: Task) => !task.isDeleted && task.status !== 'COMPLETED'));
+      setGroups(data.groups);
     } catch (error) {
-      console.error('Failed to fetch tasks:', error);
+      console.error('Failed to fetch tasks and groups:', error);
       toast({
         title: 'Error',
-        description: 'Failed to fetch tasks.',
-        variant: 'destructive',
-        duration: 3000,
-      });
-    }
-    setIsLoading(false);
-  };
-
-  const fetchGroups = async () => {
-    setIsLoading(true);
-    try {
-      const response = await fetch('/api/groups');
-      const data = await response.json();
-      setGroups(data);
-    } catch (error) {
-      console.error('Failed to fetch groups:', error);
-      toast({
-        title: 'Error',
-        description: 'Failed to fetch groups.',
+        description: 'Failed to fetch tasks and groups.',
         variant: 'destructive',
         duration: 3000,
       });
@@ -207,7 +193,7 @@ export default function TodolistsPage() {
     setIsLoading(false);
   };
 
-  const addTask = async (description: string, dueDate: Date | null) => {
+  const addTask = async (description: string, dueDate: Date | null, priority: string) => {
     if (newTask.trim()) {
       setIsLoading(true);
       try {
@@ -216,7 +202,7 @@ export default function TodolistsPage() {
           headers: {
             'Content-Type': 'application/json',
           },
-          body: JSON.stringify({ title: newTask, tags, group: selectedGroup, description, dueDate }),
+          body: JSON.stringify({ title: newTask, tags, group: selectedGroup, description, dueDate, priority }),
         });
         const data = await response.json();
 
@@ -663,7 +649,47 @@ export default function TodolistsPage() {
     setIsLoading(false);
   };
 
+  const updateTaskPriority = async (taskId: string, newPriority: string) => {
+    setIsLoading(true);
+    try {
+      const response = await fetch(`/api/tasks/${taskId}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ priority: newPriority }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Failed to update task priority');
+      }
+
+      setTasks((prevTasks) =>
+          prevTasks.map((task) =>
+          task._id === taskId ? { ...task, priority: newPriority } : task
+        )
+      );
+
+      toast({
+        title: 'Priority Updated',
+        description: `Task priority has been updated to ${newPriority}.`,
+        duration: 3000,
+      });
+    } catch (error) {
+      console.error('Failed to update task priority:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to update task priority.',
+        variant: 'destructive',
+        duration: 3000,
+      });
+    }
+    setIsLoading(false);
+  };
+
   const updateTaskDescription = async (taskId: string, newDescription: string) => {
+    setIsLoading(true);
     try {
       const response = await fetch(`/api/tasks/${taskId}`, {
         method: 'PUT',
@@ -783,13 +809,12 @@ export default function TodolistsPage() {
   useEffect(() => {
     if (status === 'authenticated') {
       setIsFetchLoading(true);
-      fetchTasks();
-      fetchGroups();
+      fetchTasksAndGroups();
       setIsFetchLoading(false);
     }
   }, [status]);
 
-  if (status === 'loading' || isFetchLoading) {
+  if (status === 'loading' || isFetchLoading || isLoading) {
     return (
       <div className="py-16 flex justify-center items-center h-full">
         <div className="animate-spin h-8 w-8 border-4 border-t-transparent dark:border-t-black border-black dark:border-white rounded-full"></div>
@@ -1046,6 +1071,80 @@ export default function TodolistsPage() {
               >
                 <Trash2 size={16} />
               </Button>
+              <Popover open={showPriorityDropdown} onOpenChange={setShowPriorityDropdown}>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    aria-label="priority"
+                    size="icon"
+                    onClick={() => setShowPriorityDropdown(!showPriorityDropdown)}
+                  >
+                    {priority === 'High' && (
+                      <div className="flex items-center">
+                        <ChevronsUp size={16} />
+                      </div>
+                    )}
+                    {priority === 'Medium' && (
+                      <div className="flex items-center">
+                        <ChevronUp size={16} />
+                      </div>
+                    )}
+                    {priority === 'Low' && (
+                      <div className="flex items-center">
+                        <ChevronDown size={16} />
+                      </div>
+                    )}
+                    {!priority && (
+                      <div className="flex items-center">
+                        <Flag size={16} />
+                      </div>
+                    )}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-36">
+                  <div
+                    className="flex items-center space-x-2 p-2 rounded-md cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-900 text-sm"
+                    onClick={() => {
+                      setPriority('High');
+                      setShowPriorityDropdown(false);
+                    }}
+                  >
+                    <ChevronsUp size={16} />
+                    <span>High</span>
+                  </div>
+                  <div
+                    className="flex items-center space-x-2 p-2 rounded-md cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-900 text-sm"
+                    onClick={() => {
+                      setPriority('Medium');
+                      setShowPriorityDropdown(false);
+                    }}
+                  >
+                    <ChevronUp size={16} />
+                    <span>Medium</span>
+                  </div>
+                  <div
+                    className="flex items-center space-x-2 p-2 rounded-md cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-900 text-sm"
+                    onClick={() => {
+                      setPriority('Low');
+                      setShowPriorityDropdown(false);
+                    }}
+                  >
+                    <ChevronDown size={16} />
+                    <span>Low</span>
+                  </div>
+                  <div
+                    className="flex items-center space-x-2 p-2 rounded-md cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-900 text-sm"
+                    onClick={() => {
+                      setPriority('');
+                      setShowPriorityDropdown(false);
+                    }}
+                  >
+                    <Flag size={16} />
+                    <span>No Priority</span>
+                  </div>
+                </PopoverContent>
+              </Popover>
+
               <Button
                 onClick={() => handleAddTask(newTaskDescription)}
                 aria-label="Add Task"
@@ -1166,6 +1265,51 @@ export default function TodolistsPage() {
                       )
                     }
 
+                    {
+                      task.priority && task.priority !== '' ?
+                      <Popover>
+                        <PopoverTrigger asChild>
+                          <Button variant="ghost" size="icon">
+                            {task.priority === 'High' && <ChevronsUp size={16} />}
+                            {task.priority === 'Medium' && <ChevronUp size={16} />}
+                            {task.priority === 'Low' && <ChevronDown size={16} />}
+                            {!task.priority && <Flag size={16} />}
+                          </Button>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-36">
+                          <div
+                            className="flex items-center space-x-2 p-2 rounded-md cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-900 text-sm"
+                            onClick={() => updateTaskPriority(task._id, 'High')}
+                          >
+                            <ChevronsUp size={16} />
+                            <span>High</span>
+                          </div>
+                          <div
+                            className="flex items-center space-x-2 p-2 rounded-md cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-900 text-sm"
+                            onClick={() => updateTaskPriority(task._id, 'Medium')}
+                          >
+                            <ChevronUp size={16} />
+                            <span>Medium</span>
+                          </div>
+                          <div
+                            className="flex items-center space-x-2 p-2 rounded-md cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-900 text-sm"
+                            onClick={() => updateTaskPriority(task._id, 'Low')}
+                          >
+                            <ChevronDown size={16} />
+                            <span>Low</span>
+                          </div>
+                          <div
+                            className="flex items-center space-x-2 p-2 rounded-md cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-900 text-sm"
+                            onClick={() => updateTaskPriority(task._id, '')}
+                          >
+                            <Flag size={16} />
+                            <span>No Priority</span>
+                          </div>
+                        </PopoverContent>
+                      </Popover>
+                      : null
+                    }
+
                     <div className="flex flex-col gap-2 w-full">
                       {editingTaskTitleId === task._id ? (
                         <div className="flex items-center">
@@ -1224,6 +1368,50 @@ export default function TodolistsPage() {
                         </p>
                       )}
                     </div>
+
+                    {
+                      !task.priority || (task.priority  && task.priority === '') ?
+                      <Popover>
+                        <PopoverTrigger asChild>
+                          <Button variant="ghost" size="icon">
+                            {task.priority === 'High' && <ChevronsUp size={16} />}
+                            {task.priority === 'Medium' && <ChevronUp size={16} />}
+                            {task.priority === 'Low' && <ChevronDown size={16} />}
+                            {!task.priority && <Flag size={16} />}
+                          </Button>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-36">
+                          <div
+                            className="flex items-center space-x-2 p-2 rounded-md cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-900 text-sm"
+                            onClick={() => updateTaskPriority(task._id, 'High')}
+                          >
+                            <ChevronsUp size={16} />
+                            <span>High</span>
+                          </div>
+                          <div
+                            className="flex items-center space-x-2 p-2 rounded-md cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-900 text-sm"
+                            onClick={() => updateTaskPriority(task._id, 'Medium')}
+                          >
+                            <ChevronUp size={16} />
+                            <span>Medium</span>
+                          </div>
+                          <div
+                            className="flex items-center space-x-2 p-2 rounded-md cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-900 text-sm"
+                            onClick={() => updateTaskPriority(task._id, 'Low')}
+                          >
+                            <ChevronDown size={16} />
+                            <span>Low</span>
+                          </div>
+                          <div
+                            className="flex items-center space-x-2 p-2 rounded-md cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-900 text-sm"
+                            onClick={() => updateTaskPriority(task._id, '')}
+                          >
+                            <Flag size={16} />
+                            <span>No Priority</span>
+                          </div>
+                        </PopoverContent>
+                      </Popover>
+                    : null}
 
                     <Button
                       variant="ghost"
