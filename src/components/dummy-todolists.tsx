@@ -70,6 +70,7 @@ const defaultTasks: Task[] = [
     completedAt: null,
     deletedAt: null,
     ignoredAt: null,
+    completionStatus: 'N/A'
   },
   {
     _id: generateId(),
@@ -86,6 +87,7 @@ const defaultTasks: Task[] = [
     completedAt: null,
     deletedAt: null,
     ignoredAt: null,
+    completionStatus: 'N/A'
   },
 ];
 
@@ -239,6 +241,7 @@ export default function DummyTodolists() {
           completedAt: null,
           deletedAt: null,
           ignoredAt: null,
+          completionStatus: 'N/A'
         };
         setTasks((prevTasks) => [...prevTasks, newTaskObj]);
         setNewTask('');

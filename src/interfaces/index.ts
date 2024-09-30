@@ -13,6 +13,7 @@ export interface Task {
   deletedAt: Date | null;
   dueDate: Date | null;
   ignoredAt: Date | null;
+  completionStatus?: string;
 }
 
 export interface Habit {

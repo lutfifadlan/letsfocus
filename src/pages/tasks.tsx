@@ -54,17 +54,19 @@ export default function TasksPage() {
     showIgnored: false, // Add showIgnored to filter criteria
     tags: [] as string[],
     group: '',
-    ignoredDate: { from: null as Date | null, to: null as Date | null }, // Update to handle date range
+    ignoredDate: { from: null as Date | null, to: null as Date | null },
+    showCompletionStatus: false,
   });
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
-  const [sortField, setSortField] = useState<keyof Task | 'timeTaken' | 'status'>('createdAt');
+  const [sortField, setSortField] = useState<keyof Task | 'timeTaken' | 'status' | 'completionStatus'>('createdAt');
   const [isSearchBarVisible, setIsSearchBarVisible] = useState(false);
   const [visibleColumns, setVisibleColumns] = useState({
     description: false,
     group: false,
     tags: false,
     createdAt: false,
-    ignoredAt: false, // Add ignoredAt to visible columns
+    ignoredAt: false,
+    completionStatus: false,
   });
   const { toast } = useToast();
   const [isDialogOpen, setIsDialogOpen] = useState(false);
@@ -135,6 +137,17 @@ export default function TasksPage() {
       filtered = filtered.filter((task) => task.status === 'IGNORED');
     }
 
+    if (filterCriteria.showCompletionStatus) {
+      filtered = filtered.filter((task) => {
+        if (task.completedAt && task.dueDate) {
+          const completedAt = new Date(task.completedAt);
+          const dueDate = new Date(task.dueDate);
+          return completedAt < dueDate;
+        }
+        return false;
+      });
+    }
+
     // Always exclude deleted tasks
     filtered = filtered.filter((task) => !task.isDeleted);
 
@@ -182,8 +195,33 @@ export default function TasksPage() {
           b.completedAt && b.createdAt
             ? new Date(b.completedAt).getTime() - new Date(b.createdAt).getTime()
             : null;
-      } else {
-        valueA = a[sortField];
+      } else if (sortField === 'completionStatus') {
+        const getCompletionStatus = (task: Task) => {
+          if (task.completedAt && task.dueDate) {
+            const completedAt = new Date(task.completedAt);
+            const dueDate = new Date(task.dueDate);
+  
+            if (completedAt < dueDate) {
+              return 'Early';
+            } else if (completedAt.getTime() === dueDate.getTime()) {
+              return 'On Time';
+            } else {
+              return 'Late';
+            }
+          }
+          return 'N/A';
+        };
+  
+        const statusA = getCompletionStatus(a);
+        const statusB = getCompletionStatus(b);
+  
+        const statusOrder = ['Early', 'On Time', 'Late', 'N/A'];
+  
+        return sortOrder === 'asc'
+        ? statusOrder.indexOf(statusA) - statusOrder.indexOf(statusB)
+        : statusOrder.indexOf(statusB) - statusOrder.indexOf(statusA);
+    } else {
+      valueA = a[sortField];
         valueB = b[sortField];
       }
   
@@ -241,13 +279,14 @@ export default function TasksPage() {
       tags: [],
       group: '',
       ignoredDate: { from: null, to: null },
+      showCompletionStatus: false,
     });
     setSearchTerm('');
     setSortOrder('asc');
     setSortField('createdAt');
   };
 
-  const handleSort = (field: keyof Task | 'timeTaken' | 'status') => {
+  const handleSort = (field: keyof Task | 'timeTaken' | 'status' | 'completionStatus') => {
     const newSortOrder = sortField === field && sortOrder === 'asc' ? 'desc' : 'asc';
     setSortField(field);
     setSortOrder(newSortOrder);
@@ -619,6 +658,18 @@ export default function TasksPage() {
                       Ignored At
                     </Label>
                   </div>
+                  <div className="flex items-center">
+                    <Checkbox
+                      id="completionStatus"
+                      checked={!!visibleColumns.completionStatus}
+                      onCheckedChange={(checked: boolean) =>
+                        setVisibleColumns({ ...visibleColumns, completionStatus: checked })
+                      }
+                    />
+                    <Label htmlFor="completionStatus" className="ml-2 text-sm">
+                      Completion Status
+                    </Label>
+                  </div>
                 </div>
               </PopoverContent>
             </Popover>
@@ -775,6 +826,25 @@ export default function TasksPage() {
                       )}
                     </div>
                   </TableHead>
+                  {visibleColumns.completionStatus && (
+                    <TableHead
+                      className="cursor-pointer select-none hover:bg-gray-100"
+                      onClick={() => handleSort('completionStatus')}
+                    >
+                      <div className="flex flex-row items-center gap-2">
+                        Completion Status
+                        {sortField === 'completionStatus' ? (
+                          sortOrder === 'asc' ? (
+                            <ArrowDown size={16} />
+                          ) : (
+                            <ArrowUp size={16} />
+                          )
+                        ) : (
+                          <ArrowUpDown size={16} />
+                        )}
+                      </div>
+                    </TableHead>
+                  )}
                   {visibleColumns.ignoredAt && (
                     <TableHead
                       className="cursor-pointer select-none hover:bg-gray-100"
@@ -846,6 +916,25 @@ export default function TasksPage() {
                     {visibleColumns.ignoredAt && (
                       <TableCell>
                         {task.ignoredAt ? format(new Date(task.ignoredAt), 'PPP') : '-'}
+                      </TableCell>
+                    )}
+                    {visibleColumns.completionStatus && (
+                      <TableCell>
+                        { task.completedAt && task.dueDate && new Date(task.completedAt).toDateString() === new Date(task.dueDate).toDateString() ? (
+                          <Badge variant="outline" className="text-sm text-green-500">
+                            On Time
+                          </Badge>
+                        ) : task.completedAt && task.dueDate && new Date(task.completedAt) < new Date(task.dueDate) ? (
+                          <Badge variant="outline" className="text-sm text-blue-500">
+                            Early
+                          </Badge>
+                        ) : task.completedAt && task.dueDate && new Date(task.completedAt) > new Date(task.dueDate) ?  (
+                          <Badge variant="outline" className="text-sm text-red-500">
+                            Late
+                          </Badge>
+                        ) : (
+                          '-'
+                        )}
                       </TableCell>
                     )}
                   </TableRow>
