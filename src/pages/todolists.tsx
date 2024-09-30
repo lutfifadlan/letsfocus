@@ -1082,7 +1082,7 @@ export default function TodolistsPage() {
                               }}
                               variant="outline"
                               numberOfMonths={1}
-                              className="min-w-[150px] border rounded-md p-2"
+                              className="min-w-[150px] border rounded-md ml-3 mt-2 justify-center items-center"
                             />
 
                             <Button
@@ -1092,7 +1092,7 @@ export default function TodolistsPage() {
                                   setDueDate(null);
                                   setIsCalendarPickerOpen(false);
                                 }}
-                                className="px-2 py-1"
+                                className="px-2 py-1 mt-2"
                               >
                                 <X size={16} />
                             </Button>
@@ -1239,7 +1239,7 @@ export default function TodolistsPage() {
                     }
                   >
                     <CalendarIcon size={12} className="mr-1" />
-                    {isSameDay(dueDate, new Date()) ? 'Today' : format(dueDate, 'PPP')}
+                    {isSameDay(dueDate, new Date()) ? 'Today' : isSameDay(dueDate, new Date(new Date().setDate(new Date().getDate() + 1))) ? 'Tomorrow' : format(dueDate, 'PPP')}
                   </Badge>
                 )}
               </div>
@@ -1596,59 +1596,65 @@ export default function TodolistsPage() {
                           <CalendarIcon size={16} />
                         </Button>
                       </PopoverTrigger>
-                      <PopoverContent className="w-72 text-sm">
-                        <div className="flex flex-col justify-center text-center items-center space-y-2">
+                      <PopoverContent className="w-52 text-sm">
+                        <div className="flex flex-col space-y-1">
                           <p className="text-center">Select Due Date</p>
-                          <CalendarDatePicker
-                            date={{
-                              from: existingTaskDueDate
-                                ? new Date(existingTaskDueDate)
-                                : new Date(),
-                              to: existingTaskDueDate
-                                ? new Date(existingTaskDueDate)
-                                : new Date(),
-                            }}
-                            onDateSelect={({ from }) => {
-                              setExistingTaskDueDate(from);
-                              updateTaskDueDate(task._id, from);
-                            }}
-                            variant="outline"
-                            numberOfMonths={1}
-                            className="min-w-[150px] border rounded-md ml-3 mt-2 justify-center items-center"
-                          />
-                          <div className="grid grid-cols-3 gap-2 mt-2">
-                            <Button
-                              variant="outline"
-                              onClick={() => {
-                                setExistingTaskDueDate(new Date());
-                                updateTaskDueDate(task._id, new Date());
-                              }}
-                              className="px-2 py-1"
-                            >
-                              Today
-                            </Button>
-                            <Button
-                              variant="outline"
-                              onClick={() => {
-                                const tomorrow = new Date();
-                                tomorrow.setDate(tomorrow.getDate() + 1);
-                                setExistingTaskDueDate(tomorrow);
-                                updateTaskDueDate(task._id, tomorrow);
-                              }}
-                              className="px-2 py-1"
-                            >
-                              Tomorrow
-                            </Button>
-                            <Button
-                              variant="outline"
-                              onClick={() => {
-                                setExistingTaskDueDate(null);
-                                updateTaskDueDate(task._id, null);
-                              }}
-                              className="px-2 py-1"
-                            >
-                              No Date
-                            </Button>
+                          <div className="flex items-center justify-center space-x-1">
+                            <div className="flex flex-col justify-center text-center items-center space-y-2">
+                              <div className="flex justify-center items-center space-x-1">
+                                <CalendarDatePicker
+                                  date={{
+                                    from: existingTaskDueDate
+                                      ? new Date(existingTaskDueDate)
+                                      : new Date(),
+                                    to: existingTaskDueDate
+                                      ? new Date(existingTaskDueDate)
+                                      : new Date(),
+                                  }}
+                                  onDateSelect={({ from }) => {
+                                    setExistingTaskDueDate(from);
+                                    updateTaskDueDate(task._id, from);
+                                  }}
+                                  variant="outline"
+                                  numberOfMonths={1}
+                                  className="min-w-[150px] border rounded-md ml-3 mt-2 justify-center items-center"
+                                />
+                                <Button
+                                  variant="outline"
+                                  onClick={() => {
+                                    setExistingTaskDueDate(null);
+                                    updateTaskDueDate(task._id, null);
+                                  }}
+                                  className="px-2 py-1 mt-2"
+                                >
+                                  <X size={16} />
+                                </Button>
+                              </div>
+                              <div className="grid grid-cols-2 gap-2 mt-2">
+                                <Button
+                                  variant="outline"
+                                  onClick={() => {
+                                    setExistingTaskDueDate(new Date());
+                                    updateTaskDueDate(task._id, new Date());
+                                  }}
+                                  className="px-2 py-1"
+                                >
+                                  Today
+                                </Button>
+                                <Button
+                                  variant="outline"
+                                  onClick={() => {
+                                    const tomorrow = new Date();
+                                    tomorrow.setDate(tomorrow.getDate() + 1);
+                                    setExistingTaskDueDate(tomorrow);
+                                    updateTaskDueDate(task._id, tomorrow);
+                                  }}
+                                  className="px-2 py-1"
+                                >
+                                  Tomorrow
+                                </Button>
+                              </div>
+                            </div>
                           </div>
                         </div>
                       </PopoverContent>
@@ -1726,9 +1732,18 @@ export default function TodolistsPage() {
                       </Badge>
                     ))}
                     {task.dueDate && (
-                      <Badge variant="outline">
+                      <Badge
+                        variant="outline"
+                        className={
+                          task.dueDate < new Date() && !isSameDay(task.dueDate, new Date())
+                            ? 'bg-red-400 text-black'
+                            : isSameDay(task.dueDate, new Date())
+                            ? 'bg-yellow-200 text-black'
+                            : 'bg-green-200 text-black'
+                        }
+                      >
                         <CalendarIcon size={12} className="mr-1" />
-                        {format(new Date(task.dueDate), 'PPP')}
+                        {isSameDay(task.dueDate, new Date()) ? 'Today' : isSameDay(task.dueDate, new Date(new Date().setDate(new Date().getDate() + 1))) ? 'Tomorrow' : format(task.dueDate, 'PPP')}
                       </Badge>
                     )}
                   </div>
