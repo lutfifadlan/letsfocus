@@ -77,19 +77,25 @@ export default function TodolistsPage() {
   });
 
   const [tasks, setTasks] = useState<Task[]>([]);
-  const [sortOptions, setSortOptions] = useState({
-    createdAt: true,
-    priority: false,
-    dueDate: false,
-    group: false,
-    title: false,
+  const [sortOptions, setSortOptions] = useState(() => {
+    const savedSortOptions = typeof window !== 'undefined' ? localStorage.getItem('sortOptions') : null;
+    return savedSortOptions ? JSON.parse(savedSortOptions) : {
+      createdAt: true,
+      priority: false,
+      dueDate: false,
+      group: false,
+      title: false,
+    };
   });
-  const [sortDirection, setSortDirection] = useState({
-    createdAt: 'desc',
-    priority: 'desc',
-    dueDate: 'desc',
-    group: 'desc',
-    title: 'desc',
+  const [sortDirection, setSortDirection] = useState(() => {
+    const savedSortDirection = typeof window !== 'undefined' ? localStorage.getItem('sortDirection') : null;
+    return savedSortDirection ? JSON.parse(savedSortDirection) : {
+      createdAt: 'desc',
+      priority: 'desc',
+      dueDate: 'desc',
+      group: 'desc',
+      title: 'desc',
+    };
   });
   const [newTask, setNewTask] = useState('');
   const [tags, setTags] = useState<string[]>([]);
@@ -118,6 +124,7 @@ export default function TodolistsPage() {
   const [isFetchLoading, setIsFetchLoading] = useState(false);
   const [priority, setPriority] = useState('');
   const [showPriorityDropdown, setShowPriorityDropdown] = useState(false);
+  const [isCurrentlyFocused, setIsCurrentlyFocused] = useState(false);
   
   const { status } = useSession();
   const { toast } = useToast();
@@ -133,97 +140,96 @@ export default function TodolistsPage() {
 
   const sortTasks = (tasks: Task[]) => {
     const sortedTasks = [...tasks];
-    const priorityOrder = { High: 1, Medium: 2, Low: 3 }; // Priorities with values
+    const priorityOrder = { High: 1, Medium: 2, Low: 3 };
   
-    (Object.keys(sortOptions) as Array<keyof typeof sortOptions>).forEach((key) => {
-      if (sortOptions[key]) {
-        const direction = sortDirection[key] === 'asc' ? 1 : -1;
+    const activeSortOption = Object.keys(sortOptions).find(key => sortOptions[key as keyof typeof sortOptions]) as keyof typeof sortOptions;
+    
+    if (activeSortOption) {
+      const direction = sortDirection[activeSortOption] === 'asc' ? 1 : -1;
   
-        switch (key) {
-          case 'createdAt':
-            sortedTasks.sort((a, b) =>
-              direction * (new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime())
-            );
-            break;
-          case 'priority':
-            sortedTasks.sort((a, b) => {
-              const aPriority = a.priority ? priorityOrder[a.priority as keyof typeof priorityOrder] : null;
-              const bPriority = b.priority ? priorityOrder[b.priority as keyof typeof priorityOrder] : null;
+      switch (activeSortOption) {
+        case 'createdAt':
+          sortedTasks.sort((a, b) =>
+            direction * (new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime())
+          );
+          break;
+        case 'priority':
+          sortedTasks.sort((a, b) => {
+            const aPriority = a.priority ? priorityOrder[a.priority as keyof typeof priorityOrder] : null;
+            const bPriority = b.priority ? priorityOrder[b.priority as keyof typeof priorityOrder] : null;
   
-              // Tasks with priority are prioritized
-              if (aPriority !== null && bPriority === null) return -1; // Task with priority first
-              if (aPriority === null && bPriority !== null) return 1;  // Task without priority last
+            if (aPriority !== null && bPriority === null) return -1;
+            if (aPriority === null && bPriority !== null) return 1;
   
-              // If both tasks have priority, compare them
-              if (aPriority !== null && bPriority !== null) {
-                return direction * (aPriority - bPriority);
-              }
+            if (aPriority !== null && bPriority !== null) {
+              return direction * (aPriority - bPriority);
+            }
   
-              // If neither task has priority, treat them as equal
-              return 0;
-            });
-            break;
-          case 'dueDate':
-            sortedTasks.sort((a, b) => {
-              const aDueDate = a.dueDate ? new Date(a.dueDate).getTime() : null;
-              const bDueDate = b.dueDate ? new Date(b.dueDate).getTime() : null;
+            return 0;
+          });
+          break;
+        case 'dueDate':
+          sortedTasks.sort((a, b) => {
+            const aDueDate = a.dueDate ? new Date(a.dueDate).getTime() : null;
+            const bDueDate = b.dueDate ? new Date(b.dueDate).getTime() : null;
   
-              // Tasks with due dates are prioritized
-              if (aDueDate !== null && bDueDate === null) return -1; // Task with due date first
-              if (aDueDate === null && bDueDate !== null) return 1;  // Task without due date last
+            if (aDueDate !== null && bDueDate === null) return -1;
+            if (aDueDate === null && bDueDate !== null) return 1;
   
-              // If both tasks have due dates, compare them
-              if (aDueDate !== null && bDueDate !== null) {
-                return direction * (aDueDate - bDueDate);
-              }
+            if (aDueDate !== null && bDueDate !== null) {
+              return direction * (aDueDate - bDueDate);
+            }
   
-              // If neither task has a due date, treat them as equal
-              return 0;
-            });
-            break;
-          case 'group':
-            sortedTasks.sort((a, b) => {
-              const aGroup = a.group ? a.group : null;
-              const bGroup = b.group ? b.group : null;
+            return 0;
+          });
+          break;
+        case 'group':
+          sortedTasks.sort((a, b) => {
+            const aGroup = a.group ? a.group : null;
+            const bGroup = b.group ? b.group : null;
   
-              if (aGroup && !bGroup) return -1; // Tasks with groups first
-              if (!aGroup && bGroup) return 1;  // Tasks without groups last
+            if (aGroup && !bGroup) return -1;
+            if (!aGroup && bGroup) return 1;
   
-              if (aGroup && bGroup) {
-                return direction * aGroup.localeCompare(bGroup);
-              }
+            if (aGroup && bGroup) {
+              return direction * aGroup.localeCompare(bGroup);
+            }
   
-              return 0;
-            });
-            break;
-          case 'title':
-            sortedTasks.sort((a, b) =>
-              direction * a.title.localeCompare(b.title)
-            );
-            break;
-          default:
-            break;
-        }
+            return 0;
+          });
+          break;
+        case 'title':
+          sortedTasks.sort((a, b) =>
+            direction * a.title.localeCompare(b.title)
+          );
+          break;
+        default:
+          break;
       }
-    });
+    }
   
     return sortedTasks;
-  };  
+  };
 
   const handleSortChange = (key: keyof typeof sortOptions) => {
-    setSortOptions((prev) => {
+    setSortOptions((prev: typeof sortOptions) => {
       const newSortOptions = Object.keys(prev).reduce((acc, currKey) => {
         acc[currKey as keyof typeof sortOptions] = currKey === key ? true : false;
         return acc;
       }, {} as typeof sortOptions);
-
+  
+      localStorage.setItem('sortOptions', JSON.stringify(newSortOptions));
       return newSortOptions;
     });
-
-    setSortDirection((prev) => ({
-      ...prev,
-      [key]: prev[key] === 'asc' ? 'desc' : 'asc',
-    }));
+  
+    setSortDirection((prev: typeof sortDirection) => {
+      const newSortDirection = {
+        ...prev,
+        [key]: prev[key] === 'asc' ? 'desc' : 'asc',
+      };
+      localStorage.setItem('sortDirection', JSON.stringify(newSortDirection));
+      return newSortDirection;
+    });
   };
 
   const fetchTasksAndGroups = async () => {
@@ -325,7 +331,15 @@ export default function TodolistsPage() {
           headers: {
             'Content-Type': 'application/json',
           },
-          body: JSON.stringify({ title: newTask, tags, group: selectedGroup, description, dueDate, priority }),
+          body: JSON.stringify({
+            title: newTask,
+            tags,
+            group: selectedGroup,
+            description,
+            dueDate,
+            priority,
+            isCurrentlyFocused,
+          }),
         });
         const data = await response.json();
 
@@ -691,6 +705,45 @@ export default function TodolistsPage() {
       toast({
         title: 'Error',
         description: 'Failed to update task group.',
+        variant: 'destructive',
+        duration: 3000,
+      });
+    }
+    setIsLoading(false);
+  };
+
+  const updateTaskCurrentlyFocused = async (taskId: string, isCurrentlyFocused: boolean) => {
+    setIsLoading(true);
+    try {
+      const response = await fetch(`/api/tasks/${taskId}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ isCurrentlyFocused }),
+      });
+  
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Failed to update task');
+      }
+  
+      setTasks((prevTasks) =>
+        prevTasks.map((task) =>
+          task._id === taskId ? { ...task, isCurrentlyFocused } : task
+        )
+      );
+  
+      toast({
+        title: 'Task Updated',
+        description: `Task is ${isCurrentlyFocused ? 'now' : 'no longer'} marked as currently focused.`,
+        duration: 3000,
+      });
+    } catch (error) {
+      console.error('Failed to update task:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to update task.',
         variant: 'destructive',
         duration: 3000,
       });
@@ -1155,11 +1208,38 @@ export default function TodolistsPage() {
     setShowBulkActions(false);
   };
 
+  const bulkUpdateCurrentlyFocused = async (isCurrentlyFocused: boolean) => {
+    setIsLoading(true);
+    try {
+      const response = await fetch('/api/tasks/bulk', {
+        method: 'PUT',
+        body: JSON.stringify({ taskIds: selectedTaskIds, isCurrentlyFocused }),
+        headers: { 'Content-Type': 'application/json' },
+      });
+      if (!response.ok) throw new Error('Failed to bulk update currently working status');
+      setTasks((prevTasks) =>
+        prevTasks.map((task) =>
+          selectedTaskIds.includes(task._id) ? { ...task, isCurrentlyFocused } : task
+        )
+      );
+      setSelectedTaskIds([]);
+    } catch (error) {
+      console.error(error);
+    }
+    setIsLoading(false);
+    setShowBulkActions(false);
+  };
+
   useEffect(() => {
     if (status === 'authenticated') {
       setIsFetchLoading(true);
-      fetchTasksAndGroups();
-      setIsFetchLoading(false);
+      fetchTasksAndGroups().then(() => {
+        setTasks((prevTasks) => {
+          const sortedTasks = sortTasks(prevTasks);
+          return sortedTasks ? sortedTasks : prevTasks;
+        });
+        setIsFetchLoading(false);
+      });
     }
   }, [status]);
 
@@ -1257,14 +1337,24 @@ export default function TodolistsPage() {
         <CardContent>
           <div className="flex flex-col gap-0 mb-2">
             <div className={`flex flex-row gap-2 ${isFileTextButtonClicked ? 'items-start justify-start' : 'items-center justify-center'}`}>
-              <Button
-                variant="ghost"
-                size="icon"
-                aria-label="Complete Task"
-                className="hover:bg-transparent hover:cursor-default"
-              >
-                <Rocket size={16} />
-              </Button>
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => setIsCurrentlyFocused(!isCurrentlyFocused)}
+                      aria-label="Toggle Currently Focused"
+                      className={`w-auto px-1.5 ${isCurrentlyFocused ? 'bg-yellow-100 dark:bg-yellow-900' : ''}`}
+                    >
+                      <Rocket size={16} />
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    { isCurrentlyFocused ? <p>Remove focus</p> : <p>Let&apos;s focus</p> }
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
               <div className="flex flex-col gap-2 w-full text-sm">
                 <Input
                   placeholder="Add task"
@@ -1948,6 +2038,24 @@ export default function TodolistsPage() {
                       </TooltipContent>
                     </Tooltip>
                   </TooltipProvider>
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => bulkUpdateCurrentlyFocused(true)}
+                          aria-label="Mark as Currently Focused"
+                          disabled={selectedTaskIds.length === 0}
+                        >
+                          <Rocket size={16} />
+                        </Button>
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        <p>Let&apos;s focus</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
                 </div>
               </div>
             )}
@@ -2042,6 +2150,29 @@ export default function TodolistsPage() {
                         </Tooltip>
                       </TooltipProvider>
                       : null
+                    }
+
+                    {
+                      task.isCurrentlyFocused && (
+                        <TooltipProvider>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                onClick={() => updateTaskCurrentlyFocused(task._id, false)}
+                                aria-label="Currently Focused"
+                                className="w-auto px-1 bg-yellow-100 dark:bg-yellow-900"
+                              >
+                                <Rocket size={16} />
+                              </Button>
+                            </TooltipTrigger>
+                            <TooltipContent>
+                              {task.isCurrentlyFocused ? <p>Remove focus</p> : <p>Let&apos;s focus</p>}
+                            </TooltipContent>
+                          </Tooltip>
+                        </TooltipProvider>
+                      )
                     }
 
                     <div className="flex flex-col gap-1 w-full">
@@ -2157,6 +2288,29 @@ export default function TodolistsPage() {
                         </Tooltip>
                       </TooltipProvider>
                     : null}
+
+                    {
+                      !task.isCurrentlyFocused && (
+                        <TooltipProvider>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                onClick={() => updateTaskCurrentlyFocused(task._id, !task.isCurrentlyFocused)}
+                                aria-label="Toggle Currently Focused"
+                                className={`w-auto px-1.5 ${task.isCurrentlyFocused ? 'bg-yellow-100 dark:bg-yellow-900' : ''}`}
+                              >
+                                <Rocket size={16} />
+                              </Button>
+                            </TooltipTrigger>
+                            <TooltipContent>
+                              {task.isCurrentlyFocused ? <p>Remove focus</p> : <p>Let&apos;s focus</p>}
+                            </TooltipContent>
+                          </Tooltip>
+                        </TooltipProvider>
+                      )
+                    }
 
                     <TooltipProvider>
                       <Tooltip>
@@ -2464,7 +2618,7 @@ export default function TodolistsPage() {
                           target.style.height = `${target.scrollHeight}px`;
                         }}
                       />
-                      <div className="flex flex-row gap-2 mt-1">
+                      <div className="flex justify-end items-center gap-2 mt-1">
                         <Button
                           variant="ghost"
                           size="icon"
