@@ -32,6 +32,7 @@ const TaskSchema = new mongoose.Schema({
   ignoredAt: { type: Date, default: null },
   completionStatus: { type: String },
   priority: { type: String, default: null },
+  isCurrentlyFocused: { type: Boolean, default: false },
 }, { timestamps: true });
 
 export const User = mongoose.models.User || mongoose.model('User', UserSchema);

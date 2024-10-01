@@ -15,6 +15,7 @@ export interface Task {
   ignoredAt: Date | null;
   completionStatus?: string;
   priority?: string;
+  isCurrentlyFocused?: boolean;
 }
 
 export interface Habit {

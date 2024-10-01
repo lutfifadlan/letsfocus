@@ -41,9 +41,23 @@ export default async function handler(
 
     case 'PUT':
       try {
-        const { title, status, isDeleted, description, tags, group, dueDate, priority } = req.body;
+        const { title, status, isDeleted, description, tags, group, dueDate, priority, isCurrentlyFocused } = req.body;
 
-        const updateFields: Partial<{ title: string; status: string; isDeleted: boolean; description: string; tags: string[]; group: string; dueDate: Date; completedAt: Date; ignoredAt: Date; deletedAt: Date; priority: string }> = {};
+        const updateFields: Partial<{
+          title: string;
+          status: string;
+          isDeleted: boolean;
+          description: string;
+          tags: string[];
+          group: string;
+          dueDate: Date;
+          completedAt: Date;
+          ignoredAt: Date;
+          deletedAt: Date;
+          priority: string;
+          isCurrentlyFocused: boolean;
+        }> = {};
+
         if (title !== undefined) updateFields.title = title;
         if (status !== undefined) updateFields.status = status;
         if (isDeleted !== undefined) updateFields.isDeleted = isDeleted;
@@ -52,6 +66,7 @@ export default async function handler(
         if (group !== undefined) updateFields.group = group;
         if (dueDate !== undefined) updateFields.dueDate = dueDate;
         if (priority !== undefined) updateFields.priority = priority;
+        if (isCurrentlyFocused !== undefined) updateFields.isCurrentlyFocused = isCurrentlyFocused;
 
         if (status === 'COMPLETED') {
           updateFields.completedAt = new Date();
