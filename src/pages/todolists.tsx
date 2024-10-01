@@ -12,9 +12,11 @@ import { Task } from '@/interfaces';
 import Layout from '@/components/layout';
 import {
   Plus, Trash, Tag, Folder, PlusCircle, Edit, FileText, Save, X,
-  CalendarIcon, Rocket, SquareCheck, Trash2, ChevronsUp, ChevronUp,
-  ChevronDown, Flag, CalendarArrowDown, ArrowDownUp,
-  CopyCheck
+  CalendarIcon, SquareCheck, Trash2, ChevronsUp, ChevronUp,
+  ChevronDown, Flag, CalendarArrowDown, ArrowDownUp, CopyCheck,
+  MinusCircle,
+  Rocket,
+  CircleMinus
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { ToastAction } from '@/components/ui/toast';
@@ -41,6 +43,12 @@ import {
   AlertDialogCancel,
 } from '@/components/ui/alert-dialog';
 import { Checkbox } from '@/components/ui/checkbox';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 
 const FormSchema = z.object({
   calendar: z.object({
@@ -78,10 +86,10 @@ export default function TodolistsPage() {
   });
   const [sortDirection, setSortDirection] = useState({
     createdAt: 'desc',
-    priority: 'asc',
-    dueDate: 'asc',
-    group: 'asc',
-    title: 'asc',
+    priority: 'desc',
+    dueDate: 'desc',
+    group: 'desc',
+    title: 'desc',
   });
   const [newTask, setNewTask] = useState('');
   const [tags, setTags] = useState<string[]>([]);
@@ -96,7 +104,6 @@ export default function TodolistsPage() {
   const [taskDescription, setTaskDescription] = useState<string>('');
   const [isFileTextButtonClicked, setIsFileTextButtonClicked] = useState(false);
   const [taskTitle, setTaskTitle] = useState<string>('');
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [isLoading, setIsLoading] = useState(false);
   const [dueDate, setDueDate] = useState<Date | null>(null);
   const [isCalendarPickerOpen, setIsCalendarPickerOpen] = useState(false);
@@ -125,12 +132,12 @@ export default function TodolistsPage() {
 
   const sortTasks = (tasks: Task[]) => {
     const sortedTasks = [...tasks];
-    const priorityOrder = { High: 1, Medium: 2, Low: 3, None: 4 };
-
+    const priorityOrder = { High: 1, Medium: 2, Low: 3 }; // Priorities with values
+  
     (Object.keys(sortOptions) as Array<keyof typeof sortOptions>).forEach((key) => {
       if (sortOptions[key]) {
         const direction = sortDirection[key] === 'asc' ? 1 : -1;
-
+  
         switch (key) {
           case 'createdAt':
             sortedTasks.sort((a, b) =>
@@ -138,21 +145,55 @@ export default function TodolistsPage() {
             );
             break;
           case 'priority':
-            sortedTasks.sort((a, b) =>
-              direction *
-              ((priorityOrder[a.priority as keyof typeof priorityOrder] ?? 4) -
-                (priorityOrder[b.priority as keyof typeof priorityOrder] ?? 4))
-            );
+            sortedTasks.sort((a, b) => {
+              const aPriority = a.priority ? priorityOrder[a.priority as keyof typeof priorityOrder] : null;
+              const bPriority = b.priority ? priorityOrder[b.priority as keyof typeof priorityOrder] : null;
+  
+              // Tasks with priority are prioritized
+              if (aPriority !== null && bPriority === null) return -1; // Task with priority first
+              if (aPriority === null && bPriority !== null) return 1;  // Task without priority last
+  
+              // If both tasks have priority, compare them
+              if (aPriority !== null && bPriority !== null) {
+                return direction * (aPriority - bPriority);
+              }
+  
+              // If neither task has priority, treat them as equal
+              return 0;
+            });
             break;
           case 'dueDate':
-            sortedTasks.sort((a, b) =>
-              direction * ((new Date(a.dueDate || 0).getTime()) - (new Date(b.dueDate || 0).getTime()))
-            );
+            sortedTasks.sort((a, b) => {
+              const aDueDate = a.dueDate ? new Date(a.dueDate).getTime() : null;
+              const bDueDate = b.dueDate ? new Date(b.dueDate).getTime() : null;
+  
+              // Tasks with due dates are prioritized
+              if (aDueDate !== null && bDueDate === null) return -1; // Task with due date first
+              if (aDueDate === null && bDueDate !== null) return 1;  // Task without due date last
+  
+              // If both tasks have due dates, compare them
+              if (aDueDate !== null && bDueDate !== null) {
+                return direction * (aDueDate - bDueDate);
+              }
+  
+              // If neither task has a due date, treat them as equal
+              return 0;
+            });
             break;
           case 'group':
-            sortedTasks.sort((a, b) =>
-              direction * (a.group?.localeCompare(b.group ?? '') ?? 0)
-            );
+            sortedTasks.sort((a, b) => {
+              const aGroup = a.group ? a.group : null;
+              const bGroup = b.group ? b.group : null;
+  
+              if (aGroup && !bGroup) return -1; // Tasks with groups first
+              if (!aGroup && bGroup) return 1;  // Tasks without groups last
+  
+              if (aGroup && bGroup) {
+                return direction * aGroup.localeCompare(bGroup);
+              }
+  
+              return 0;
+            });
             break;
           case 'title':
             sortedTasks.sort((a, b) =>
@@ -164,12 +205,11 @@ export default function TodolistsPage() {
         }
       }
     });
-
+  
     return sortedTasks;
-  };
+  };  
 
   const handleSortChange = (key: keyof typeof sortOptions) => {
-    // Set all other sort options to false, and toggle the selected one
     setSortOptions((prev) => {
       const newSortOptions = Object.keys(prev).reduce((acc, currKey) => {
         acc[currKey as keyof typeof sortOptions] = currKey === key ? true : false;
@@ -179,7 +219,6 @@ export default function TodolistsPage() {
       return newSortOptions;
     });
 
-    // Toggle the sort direction for the selected option
     setSortDirection((prev) => ({
       ...prev,
       [key]: prev[key] === 'asc' ? 'desc' : 'asc',
@@ -514,7 +553,7 @@ export default function TodolistsPage() {
   };
 
   const deleteSelectedTasks = async () => {
-    if (selectedTaskIds.length === 0) return; // Prevent deletion if no tasks are selected
+    if (selectedTaskIds.length === 0) return;
 
     setIsLoading(true);
     const tasksToDelete = tasks.filter((task) =>
@@ -522,10 +561,8 @@ export default function TodolistsPage() {
     );
     if (tasksToDelete.length === 0) return;
 
-    // Save the deleted task IDs
     setLastDeletedTaskIds(selectedTaskIds);
 
-    // Set isDeleted: true in the frontend state
     setTasks((prevTasks) =>
       prevTasks.filter((task) => !selectedTaskIds.includes(task._id))
     );
@@ -565,7 +602,6 @@ export default function TodolistsPage() {
         duration: 3000,
       });
 
-      // Revert the isDeleted flag
       setTasks((prevTasks) =>
         prevTasks.map((task) =>
           selectedTaskIds.includes(task._id)
@@ -894,7 +930,6 @@ export default function TodolistsPage() {
     setIsLoading(false);
   };
 
-  // Bulk assign group
   const bulkAssignGroup = async (groupName: string) => {
     setIsLoading(true);
     try {
@@ -914,9 +949,9 @@ export default function TodolistsPage() {
       console.error(error);
     }
     setIsLoading(false);
+    setShowBulkActions(false);
   };
 
-  // Bulk assign tags
   const bulkAssignTags = async (newTags: string[]) => {
     setIsLoading(true);
     try {
@@ -936,9 +971,9 @@ export default function TodolistsPage() {
       console.error(error);
     }
     setIsLoading(false);
+    setShowBulkActions(false);
   };
 
-  // Bulk assign due date
   const bulkAssignDueDate = async (dueDate: Date | null) => {
     setIsLoading(true);
     try {
@@ -958,9 +993,9 @@ export default function TodolistsPage() {
       console.error(error);
     }
     setIsLoading(false);
+    setShowBulkActions(false);
   };
 
-  // Bulk assign priority
   const bulkAssignPriority = async (priority: string) => {
     setIsLoading(true);
     try {
@@ -980,9 +1015,9 @@ export default function TodolistsPage() {
       console.error(error);
     }
     setIsLoading(false);
+    setShowBulkActions(false);
   };
 
-  // Bulk mark as completed
   const bulkMarkAsCompleted = async () => {
     setIsLoading(true);
     try {
@@ -997,14 +1032,67 @@ export default function TodolistsPage() {
           selectedTaskIds.includes(task._id) ? { ...task, status: 'COMPLETED' } : task
         )
       );
+
+      const totalTasks =  incompleteTasks.length;
+      const completedTasks = selectedTaskIds.length;
+
+      if (completedTasks === totalTasks) {
+        for (let i = 0; i < 5; i++) {
+          setTimeout(() => {
+            confetti({
+              particleCount: 400,
+              spread: 180,
+              startVelocity: 60,
+              gravity: 0.5,
+              scalar: 1.8,
+              ticks: 200,
+              origin: { x: Math.random(), y: Math.random() - 0.2 },
+              colors: ['#f00', '#0f0', '#00f', '#ff0', '#0ff', '#f0f'],
+            });
+          }, i * 500);
+        }
+  
+        confetti({
+          particleCount: 600,
+          spread: 360,
+          startVelocity: 50,
+          gravity: 0.4,
+          ticks: 300,
+          origin: { y: 0.5 },
+          scalar: 2.2,
+          shapes: ['circle', 'square'],
+        });
+  
+        confetti({
+          particleCount: 800,
+          spread: 360,
+          startVelocity: 100,
+          gravity: 0.6,
+          ticks: 400,
+          origin: { y: 0.7 },
+          scalar: 2,
+          colors: ['#ff69b4', '#ff4500', '#32cd32', '#1e90ff'],
+        });
+      } else if (completedTasks > 0) {
+        confetti({
+          particleCount: 200,
+          spread: 80,
+          origin: { y: 0.6 },
+          scalar: 1.5,
+          angle: 90,
+          gravity: 0.6,
+          ticks: 200,
+        });
+      }
+
       setSelectedTaskIds([]);
     } catch (error) {
       console.error(error);
     }
     setIsLoading(false);
+    setShowBulkActions(false);
   };
 
-  // Bulk mark as ignored
   const bulkMarkAsIgnored = async () => {
     setIsLoading(true);
     try {
@@ -1024,6 +1112,7 @@ export default function TodolistsPage() {
       console.error(error);
     }
     setIsLoading(false);
+    setShowBulkActions(false);
   };
 
   useEffect(() => {
@@ -1056,97 +1145,73 @@ export default function TodolistsPage() {
           <div className="flex justify-between items-center space-x-1">
             <CardTitle className="text-center text-2xl">To-Do Lists</CardTitle>
             <div className="flex justify-center items-center space-x-1 text-sm">
-              <Popover>
-                <PopoverTrigger asChild>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    aria-label="Sort Tasks"
-                  >
-                    <ArrowDownUp size={16} />
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent className="w-48 p-2 text-sm">
-                  <p className="mb-2">Sort By</p>
-                  <div className="space-y-2">
-                    <div className="flex items-center space-x-2">
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        aria-label="Sort by createdAt"
-                        onClick={() => handleSortChange('createdAt')}
-                      >
-                        {sortDirection['createdAt'] === 'asc' ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
-                        <CalendarArrowDown size={16} />
-                      </Button>
-                      <span>Date Created</span>
-                    </div>
-                    <div className="flex items-center space-x-2">
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        aria-label="Sort by Priority"
-                        onClick={() => handleSortChange('priority')}
-                      >
-                        {sortDirection['priority'] === 'asc' ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
-                        <Flag size={16} />
-                      </Button>
-                      <span>Priority</span>
-                    </div>
-                    <div className="flex items-center space-x-2">
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        aria-label="Sort by Due Date"
-                        onClick={() => handleSortChange('dueDate')}
-                      >
-                        {sortDirection['dueDate'] === 'asc' ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
-                        <CalendarIcon size={16} />
-                      </Button>
-                      <span>Due Date</span>
-                    </div>
-                    <div className="flex items-center space-x-2">
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        aria-label="Sort by Group"
-                        onClick={() => handleSortChange('group')}
-                      >
-                        {sortDirection['group'] === 'asc' ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
-                        <Folder size={16} />
-                      </Button>
-                      <span>Group</span>
-                    </div>
-                    <div className="flex items-center space-x-2">
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        aria-label="Sort by Title"
-                        onClick={() => handleSortChange('title')}
-                      >
-                        {sortDirection['title'] === 'asc' ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
-                        <FileText size={16} />
-                      </Button>
-                      <span>Title</span>
-                    </div>
-                  </div>
-                </PopoverContent>
-              </Popover>
-              <Button
-                onClick={() => setShowBulkActions(!showBulkActions)}
-                aria-label={showBulkActions ? 'Hide Bulk Actions' : 'Show Bulk Actions'}
-                variant="ghost"
-                size="icon"
-                disabled={incompleteTasks.length === 0}
-              >
-                <CopyCheck size={16} />
-              </Button>
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger>
+                    <Popover>
+                      <PopoverTrigger asChild>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          aria-label="Sort Tasks"
+                        >
+                          <ArrowDownUp size={16} />
+                        </Button>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-48 p-2 text-sm">
+                        <p className="mb-2">Sort By</p>
+                        <div className="space-y-2">
+                          {Object.entries(sortOptions).map(([key]) => (
+                            <div key={key} className="flex items-center space-x-2">
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                aria-label={`Sort by ${key}`}
+                                onClick={() => handleSortChange(key as keyof typeof sortOptions)}
+                              >
+                                {sortDirection[key as keyof typeof sortDirection] === 'asc' ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+                                {key === 'createdAt' && <CalendarArrowDown size={16} />}
+                                {key === 'priority' && <Flag size={16} />}
+                                {key === 'dueDate' && <CalendarIcon size={16} />}
+                                {key === 'group' && <Folder size={16} />}
+                                {key === 'title' && <FileText size={16} />}
+                              </Button>
+                              <span>{key.charAt(0).toUpperCase() + key.slice(1)}</span>
+                            </div>
+                          ))}
+                        </div>
+                      </PopoverContent>
+                    </Popover>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>Sort tasks</p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      onClick={() => setShowBulkActions(!showBulkActions)}
+                      aria-label={showBulkActions ? 'Hide Bulk Actions' : 'Show Bulk Actions'}
+                      variant="ghost"
+                      size="icon"
+                      disabled={incompleteTasks.length === 0}
+                    >
+                      <CopyCheck size={16} />
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>{showBulkActions ? 'Hide bulk actions' : 'Show bulk actions'}</p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
             </div>
           </div>
         </CardHeader>
         <CardContent>
           <div className="flex flex-col gap-0 mb-2">
-            <div className={`flex flex-row gap-1 ${isFileTextButtonClicked ? 'items-start justify-start' : 'items-center justify-center'}`}>
+            <div className={`flex flex-row gap-2 ${isFileTextButtonClicked ? 'items-start justify-start' : 'items-center justify-center'}`}>
               <Button
                 variant="ghost"
                 size="icon"
@@ -1157,7 +1222,7 @@ export default function TodolistsPage() {
               </Button>
               <div className="flex flex-col gap-2 w-full text-sm">
                 <Input
-                  placeholder="Task name"
+                  placeholder="Add task"
                   className="w-full shadow-none border-none text-sm flex-1"
                   type="text"
                   value={newTask}
@@ -1168,7 +1233,7 @@ export default function TodolistsPage() {
                     }
                   }}
                   aria-label="New Task"
-                  autoFocus // Enable auto-focus
+                  autoFocus
                 />
                 {isFileTextButtonClicked && (
                   <Textarea
@@ -1188,296 +1253,352 @@ export default function TodolistsPage() {
                   />
                 )}
               </div>
-              <Button
-                onClick={() => setIsFileTextButtonClicked(!isFileTextButtonClicked)}
-                aria-label="Add Description"
-                variant="ghost"
-                size="icon"
-              >
-                <FileText size={16} />
-              </Button>
-              <Popover open={isGroupPopoverOpen} onOpenChange={setIsGroupPopoverOpen}>
-                <PopoverTrigger asChild>
-                  <Button aria-label="Select Group" variant="ghost" size="icon">
-                    <Folder size={16} />
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent className="w-64">
-                  <div className="space-y-2 text-sm">
-                    <p>Select or create a group</p>
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
                     <Button
-                      variant={selectedGroup === null ? "secondary" : "ghost"}
-                      className="w-full justify-start text-sm"
-                      onClick={() => setSelectedGroup(null)}
+                      onClick={() => setIsFileTextButtonClicked(!isFileTextButtonClicked)}
+                      aria-label="Add Description"
+                      variant="ghost"
+                      size="icon"
+                      className="w-auto px-1.5"
                     >
-                      No Group
+                      <FileText size={16}/>
                     </Button>
-                    {groups.map((group) => (
-                      <div key={group._id} className="flex items-center justify-between text-sm">
-                        {editingGroup === group.name ? (
-                          <Input
-                            type="text"
-                            value={newGroupName}
-                            onChange={(e) => setNewGroupName(e.target.value)}
-                            onBlur={() => {
-                              if (newGroupName.trim() && newGroupName !== group.name) {
-                                updateGroup(group._id, newGroupName);
-                              }
-                              setEditingGroup(null);
-                              setNewGroupName('');
-                              setIsGroupPopoverOpen(false);
-                            }}
-                            onKeyDown={(e) => {
-                              if (e.key === 'Enter') {
-                                if (newGroupName.trim() && newGroupName !== group.name) {
-                                  updateGroup(group._id, newGroupName);
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>Add description</p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger>
+                    <Popover open={isGroupPopoverOpen} onOpenChange={setIsGroupPopoverOpen}>
+                      <PopoverTrigger asChild>
+                        <Button aria-label="Select Group" variant="ghost" size="icon" className="w-auto px-1.5">
+                          <Folder size={16}/>
+                        </Button>
+                      </PopoverTrigger>
+                      <TooltipContent>
+                        <p>Select or create group</p>
+                      </TooltipContent>
+                      <PopoverContent className="w-64">
+                        <div className="space-y-2 text-sm">
+                          <p>Select or create a group</p>
+                          <Button
+                            variant={selectedGroup === null ? "secondary" : "ghost"}
+                            className="w-full justify-start text-sm"
+                            onClick={() => setSelectedGroup(null)}
+                          >
+                            No Group
+                          </Button>
+                          {groups.map((group) => (
+                            <div key={group._id} className="flex items-center justify-between text-sm">
+                              {editingGroup === group.name ? (
+                                <Input
+                                  type="text"
+                                  value={newGroupName}
+                                  onChange={(e) => setNewGroupName(e.target.value)}
+                                  onBlur={() => {
+                                    if (newGroupName.trim() && newGroupName !== group.name) {
+                                      updateGroup(group._id, newGroupName);
+                                    }
+                                    setEditingGroup(null);
+                                    setNewGroupName('');
+                                    setIsGroupPopoverOpen(false);
+                                  }}
+                                  onKeyDown={(e) => {
+                                    if (e.key === 'Enter') {
+                                      if (newGroupName.trim() && newGroupName !== group.name) {
+                                        updateGroup(group._id, newGroupName);
+                                      }
+                                      setEditingGroup(null);
+                                      setNewGroupName('');
+                                      setIsGroupPopoverOpen(false);
+                                    }
+                                  }}
+                                  autoFocus
+                                />
+                              ) : (
+                                <>
+                                  <Button
+                                    variant={selectedGroup === group.name ? "secondary" : "ghost"}
+                                    className="w-full justify-start"
+                                    onClick={() => setSelectedGroup(group.name)}
+                                  >
+                                    {group.name}
+                                  </Button>
+                                  <Button
+                                    size="icon"
+                                    variant="ghost"
+                                    onClick={() => {
+                                      setEditingGroup(group.name);
+                                      setNewGroupName(group.name);
+                                    }}
+                                  >
+                                    <Edit size={12} />
+                                  </Button>
+                                </>
+                              )}
+                              <Button size="icon" variant="ghost" onClick={() => deleteGroup(group._id)}>
+                                <Trash size={12} />
+                              </Button>
+                            </div>
+                          ))}
+                          <div className="flex items-center space-x-2 text-sm">
+                            <Input
+                              type="text"
+                              placeholder="New group name"
+                              value={newGroupName}
+                              onChange={(e) => setNewGroupName(e.target.value)}
+                              onKeyDown={(e) => {
+                                if (e.key === 'Enter' && newGroupName.trim()) {
+                                  createGroup(newGroupName);
+                                  setNewGroupName('');
                                 }
-                                setEditingGroup(null);
-                                setNewGroupName('');
-                                setIsGroupPopoverOpen(false);
-                              }
-                            }}
-                            autoFocus
-                          />
-                        ) : (
-                          <>
-                            <Button
-                              variant={selectedGroup === group.name ? "secondary" : "ghost"}
-                              className="w-full justify-start"
-                              onClick={() => setSelectedGroup(group.name)}
-                            >
-                              {group.name}
-                            </Button>
+                              }}
+                              autoFocus
+                            />
                             <Button
                               size="icon"
-                              variant="ghost"
                               onClick={() => {
-                                setEditingGroup(group.name);
-                                setNewGroupName(group.name);
+                                if (newGroupName.trim()) {
+                                  createGroup(newGroupName);
+                                  setNewGroupName('');
+                                }
                               }}
                             >
-                              <Edit size={12} />
+                              <PlusCircle size={16} />
                             </Button>
-                          </>
-                        )}
-                        <Button size="icon" variant="ghost" onClick={() => deleteGroup(group._id)}>
-                          <Trash size={12} />
+                          </div>
+                        </div>
+                      </PopoverContent>
+                    </Popover>
+                  </TooltipTrigger>
+                </Tooltip>
+              </TooltipProvider>
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger>
+                    <Popover>
+                      <PopoverTrigger asChild>
+                        <Button aria-label="Add Tags" variant="ghost" size="icon" className="w-auto px-1.5">
+                          <Tag size={16}/>
                         </Button>
-                      </div>
-                    ))}
-                    <div className="flex items-center space-x-2 text-sm">
-                      <Input
-                        type="text"
-                        placeholder="New group name"
-                        value={newGroupName}
-                        onChange={(e) => setNewGroupName(e.target.value)}
-                        onKeyDown={(e) => {
-                          if (e.key === 'Enter' && newGroupName.trim()) {
-                            createGroup(newGroupName);
-                            setNewGroupName('');
-                          }
-                        }}
-                        autoFocus
-                      />
-                      <Button
-                        size="icon"
-                        onClick={() => {
-                          if (newGroupName.trim()) {
-                            createGroup(newGroupName);
-                            setNewGroupName('');
-                          }
-                        }}
-                      >
-                        <PlusCircle size={16} />
-                      </Button>
-                    </div>
-                  </div>
-                </PopoverContent>
-              </Popover>
-              <Popover>
-                <PopoverTrigger asChild>
-                  <Button aria-label="Add Tags" variant="ghost" size="icon">
-                    <Tag size={16} />
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent className="w-64 text-sm">
-                  <div className="space-y-2">
-                    <div className="font-medium">Add tags</div>
-                    <InputTags
-                      type="text"
-                      value={tags}
-                      onChange={(value) => setTags(value as string[])}
-                      placeholder="Use enter or comma to add tag"
-                      className="w-full text-xs"
-                      autoFocus
-                    />
-                  </div>
-                </PopoverContent>
-              </Popover>
-              <Popover open={isCalendarPickerOpen} onOpenChange={setIsCalendarPickerOpen}>
-                <PopoverTrigger asChild>
-                  <Button
-                    onClick={() => setIsCalendarPickerOpen(!isCalendarPickerOpen)}
-                    aria-label="Add Due Date"
-                    variant="ghost"
-                    size="icon"
-                  >
-                    <CalendarIcon size={16} />
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent className="w-52 text-sm">
-                  <div className="flex flex-col space-y-1">
-                    <p className="flex justify-start items-center">Select Due Date</p>
-                    <div className="flex items-center justify-center space-x-1">
-                      <Form {...form}>
-                        <form
-                          onSubmit={form.handleSubmit((data) => {
-                            setDueDate(data.datePicker.to);
-                            setIsCalendarPickerOpen(false);
-                          })}
-                          className="flex flex-col justify-center text-center items-center space-y-2"
+                      </PopoverTrigger>
+                      <PopoverContent className="w-64 text-sm">
+                        <div className="space-y-2">
+                          <div className="font-medium">Add tags</div>
+                          <InputTags
+                            type="text"
+                            value={tags}
+                            onChange={(value) => setTags(value as string[])}
+                            placeholder="Use enter or comma to add tag"
+                            className="w-full text-xs"
+                            autoFocus
+                          />
+                        </div>
+                      </PopoverContent>
+                    </Popover>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>Add tags</p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger>
+                    <Popover open={showPriorityDropdown} onOpenChange={setShowPriorityDropdown}>
+                      <PopoverTrigger asChild>
+                        <Button
+                          variant="ghost"
+                          aria-label="priority"
+                          size="icon"
+                          onClick={() => setShowPriorityDropdown(!showPriorityDropdown)}
+                          className="w-auto px-1.5"
                         >
-                          <div className="flex justify-center items-center space-x-1">
-                            <CalendarDatePicker
-                              date={{ from: dueDate || new Date(), to: dueDate || new Date() }}
-                              onDateSelect={({ from, to }) => {
-                                form.setValue("datePicker", { from, to });
-                                setDueDate(from);
-                                setIsCalendarPickerOpen(false);
-                              }}
-                              variant="outline"
-                              numberOfMonths={1}
-                              className="min-w-[150px] border rounded-md ml-3 mt-2 justify-center items-center"
-                            />
-
-                            <Button
-                              variant="outline"
-                              type="button"
-                                onClick={() => {
-                                  setDueDate(null);
+                          {priority === 'High' && (
+                            <div className="flex items-center">
+                              <ChevronsUp size={16} className="text-red-500" />
+                            </div>
+                          )}
+                          {priority === 'Medium' && (
+                            <div className="flex items-center">
+                              <ChevronUp size={16} />
+                            </div>
+                          )}
+                          {priority === 'Low' && (
+                            <div className="flex items-center">
+                              <ChevronDown size={16} />
+                            </div>
+                          )}
+                          {!priority && (
+                            <div className="flex items-center">
+                              <Flag size={16} />
+                            </div>
+                          )}
+                        </Button>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-36 text-sm">
+                        <p className="flex justify-start items-center mb-2">Select Priority</p>
+                        <div
+                          className="flex items-center space-x-2 p-2 rounded-md cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-900"
+                          onClick={() => {
+                            setPriority('High');
+                            setShowPriorityDropdown(false);
+                          }}
+                        >
+                          <ChevronsUp size={16} className="text-red-500" />
+                          <span>High</span>
+                        </div>
+                        <div
+                          className="flex items-center space-x-2 p-2 rounded-md cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-900"
+                          onClick={() => {
+                            setPriority('Medium');
+                            setShowPriorityDropdown(false);
+                          }}
+                        >
+                          <ChevronUp size={16} />
+                          <span>Medium</span>
+                        </div>
+                        <div
+                          className="flex items-center space-x-2 p-2 rounded-md cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-900"
+                          onClick={() => {
+                            setPriority('Low');
+                            setShowPriorityDropdown(false);
+                          }}
+                        >
+                          <ChevronDown size={16} />
+                          <span>Low</span>
+                        </div>
+                        <div
+                          className="flex items-center space-x-2 p-2 rounded-md cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-900"
+                          onClick={() => {
+                            setPriority('');
+                            setShowPriorityDropdown(false);
+                          }}
+                        >
+                          <Flag size={16} />
+                          <span>No Priority</span>
+                        </div>
+                      </PopoverContent>
+                    </Popover>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>Set priority</p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger>
+                    <Popover open={isCalendarPickerOpen} onOpenChange={setIsCalendarPickerOpen}>
+                      <PopoverTrigger asChild>
+                        <Button
+                          onClick={() => setIsCalendarPickerOpen(!isCalendarPickerOpen)}
+                          aria-label="Add Due Date"
+                          variant="ghost"
+                          size="icon"
+                          className="w-auto px-1"
+                        >
+                          <CalendarIcon size={16} />
+                        </Button>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-52 text-sm">
+                        <div className="flex flex-col space-y-1">
+                          <p className="flex justify-start items-center">Select Due Date</p>
+                          <div className="flex items-center justify-center space-x-1">
+                            <Form {...form}>
+                              <form
+                                onSubmit={form.handleSubmit((data) => {
+                                  setDueDate(data.datePicker.to);
                                   setIsCalendarPickerOpen(false);
-                                }}
-                                className="px-2 py-1 mt-2"
+                                })}
+                                className="flex flex-col justify-center text-center items-center space-y-2"
                               >
-                                <X size={16} />
-                            </Button>
+                                <div className="flex justify-center items-center space-x-1">
+                                  <CalendarDatePicker
+                                    date={{ from: dueDate || new Date(), to: dueDate || new Date() }}
+                                    onDateSelect={({ from, to }) => {
+                                      form.setValue("datePicker", { from, to });
+                                      setDueDate(from);
+                                      setIsCalendarPickerOpen(false);
+                                    }}
+                                    variant="outline"
+                                    numberOfMonths={1}
+                                    className="min-w-[150px] border rounded-md ml-3 mt-2 justify-center items-center"
+                                  />
+                                  <Button
+                                    variant="outline"
+                                    type="button"
+                                    onClick={() => {
+                                      setDueDate(null);
+                                      setIsCalendarPickerOpen(false);
+                                    }}
+                                    className="px-2 py-1 mt-2"
+                                  >
+                                    <X size={16} />
+                                  </Button>
+                                </div>
+                                <div className="grid grid-cols-2 gap-2 mt-2">
+                                  <Button
+                                    variant="outline"
+                                    type="button"
+                                    onClick={() => {
+                                      setDueDate(new Date());
+                                      setIsCalendarPickerOpen(false);
+                                    }}
+                                    className="px-2 py-1"
+                                  >
+                                    Today
+                                  </Button>
+                                  <Button
+                                    variant="outline"
+                                    type="button"
+                                    onClick={() => {
+                                      const tomorrow = new Date();
+                                      tomorrow.setDate(tomorrow.getDate() + 1);
+                                      setDueDate(tomorrow);
+                                      setIsCalendarPickerOpen(false);
+                                    }}
+                                    className="px-2 py-1"
+                                  >
+                                    Tomorrow
+                                  </Button>
+                                </div>
+                              </form>
+                            </Form>
                           </div>
-                          <div className="grid grid-cols-2 gap-2 mt-2">
-                            <Button
-                              variant="outline"
-                              type="button"
-                              onClick={() => {
-                                setDueDate(new Date());
-                                setIsCalendarPickerOpen(false);
-                              }}
-                              className="px-2 py-1"
-                            >
-                              Today
-                            </Button>
-                            <Button
-                              variant="outline"
-                              type="button"
-                              onClick={() => {
-                                const tomorrow = new Date();
-                                tomorrow.setDate(tomorrow.getDate() + 1);
-                                setDueDate(tomorrow);
-                                setIsCalendarPickerOpen(false);
-                              }}
-                              className="px-2 py-1"
-                            >
-                              Tomorrow
-                            </Button>
-                          </div>
-                        </form>
-                      </Form>
-                    </div>
-                  </div>
-                </PopoverContent>
-              </Popover>
-              <Popover open={showPriorityDropdown} onOpenChange={setShowPriorityDropdown}>
-                <PopoverTrigger asChild>
-                  <Button
-                    variant="ghost"
-                    aria-label="priority"
-                    size="icon"
-                    onClick={() => setShowPriorityDropdown(!showPriorityDropdown)}
-                  >
-                    {priority === 'High' && (
-                      <div className="flex items-center">
-                        <ChevronsUp size={16} className="text-red-500" />
-                      </div>
-                    )}
-                    {priority === 'Medium' && (
-                      <div className="flex items-center">
-                        <ChevronUp size={16} />
-                      </div>
-                    )}
-                    {priority === 'Low' && (
-                      <div className="flex items-center">
-                        <ChevronDown size={16} />
-                      </div>
-                    )}
-                    {!priority && (
-                      <div className="flex items-center">
-                        <Flag size={16} />
-                      </div>
-                    )}
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent className="w-36 text-sm">
-                  <p className="flex justify-start items-center mb-2">Select Priority</p>
-                  <div
-                    className="flex items-center space-x-2 p-2 rounded-md cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-900"
-                    onClick={() => {
-                      setPriority('High');
-                      setShowPriorityDropdown(false);
-                    }}
-                  >
-                    <ChevronsUp size={16} className="text-red-500" />
-                    <span>High</span>
-                  </div>
-                  <div
-                    className="flex items-center space-x-2 p-2 rounded-md cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-900"
-                    onClick={() => {
-                      setPriority('Medium');
-                      setShowPriorityDropdown(false);
-                    }}
-                  >
-                    <ChevronUp size={16} />
-                    <span>Medium</span>
-                  </div>
-                  <div
-                    className="flex items-center space-x-2 p-2 rounded-md cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-900"
-                    onClick={() => {
-                      setPriority('Low');
-                      setShowPriorityDropdown(false);
-                    }}
-                  >
-                    <ChevronDown size={16} />
-                    <span>Low</span>
-                  </div>
-                  <div
-                    className="flex items-center space-x-2 p-2 rounded-md cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-900"
-                    onClick={() => {
-                      setPriority('');
-                      setShowPriorityDropdown(false);
-                    }}
-                  >
-                    <Flag size={16} />
-                    <span>No Priority</span>
-                  </div>
-                </PopoverContent>
-              </Popover>
-
-              <Button
-                onClick={() => handleAddTask(newTaskDescription)}
-                aria-label="Add Task"
-                variant="ghost"
-                size="icon"
-                disabled={!newTask.trim()}
-              >
-                <Plus size={16} />
-              </Button>
+                        </div>
+                      </PopoverContent>
+                    </Popover>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>Set due date</p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger>
+                    <Button
+                      onClick={() => handleAddTask(newTaskDescription)}
+                      aria-label="Add Task"
+                      variant="ghost"
+                      size="icon"
+                      disabled={!newTask.trim()}
+                      className="w-auto px-1.5"
+                    >
+                      <Plus size={16} />
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>Add task</p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
             </div>
             {(selectedGroup || tags.length > 0 || dueDate) && (
               <div className="flex flex-wrap gap-1 mt-1">
@@ -1493,7 +1614,7 @@ export default function TodolistsPage() {
                     {tag}
                   </Badge>
                 ))}
-               {dueDate && (
+                {dueDate && (
                   <Badge
                     variant="outline"
                     className={
@@ -1533,179 +1654,259 @@ export default function TodolistsPage() {
                   aria-label="Select All Tasks"
                   className="mr-1"
                 />
-                    {/* Trash2 icon to delete selected tasks */}
-                <AlertDialog>
-                  <AlertDialogTrigger asChild>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      aria-label="Delete Tasks"
-                      disabled={selectedTaskIds.length === 0} // Disable button if no tasks are selected
-                    >
-                      <Trash2 size={16} />
-                    </Button>
-                  </AlertDialogTrigger>
-                  <AlertDialogContent>
-                    <AlertDialogHeader>
-                      <AlertDialogTitle>Confirm Deletion</AlertDialogTitle>
-                      <AlertDialogDescription>
-                        {`Are you sure you want to delete ${selectedTaskIds.length} selected task(s)? This action cannot be undone.`}
-                      </AlertDialogDescription>
-                    </AlertDialogHeader>
-                    <AlertDialogFooter>
-                      <AlertDialogCancel>Cancel</AlertDialogCancel>
-                      <AlertDialogAction
-                        onClick={() => deleteSelectedTasks()}
-                      >
-                        Delete
-                      </AlertDialogAction>
-                    </AlertDialogFooter>
-                  </AlertDialogContent>
-                </AlertDialog>
-                <Popover>
-                  <PopoverTrigger asChild>
-                    <Button aria-label="Bulk Assign Group" variant="ghost" size="icon" disabled={selectedTaskIds.length === 0}>
-                      <Folder size={16} />
-                    </Button>
-                  </PopoverTrigger>
-                  <PopoverContent className="w-52">
-                    <div className="space-y-2 text-sm">
-                      <p>Select a group for selected tasks</p>
-                      {groups.map((group) => (
-                        <Button
-                          key={group._id}
-                          variant="ghost"
-                          className="w-full justify-start"
-                          onClick={() => bulkAssignGroup(group.name)}
-                        >
-                          {group.name}
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger>
+                      <AlertDialog>
+                        <AlertDialogTrigger asChild>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            aria-label="Delete Tasks"
+                            disabled={selectedTaskIds.length === 0}
+                          >
+                            <Trash2 size={16} />
+                          </Button>
+                        </AlertDialogTrigger>
+                        <AlertDialogContent>
+                          <AlertDialogHeader>
+                            <AlertDialogTitle>Confirm Deletion</AlertDialogTitle>
+                            <AlertDialogDescription>
+                              {`Are you sure you want to delete ${selectedTaskIds.length} selected task(s)? This action cannot be undone.`}
+                            </AlertDialogDescription>
+                          </AlertDialogHeader>
+                          <AlertDialogFooter>
+                            <AlertDialogCancel>Cancel</AlertDialogCancel>
+                            <AlertDialogAction
+                              onClick={() => deleteSelectedTasks()}
+                            >
+                              Delete
+                            </AlertDialogAction>
+                          </AlertDialogFooter>
+                        </AlertDialogContent>
+                      </AlertDialog>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p>Delete selected tasks</p>
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger>
+                      <Popover>
+                        <PopoverTrigger asChild>
+                          <Button aria-label="Bulk Assign Group" variant="ghost" size="icon" disabled={selectedTaskIds.length === 0}>
+                            <Folder size={16} />
+                          </Button>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-52">
+                          <div className="space-y-2 text-sm">
+                            <p>Select a group for selected tasks</p>
+                            {groups.map((group) => (
+                              <Button
+                                key={group._id}
+                                variant="ghost"
+                                className="w-full justify-start"
+                                onClick={() => bulkAssignGroup(group.name)}
+                              >
+                                {group.name}
+                              </Button>
+                            ))}
+                          </div>
+                        </PopoverContent>
+                      </Popover>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p>Assign group to selected tasks</p>
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger>
+                      <Popover>
+                        <PopoverTrigger asChild>
+                          <Button aria-label="Bulk Assign Tags" variant="ghost" size="icon" disabled={selectedTaskIds.length === 0}>
+                            <Tag size={16} />
+                          </Button>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-52 text-sm">
+                          <InputTags
+                            type="text"
+                            value={tags}
+                            onChange={(newTags) => bulkAssignTags(newTags as string[])}
+                            placeholder="Assign tags"
+                          />
+                        </PopoverContent>
+                      </Popover>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p>Assign tags to selected tasks</p>
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger>
+                      <Popover>
+                        <PopoverTrigger asChild>
+                          <Button aria-label="Bulk Assign Due Date" variant="ghost" size="icon" disabled={selectedTaskIds.length === 0}>
+                            <CalendarIcon size={16} />
+                          </Button>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-52">
+                          <div className="flex flex-col space-y-1 text-sm">
+                            <p className="flex justify-start items-center">Select Due Date</p>
+                            <div className="flex items-center justify-center space-x-1">
+                              <div className="flex flex-col justify-center text-center items-center space-y-2">
+                                <div className="flex justify-center items-center space-x-1">
+                                  <CalendarDatePicker
+                                    date={{
+                                      from: dueDate || new Date(),
+                                      to: dueDate || new Date(),
+                                    }}
+                                    onDateSelect={({ from }) => bulkAssignDueDate(from)}
+                                    variant="outline"
+                                    numberOfMonths={1}
+                                    className="min-w-[150px] border rounded-md ml-3 mt-2 justify-center items-center"
+                                  />
+                                  <Button
+                                    variant="outline"
+                                    onClick={() => {
+                                      bulkAssignDueDate(null);
+                                    }}
+                                    className="px-2 py-1 mt-2"
+                                  >
+                                    <X size={16} />
+                                  </Button>
+                                </div>
+                                <div className="grid grid-cols-2 gap-2 mt-2">
+                                  <Button
+                                    variant="outline"
+                                    onClick={() => {
+                                      bulkAssignDueDate(new Date());
+                                    }}
+                                    className="px-2 py-1"
+                                  >
+                                    Today
+                                  </Button>
+                                  <Button
+                                    variant="outline"
+                                    onClick={() => {
+                                      const tomorrow = new Date();
+                                      tomorrow.setDate(tomorrow.getDate() + 1);
+                                      bulkAssignDueDate(tomorrow);
+                                    }}
+                                    className="px-2 py-1"
+                                    >
+                                      Tomorrow
+                                    </Button>
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+                          </PopoverContent>
+                        </Popover>
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        <p>Set due date for selected tasks</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger>
+                        <Popover>
+                          <PopoverTrigger asChild>
+                            <Button aria-label="Bulk Assign Priority" variant="ghost" size="icon" disabled={selectedTaskIds.length === 0}>
+                              <Flag size={16} />
+                            </Button>
+                          </PopoverTrigger>
+                          <PopoverContent className="w-36 text-sm">
+                            <p className="flex justify-start items-center mb-2">Select Priority</p>
+                            <div
+                              className="flex items-center space-x-2 p-2 rounded-md cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-900"
+                              onClick={() => bulkAssignPriority('High')}
+                            >
+                              <ChevronsUp size={16} className="text-red-500" />
+                              <span>High</span>
+                            </div>
+                            <div
+                              className="flex items-center space-x-2 p-2 rounded-md cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-900"
+                              onClick={() => bulkAssignPriority('Medium')}
+                            >
+                              <ChevronUp size={16} />
+                              <span>Medium</span>
+                            </div>
+                            <div
+                              className="flex items-center space-x-2 p-2 rounded-md cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-900"
+                              onClick={() => bulkAssignPriority('Low')}
+                            >
+                              <ChevronDown size={16} />
+                              <span>Low</span>
+                            </div>
+                            <div
+                              className="flex items-center space-x-2 p-2 rounded-md cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-900"
+                              onClick={() => bulkAssignPriority('')}
+                            >
+                              <Flag size={16} />
+                              <span>No Priority</span>
+                            </div>
+                          </PopoverContent>
+                        </Popover>
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        <p>Set priority for selected tasks</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger>
+                        <Button onClick={() => bulkMarkAsCompleted()} aria-label="Mark as Completed" variant="ghost" size="icon" disabled={selectedTaskIds.length === 0}>
+                          <SquareCheck size={16} />
                         </Button>
-                      ))}
-                    </div>
-                  </PopoverContent>
-                </Popover>
-                <Popover>
-                  <PopoverTrigger asChild>
-                    <Button aria-label="Bulk Assign Tags" variant="ghost" size="icon" disabled={selectedTaskIds.length === 0}>
-                      <Tag size={16} />
-                    </Button>
-                  </PopoverTrigger>
-                  <PopoverContent className="w-52 text-sm">
-                    <InputTags
-                      type="text"
-                      value={tags}
-                      onChange={(newTags) => bulkAssignTags(newTags as string[])}
-                      placeholder="Assign tags"
-                    />
-                  </PopoverContent>
-                </Popover>
-                <Popover>
-                  <PopoverTrigger asChild>
-                    <Button aria-label="Bulk Assign Due Date" variant="ghost" size="icon" disabled={selectedTaskIds.length === 0}>
-                      <CalendarIcon size={16} />
-                    </Button>
-                  </PopoverTrigger>
-                  <PopoverContent className="w-52">
-                    <div className="flex flex-col space-y-1 text-sm">
-                      <p className="flex justify-start items-center">Select Due Date</p>
-                      <div className="flex items-center justify-center space-x-1">
-                        <div className="flex flex-col justify-center text-center items-center space-y-2">
-                          <div className="flex justify-center items-center space-x-1">
-                            <CalendarDatePicker
-                              date={{
-                                from: dueDate || new Date(),
-                                to: dueDate || new Date(),
-                              }}
-                              onDateSelect={({ from }) => bulkAssignDueDate(from)}
-                              variant="outline"
-                              numberOfMonths={1}
-                              className="min-w-[150px] border rounded-md ml-3 mt-2 justify-center items-center"
-                            />
-                            <Button
-                              variant="outline"
-                              onClick={() => {
-                                bulkAssignDueDate(null);
-                              }}
-                              className="px-2 py-1 mt-2"
-                            >
-                              <X size={16} />
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        <p>Mark selected tasks as completed</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger>
+                        <AlertDialog>
+                          <AlertDialogTrigger asChild>
+                            <Button onClick={() => bulkMarkAsIgnored()} aria-label="Mark as Ignored" variant="ghost" size="icon" disabled={selectedTaskIds.length === 0}>
+                              <MinusCircle size={16} />
                             </Button>
-                          </div>
-                          <div className="grid grid-cols-2 gap-2 mt-2">
-                            <Button
-                              variant="outline"
-                              onClick={() => {
-                                bulkAssignDueDate(new Date());
-                              }}
-                              className="px-2 py-1"
-                            >
-                              Today
-                            </Button>
-                            <Button
-                              variant="outline"
-                              onClick={() => {
-                                const tomorrow = new Date();
-                                tomorrow.setDate(tomorrow.getDate() + 1);
-                                bulkAssignDueDate(tomorrow);
-                              }}
-                              className="px-2 py-1"
-                            >
-                              Tomorrow
-                            </Button>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  </PopoverContent>
-                </Popover>
-                <Popover>
-                  <PopoverTrigger asChild>
-                    <Button aria-label="Bulk Assign Priority" variant="ghost" size="icon" disabled={selectedTaskIds.length === 0}>
-                      <Flag size={16} />
-                    </Button>
-                  </PopoverTrigger>
-                  <PopoverContent className="w-36 text-sm">
-                    <p className="flex justify-start items-center mb-2">Select Priority</p>
-                    <div
-                      className="flex items-center space-x-2 p-2 rounded-md cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-900"
-                      onClick={() => bulkAssignPriority('High')}
-                    >
-                      <ChevronsUp size={16} className="text-red-500" />
-                      <span>High</span>
-                    </div>
-                    <div
-                      className="flex items-center space-x-2 p-2 rounded-md cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-900"
-                      onClick={() => bulkAssignPriority('Medium')}
-                    >
-                      <ChevronUp size={16} />
-                      <span>Medium</span>
-                    </div>
-                    <div
-                      className="flex items-center space-x-2 p-2 rounded-md cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-900"
-                      onClick={() => bulkAssignPriority('Low')}
-                    >
-                      <ChevronDown size={16} />
-                      <span>Low</span>
-                    </div>
-                    <div
-                      className="flex items-center space-x-2 p-2 rounded-md cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-900"
-                      onClick={() => bulkAssignPriority('')}
-                    >
-                      <Flag size={16} />
-                      <span>No Priority</span>
-                    </div>
-                  </PopoverContent>
-                </Popover>
-                <Button onClick={() => bulkMarkAsCompleted()} aria-label="Mark as Completed" variant="ghost" size="icon" disabled={selectedTaskIds.length === 0}>
-                  <SquareCheck size={16} />
-                </Button>
-                <Button onClick={() => bulkMarkAsIgnored()} aria-label="Mark as Ignored" variant="ghost" size="icon" disabled={selectedTaskIds.length === 0}>
-                  <X size={16} />
-                </Button>
+                          </AlertDialogTrigger>
+                          <AlertDialogContent>
+                            <AlertDialogHeader>
+                              <AlertDialogTitle>Confirm Ignore</AlertDialogTitle>
+                              <AlertDialogDescription>
+                                Are you sure you want to ignore the selected tasks? This action can be undone later.
+                              </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                              <AlertDialogCancel>Cancel</AlertDialogCancel>
+                              <AlertDialogAction onClick={() => bulkMarkAsIgnored()}>
+                                Ignore
+                              </AlertDialogAction>
+                            </AlertDialogFooter>
+                          </AlertDialogContent>
+                        </AlertDialog>
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        <p>Mark selected tasks as ignored</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
+                </div>
               </div>
-            </div>
-          )}
-
+            )}
+  
           <div className="space-y-2">
             {incompleteTasks.length > 0 ? (
               incompleteTasks.map((task) => (
@@ -1723,67 +1924,84 @@ export default function TodolistsPage() {
                         }}
                       />
                     )}
-                    {
-                      !showBulkActions && (
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={() => toggleTaskCompletion(task._id)}
-                          aria-label="Complete Task"
-                        >
-                          <SquareCheck size={16} />
-                        </Button>
-                      )
-                    }
+                    {!showBulkActions && (
+                      <TooltipProvider>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              onClick={() => toggleTaskCompletion(task._id)}
+                              aria-label="Complete Task"
+                              className="w-auto px-1"
+                            >
+                              <SquareCheck size={16} />
+                            </Button>
+                          </TooltipTrigger>
+                          <TooltipContent>
+                            <p>Mark as completed</p>
+                          </TooltipContent>
+                        </Tooltip>
+                      </TooltipProvider>
+                    )}
 
                     {
                       task.priority && task.priority !== '' ?
-                      <Popover>
-                        <PopoverTrigger asChild>
-                          <Button variant="ghost" size="icon">
-                            {task.priority === 'High' && <ChevronsUp size={16} className="text-red-500" />}
-                            {task.priority === 'Medium' && <ChevronUp size={16} />}
-                            {task.priority === 'Low' && <ChevronDown size={16} />}
-                            {!task.priority && <Flag size={16} />}
-                          </Button>
-                        </PopoverTrigger>
-                        <PopoverContent className="w-36">
-                          <div
-                            className="flex items-center space-x-2 p-2 rounded-md cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-900 text-sm"
-                            onClick={() => updateTaskPriority(task._id, 'High')}
-                          >
-                            <ChevronsUp size={16} />
-                            <span>High</span>
-                          </div>
-                          <div
-                            className="flex items-center space-x-2 p-2 rounded-md cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-900 text-sm"
-                            onClick={() => updateTaskPriority(task._id, 'Medium')}
-                          >
-                            <ChevronUp size={16} />
-                            <span>Medium</span>
-                          </div>
-                          <div
-                            className="flex items-center space-x-2 p-2 rounded-md cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-900 text-sm"
-                            onClick={() => updateTaskPriority(task._id, 'Low')}
-                          >
-                            <ChevronDown size={16} />
-                            <span>Low</span>
-                          </div>
-                          <div
-                            className="flex items-center space-x-2 p-2 rounded-md cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-900 text-sm"
-                            onClick={() => updateTaskPriority(task._id, '')}
-                          >
-                            <Flag size={16} />
-                            <span>No Priority</span>
-                          </div>
-                        </PopoverContent>
-                      </Popover>
+                      <TooltipProvider>
+                        <Tooltip>
+                          <TooltipTrigger>
+                            <Popover>
+                              <PopoverTrigger asChild>
+                                <Button variant="ghost" size="icon" className="w-auto px-1">
+                                  {task.priority === 'High' && <ChevronsUp size={16} className="text-red-500" />}
+                                  {task.priority === 'Medium' && <ChevronUp size={16} />}
+                                  {task.priority === 'Low' && <ChevronDown size={16} />}
+                                  {!task.priority && <Flag size={16} />}
+                                </Button>
+                              </PopoverTrigger>
+                              <PopoverContent className="w-36">
+                                <div
+                                  className="flex items-center space-x-2 p-2 rounded-md cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-900 text-sm"
+                                  onClick={() => updateTaskPriority(task._id, 'High')}
+                                >
+                                  <ChevronsUp size={16} />
+                                  <span>High</span>
+                                </div>
+                                <div
+                                  className="flex items-center space-x-2 p-2 rounded-md cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-900 text-sm"
+                                  onClick={() => updateTaskPriority(task._id, 'Medium')}
+                                >
+                                  <ChevronUp size={16} />
+                                  <span>Medium</span>
+                                </div>
+                                <div
+                                  className="flex items-center space-x-2 p-2 rounded-md cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-900 text-sm"
+                                  onClick={() => updateTaskPriority(task._id, 'Low')}
+                                >
+                                  <ChevronDown size={16} />
+                                  <span>Low</span>
+                                </div>
+                                <div
+                                  className="flex items-center space-x-2 p-2 rounded-md cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-900 text-sm"
+                                  onClick={() => updateTaskPriority(task._id, '')}
+                                >
+                                  <Flag size={16} />
+                                  <span>No Priority</span>
+                                </div>
+                              </PopoverContent>
+                            </Popover>
+                          </TooltipTrigger>
+                          <TooltipContent>
+                            <p>Set priority</p>
+                          </TooltipContent>
+                        </Tooltip>
+                      </TooltipProvider>
                       : null
                     }
 
-                    <div className="flex flex-col gap-2 w-full">
+                    <div className="flex flex-col gap-1 w-full">
                       {editingTaskTitleId === task._id ? (
-                        <div className="flex items-center">
+                        <div className="flex items-center gap-1">
                           <Input
                             className="flex-1 border mr-1"
                             type="text"
@@ -1813,6 +2031,7 @@ export default function TodolistsPage() {
                               setEditingTaskTitleId(null);
                               setTaskTitle('');
                             }}
+                            className="w-auto px-1"
                           >
                             <Save size={16} />
                           </Button>
@@ -1823,6 +2042,7 @@ export default function TodolistsPage() {
                               setEditingTaskTitleId(null);
                               setTaskTitle('');
                             }}
+                            className="w-auto px-1"
                           >
                             <X size={16} />
                           </Button>
@@ -1842,245 +2062,351 @@ export default function TodolistsPage() {
 
                     {
                       !task.priority || (task.priority  && task.priority === '') ?
-                      <Popover>
-                        <PopoverTrigger asChild>
-                          <Button variant="ghost" size="icon">
-                            {task.priority === 'High' && <ChevronsUp size={16} className="text-red-500" />}
-                            {task.priority === 'Medium' && <ChevronUp size={16} />}
-                            {task.priority === 'Low' && <ChevronDown size={16} />}
-                            {!task.priority && <Flag size={16} />}
-                          </Button>
-                        </PopoverTrigger>
-                        <PopoverContent className="w-36">
-                          <div
-                            className="flex items-center space-x-2 p-2 rounded-md cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-900 text-sm"
-                            onClick={() => updateTaskPriority(task._id, 'High')}
-                          >
-                            <ChevronsUp size={16} className="text-red-500" />
-                            <span>High</span>
-                          </div>
-                          <div
-                            className="flex items-center space-x-2 p-2 rounded-md cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-900 text-sm"
-                            onClick={() => updateTaskPriority(task._id, 'Medium')}
-                          >
-                            <ChevronUp size={16} />
-                            <span>Medium</span>
-                          </div>
-                          <div
-                            className="flex items-center space-x-2 p-2 rounded-md cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-900 text-sm"
-                            onClick={() => updateTaskPriority(task._id, 'Low')}
-                          >
-                            <ChevronDown size={16} />
-                            <span>Low</span>
-                          </div>
-                          <div
-                            className="flex items-center space-x-2 p-2 rounded-md cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-900 text-sm"
-                            onClick={() => updateTaskPriority(task._id, '')}
-                          >
-                            <Flag size={16} />
-                            <span>No Priority</span>
-                          </div>
-                        </PopoverContent>
-                      </Popover>
+                      <TooltipProvider>
+                        <Tooltip>
+                          <TooltipTrigger>
+                            <Popover>
+                              <PopoverTrigger asChild>
+                                <Button variant="ghost" size="icon" className="w-auto px-1">
+                                  {task.priority === 'High' && <ChevronsUp size={16} className="text-red-500" />}
+                                  {task.priority === 'Medium' && <ChevronUp size={16} />}
+                                  {task.priority === 'Low' && <ChevronDown size={16} />}
+                                  {!task.priority && <Flag size={16} />}
+                                </Button>
+                              </PopoverTrigger>
+                              <PopoverContent className="w-36">
+                                <div
+                                  className="flex items-center space-x-2 p-2 rounded-md cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-900 text-sm"
+                                  onClick={() => updateTaskPriority(task._id, 'High')}
+                                >
+                                  <ChevronsUp size={16} className="text-red-500" />
+                                  <span>High</span>
+                                </div>
+                                <div
+                                  className="flex items-center space-x-2 p-2 rounded-md cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-900 text-sm"
+                                  onClick={() => updateTaskPriority(task._id, 'Medium')}
+                                >
+                                  <ChevronUp size={16} />
+                                  <span>Medium</span>
+                                </div>
+                                <div
+                                  className="flex items-center space-x-2 p-2 rounded-md cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-900 text-sm"
+                                  onClick={() => updateTaskPriority(task._id, 'Low')}
+                                >
+                                  <ChevronDown size={16} />
+                                  <span>Low</span>
+                                </div>
+                                <div
+                                  className="flex items-center space-x-2 p-2 rounded-md cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-900 text-sm"
+                                  onClick={() => updateTaskPriority(task._id, '')}
+                                >
+                                  <Flag size={16} />
+                                  <span>No Priority</span>
+                                </div>
+                              </PopoverContent>
+                            </Popover>
+                          </TooltipTrigger>
+                          <TooltipContent>
+                            <p>Set priority</p>
+                          </TooltipContent>
+                        </Tooltip>
+                      </TooltipProvider>
                     : null}
 
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      onClick={() => {
-                        setEditingTaskDescriptionId(
-                          editingTaskDescriptionId === task._id ? null : task._id
-                        );
-                        setTaskDescription(editingTaskDescriptionId ? '' : task.description || '');
-                      }}
-                    >
-                      <FileText size={16} />
-                    </Button>
-
-                    <Popover>
-                      <PopoverTrigger asChild>
-                        <Button variant="ghost" size="icon">
-                          <Folder size={16} />
-                        </Button>
-                      </PopoverTrigger>
-                      <PopoverContent className="w-48">
-                        <div className="space-y-2 text-sm">
-                          <p>Change group</p>
+                    <TooltipProvider>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
                           <Button
                             variant="ghost"
-                            className="w-full justify-start"
-                            onClick={() => updateTaskGroup(task._id, null)}
+                            size="icon"
+                            onClick={() => {
+                              setEditingTaskDescriptionId(
+                                editingTaskDescriptionId === task._id ? null : task._id
+                              );
+                              setTaskDescription(editingTaskDescriptionId ? '' : task.description || '');
+                            }}
                           >
-                            No Group
+                            <FileText size={16} />
                           </Button>
-                          {groups.map((group) => (
-                            <Button
-                              key={group._id}
-                              variant="ghost"
-                              className="w-full justify-start"
-                              onClick={() => updateTaskGroup(task._id, group.name)}
-                            >
-                              {group.name}
-                            </Button>
-                          ))}
-                        </div>
-                      </PopoverContent>
-                    </Popover>
+                        </TooltipTrigger>
+                        <TooltipContent>
+                          <p>Edit description</p>
+                        </TooltipContent>
+                      </Tooltip>
+                    </TooltipProvider>
 
-                    <Popover
-                      open={editingTaskTagsId === task._id}
-                      onOpenChange={(isOpen) => {
-                        if (isOpen) {
-                          setEditingTaskTagsId(task._id);
-                          setEditingTaskTags(task.tags || []);
-                        } else {
-                          setEditingTaskTagsId(null);
-                          setEditingTaskTags([]);
-                        }
-                      }}
-                    >
-                      <PopoverTrigger asChild>
-                        <Button variant="ghost" size="icon">
-                          <Tag size={16} />
-                        </Button>
-                      </PopoverTrigger>
-                      <PopoverContent className="w-64 text-sm">
-                        <div className="space-y-2">
-                          <div className="font-medium">Add tags</div>
-                          <InputTags
-                            type="text"
-                            value={editingTaskTags}
-                            onChange={(value) => setEditingTaskTags(value as string[])}
-                            placeholder="Use enter or comma to add tag"
-                            className="w-full text-xs"
-                            autoFocus
-                          />
-                          <div className="flex justify-end mt-2 space-x-2">
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => {
+                    <TooltipProvider>
+                      <Tooltip>
+                        <TooltipTrigger>
+                          <Popover>
+                            <PopoverTrigger asChild>
+                              <Button variant="ghost" size="icon" className="w-auto px-1">
+                                <Folder size={16} />
+                              </Button>
+                            </PopoverTrigger>
+                            <PopoverContent className="w-48">
+                              <div className="space-y-2 text-sm">
+                                <p>Change group</p>
+                                <Button
+                                  variant="ghost"
+                                  className="w-full justify-start"
+                                  onClick={() => updateTaskGroup(task._id, null)}
+                                >
+                                  No Group
+                                </Button>
+                                {groups.map((group) => (
+                                  <Button
+                                    key={group._id}
+                                    variant="ghost"
+                                    className="w-full justify-start"
+                                    onClick={() => updateTaskGroup(task._id, group.name)}
+                                  >
+                                    {group.name}
+                                  </Button>
+                                ))}
+                              </div>
+                            </PopoverContent>
+                          </Popover>
+                        </TooltipTrigger>
+                        <TooltipContent>
+                          <p>Change group</p>
+                        </TooltipContent>
+                      </Tooltip>
+                    </TooltipProvider>
+
+                    <TooltipProvider>
+                      <Tooltip>
+                        <TooltipTrigger>
+                          <Popover
+                            open={editingTaskTagsId === task._id}
+                            onOpenChange={(isOpen) => {
+                              if (isOpen) {
+                                setEditingTaskTagsId(task._id);
+                                setEditingTaskTags(task.tags || []);
+                              } else {
                                 setEditingTaskTagsId(null);
                                 setEditingTaskTags([]);
-                              }}
-                            >
-                              <X size={16} />
-                            </Button>
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => {
-                                updateTaskTags(task._id, editingTaskTags);
-                                setEditingTaskTagsId(null);
-                                setEditingTaskTags([]);
-                              }}
-                            >
-                              <Save size={16} />
-                            </Button>
-                          </div>
-                        </div>
-                      </PopoverContent>
-                    </Popover>
-
-                    <Popover>
-                      <PopoverTrigger asChild>
-                        <Button
-                          variant="ghost"
-                          aria-label="Update Task Due Date"
-                          size="icon"
-                          onClick={() => {
-                            setEditingTaskDueDateId(
-                              editingTaskDueDateId === task._id ? null : task._id
-                            );
-                            setExistingTaskDueDate(
-                              editingTaskDueDateId ? null : task.dueDate || null
-                            );
-                          }}
-                        >
-                          <CalendarIcon size={16} />
-                        </Button>
-                      </PopoverTrigger>
-                      <PopoverContent className="w-52 text-sm">
-                        <div className="flex flex-col space-y-1">
-                          <p className="text-center">Select Due Date</p>
-                          <div className="flex items-center justify-center space-x-1">
-                            <div className="flex flex-col justify-center text-center items-center space-y-2">
-                              <div className="flex justify-center items-center space-x-1">
-                                <CalendarDatePicker
-                                  date={{
-                                    from: existingTaskDueDate
-                                      ? new Date(existingTaskDueDate)
-                                      : new Date(),
-                                    to: existingTaskDueDate
-                                      ? new Date(existingTaskDueDate)
-                                      : new Date(),
-                                  }}
-                                  onDateSelect={({ from }) => {
-                                    setExistingTaskDueDate(from);
-                                    updateTaskDueDate(task._id, from);
-                                  }}
-                                  variant="outline"
-                                  numberOfMonths={1}
-                                  className="min-w-[150px] border rounded-md ml-3 mt-2 justify-center items-center"
+                              }
+                            }}
+                          >
+                            <PopoverTrigger asChild>
+                              <Button variant="ghost" size="icon" className="w-auto px-1">
+                                <Tag size={16} />
+                              </Button>
+                            </PopoverTrigger>
+                            <PopoverContent className="w-64 text-sm">
+                              <div className="space-y-2">
+                                <div className="font-medium">Add tags</div>
+                                <InputTags
+                                  type="text"
+                                  value={editingTaskTags}
+                                  onChange={(value) => setEditingTaskTags(value as string[])}
+                                  placeholder="Use enter or comma to add tag"
+                                  className="w-full text-xs"
+                                  autoFocus
                                 />
-                                <Button
-                                  variant="outline"
-                                  onClick={() => {
-                                    setExistingTaskDueDate(null);
-                                    updateTaskDueDate(task._id, null);
-                                  }}
-                                  className="px-2 py-1 mt-2"
-                                >
-                                  <X size={16} />
-                                </Button>
+                                <div className="flex justify-end mt-2 space-x-2">
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={() => {
+                                      setEditingTaskTagsId(null);
+                                      setEditingTaskTags([]);
+                                    }}
+                                  >
+                                    <X size={16} />
+                                  </Button>
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={() => {
+                                      updateTaskTags(task._id, editingTaskTags);
+                                      setEditingTaskTagsId(null);
+                                      setEditingTaskTags([]);
+                                    }}
+                                  >
+                                    <Save size={16} />
+                                  </Button>
+                                </div>
                               </div>
-                              <div className="grid grid-cols-2 gap-2 mt-2">
-                                <Button
-                                  variant="outline"
-                                  onClick={() => {
-                                    setExistingTaskDueDate(new Date());
-                                    updateTaskDueDate(task._id, new Date());
-                                  }}
-                                  className="px-2 py-1"
-                                >
-                                  Today
-                                </Button>
-                                <Button
-                                  variant="outline"
-                                  onClick={() => {
-                                    const tomorrow = new Date();
-                                    tomorrow.setDate(tomorrow.getDate() + 1);
-                                    setExistingTaskDueDate(tomorrow);
-                                    updateTaskDueDate(task._id, tomorrow);
-                                  }}
-                                  className="px-2 py-1"
-                                >
-                                  Tomorrow
-                                </Button>
+                            </PopoverContent>
+                          </Popover>
+                        </TooltipTrigger>
+                        <TooltipContent>
+                          <p>Edit tags</p>
+                        </TooltipContent>
+                      </Tooltip>
+                    </TooltipProvider>
+
+                    <TooltipProvider>
+                      <Tooltip>
+                        <TooltipTrigger>
+                          <Popover>
+                            <PopoverTrigger asChild>
+                              <Button
+                                variant="ghost"
+                                aria-label="Update Task Due Date"
+                                size="icon"
+                                onClick={() => {
+                                  setEditingTaskDueDateId(
+                                    editingTaskDueDateId === task._id ? null : task._id
+                                  );
+                                  setExistingTaskDueDate(
+                                    editingTaskDueDateId ? null : task.dueDate || null
+                                  );
+                                }}
+                                className="w-auto px-1"
+                              >
+                                <CalendarIcon size={16} />
+                              </Button>
+                            </PopoverTrigger>
+                            <PopoverContent className="w-52 text-sm">
+                              <div className="flex flex-col space-y-1">
+                                <p className="text-center">Select Due Date</p>
+                                <div className="flex items-center justify-center space-x-1">
+                                  <div className="flex flex-col justify-center text-center items-center space-y-2">
+                                    <div className="flex justify-center items-center space-x-1">
+                                      <CalendarDatePicker
+                                        date={{
+                                          from: existingTaskDueDate
+                                            ? new Date(existingTaskDueDate)
+                                            : new Date(),
+                                          to: existingTaskDueDate
+                                            ? new Date(existingTaskDueDate)
+                                            : new Date(),
+                                        }}
+                                        onDateSelect={({ from }) => {
+                                          setExistingTaskDueDate(from);
+                                          updateTaskDueDate(task._id, from);
+                                        }}
+                                        variant="outline"
+                                        numberOfMonths={1}
+                                        className="min-w-[150px] border rounded-md ml-3 mt-2 justify-center items-center"
+                                      />
+                                      <Button
+                                        variant="outline"
+                                        onClick={() => {
+                                          setExistingTaskDueDate(null);
+                                          updateTaskDueDate(task._id, null);
+                                        }}
+                                        className="px-2 py-1 mt-2"
+                                      >
+                                        <X size={16} />
+                                      </Button>
+                                    </div>
+                                    <div className="grid grid-cols-2 gap-2 mt-2">
+                                      <Button
+                                        variant="outline"
+                                        onClick={() => {
+                                          setExistingTaskDueDate(new Date());
+                                          updateTaskDueDate(task._id, new Date());
+                                        }}
+                                        className="px-2 py-1"
+                                      >
+                                        Today
+                                      </Button>
+                                      <Button
+                                        variant="outline"
+                                        onClick={() => {
+                                          const tomorrow = new Date();
+                                          tomorrow.setDate(tomorrow.getDate() + 1);
+                                          setExistingTaskDueDate(tomorrow);
+                                          updateTaskDueDate(task._id, tomorrow);
+                                        }}
+                                        className="px-2 py-1"
+                                      >
+                                        Tomorrow
+                                      </Button>
+                                    </div>
+                                  </div>
+                                </div>
                               </div>
-                            </div>
-                          </div>
-                        </div>
-                      </PopoverContent>
-                    </Popover>
+                            </PopoverContent>
+                          </Popover>
+                        </TooltipTrigger>
+                        <TooltipContent>
+                          <p>Set due date</p>
+                        </TooltipContent>
+                      </Tooltip>
+                    </TooltipProvider>
 
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      onClick={() => updateTaskStatus(task._id, 'IGNORED')}
-                      aria-label="Ignore Task"
-                    >
-                      <X size={16} />
-                    </Button>
+                    <TooltipProvider>
+                      <Tooltip>
+                        <TooltipTrigger>
+                          <AlertDialog>
+                            <AlertDialogTrigger asChild>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                onClick={() => updateTaskStatus(task._id, 'IGNORED')}
+                                aria-label="Ignore Task"
+                                className="w-auto px-1"
+                              >
+                                <CircleMinus size={16} />
+                              </Button>
+                            </AlertDialogTrigger>
+                            <AlertDialogContent>
+                              <AlertDialogHeader>
+                                <AlertDialogTitle>Confirm Ignore</AlertDialogTitle>
+                                <AlertDialogDescription>
+                                  Are you sure you want to ignore this task? This action can be undone later.
+                                </AlertDialogDescription>
+                              </AlertDialogHeader>
+                              <AlertDialogFooter>
+                                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                <AlertDialogAction
+                                  onClick={() => updateTaskStatus(task._id, 'IGNORED')}
+                                >
+                                  Ignore
+                                </AlertDialogAction>
+                              </AlertDialogFooter>
+                            </AlertDialogContent>
+                          </AlertDialog>
+                        </TooltipTrigger>
+                        <TooltipContent>
+                          <p>Ignore task</p>
+                        </TooltipContent>
+                      </Tooltip>
+                    </TooltipProvider>
 
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      onClick={() => deleteTask(task._id)}
-                      aria-label="Delete Task"
-                    >
-                      <Trash size={16} />
-                    </Button>
+                    <TooltipProvider>
+                      <Tooltip>
+                        <TooltipTrigger>
+                          <AlertDialog>
+                            <AlertDialogTrigger asChild>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                onClick={() => deleteTask(task._id)}
+                                aria-label="Delete Task"
+                                className="w-auto px-1"
+                              >
+                                <Trash size={16} />
+                              </Button>
+                            </AlertDialogTrigger>
+                            <AlertDialogContent>
+                              <AlertDialogHeader>
+                                <AlertDialogTitle>Confirm Deletion</AlertDialogTitle>
+                                <AlertDialogDescription>
+                                  Are you sure you want to delete this task? This action cannot be undone.
+                                </AlertDialogDescription>
+                              </AlertDialogHeader>
+                              <AlertDialogFooter>
+                                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                <AlertDialogAction
+                                  onClick={() => deleteTask(task._id)}
+                                >
+                                  Delete
+                                </AlertDialogAction>
+                              </AlertDialogFooter>
+                            </AlertDialogContent>
+                          </AlertDialog>
+                        </TooltipTrigger>
+                        <TooltipContent>
+                          <p>Delete task</p>
+                        </TooltipContent>
+                      </Tooltip>
+                    </TooltipProvider>
                   </div>
 
                   {editingTaskDescriptionId === task._id && (
@@ -2123,18 +2449,6 @@ export default function TodolistsPage() {
                   )}
 
                   <div className="flex flex-wrap gap-1 mt-1">
-                    {task.group && (
-                      <Badge variant="secondary">
-                        <Folder size={12} className="mr-1" />
-                        {task.group}
-                      </Badge>
-                    )}
-                    {task.tags?.map((tag, index) => (
-                      <Badge key={index} variant="outline">
-                        <Tag size={12} className="mr-1" />
-                        {tag}
-                      </Badge>
-                    ))}
                     {task.dueDate && (
                       <Badge
                         variant="outline"
@@ -2150,6 +2464,18 @@ export default function TodolistsPage() {
                         {isSameDay(task.dueDate, new Date()) ? 'Today' : isSameDay(task.dueDate, new Date(new Date().setDate(new Date().getDate() + 1))) ? 'Tomorrow' : format(task.dueDate, 'PPP')}
                       </Badge>
                     )}
+                    {task.group && (
+                      <Badge variant="secondary">
+                        <Folder size={12} className="mr-1" />
+                        {task.group}
+                      </Badge>
+                    )}
+                    {task.tags?.map((tag, index) => (
+                      <Badge key={index} variant="outline">
+                        <Tag size={12} className="mr-1" />
+                        {tag}
+                      </Badge>
+                    ))}
                   </div>
                 </div>
               ))
@@ -2162,3 +2488,4 @@ export default function TodolistsPage() {
     </Layout>
   );
 }
+  
