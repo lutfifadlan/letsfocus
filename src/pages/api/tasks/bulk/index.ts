@@ -18,7 +18,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     return res.status(404).json({ message: 'User not found' });
   }
 
-  const { taskIds, tags, dueDate, priority, group, status } = req.body;
+  const { taskIds, tags, dueDate, priority, group, status, isDeleted } = req.body;
   let completedAt = null;
   let ignoredAt = null;
   let deletedAt = null;
@@ -31,9 +31,10 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     } else if (status === 'DELETED') {
       deletedAt = new Date();
     }
-
+  
     try {
-      const updatedTasks = await Task.updateMany({ _id: { $in: taskIds }, userId: user._id }, { tags, dueDate, priority, group, status, completedAt, ignoredAt, deletedAt }, { new: true });
+      await Task.updateMany({ _id: { $in: taskIds }, userId: user._id }, { tags, dueDate, priority, group, status, completedAt, ignoredAt, deletedAt, isDeleted });
+      const updatedTasks = await Task.find({ _id: { $in: taskIds }, userId: user._id });
       res.status(200).json({ message: 'Tags updated successfully', updatedTasks });
     } catch (error) {
     console.error(error);

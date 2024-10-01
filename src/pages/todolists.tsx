@@ -112,6 +112,7 @@ export default function TodolistsPage() {
   const [editingTaskTagsId, setEditingTaskTagsId] = useState<string | null>(null);
   const [editingTaskTags, setEditingTaskTags] = useState<string[]>([]);
   const [selectedTaskIds, setSelectedTaskIds] = useState<string[]>([]);
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [lastDeletedTaskIds, setLastDeletedTaskIds] = useState<string[]>([]);
   const [showBulkActions, setShowBulkActions] = useState(false);
   const [isFetchLoading, setIsFetchLoading] = useState(false);
@@ -581,14 +582,12 @@ export default function TodolistsPage() {
         throw new Error(errorData.message || 'Failed to delete tasks');
       }
 
-      setSelectedTaskIds([]);
-
       toast({
         title: 'Tasks Deleted',
         description: `${tasksToDelete.length} tasks have been deleted.`,
         duration: 5000,
         action: (
-          <ToastAction altText="Undo" onClick={() => undoDeleteSelectedTasks()}>
+          <ToastAction altText="Undo" onClick={() => undoDeleteSelectedTasks(selectedTaskIds)}>
             Undo
           </ToastAction>
         ),
@@ -615,15 +614,15 @@ export default function TodolistsPage() {
     setIsLoading(false);
   };
 
-  const undoDeleteSelectedTasks = async () => {
+  const undoDeleteSelectedTasks = async (taskIds: string[]) => {
     setIsLoading(true);
     try {
-      const response = await fetch(`/api/tasks`, {
+      const response = await fetch(`/api/tasks/bulk`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ taskIds: lastDeletedTaskIds, isDeleted: false }),
+        body: JSON.stringify({ taskIds, isDeleted: false }),
       });
 
       if (!response.ok) {
@@ -631,9 +630,13 @@ export default function TodolistsPage() {
         throw new Error(errorData.message || 'Failed to undo delete');
       }
 
+      const selectedTasks = await response.json();
+
       setTasks((prevTasks) =>
         prevTasks.map((task) =>
-          lastDeletedTaskIds.includes(task._id) ? { ...task, isDeleted: false } : task
+          selectedTasks.updatedTasks.some((selectedTask: Task) => selectedTask._id === task._id)
+            ? { ...task, isDeleted: false }
+            : task
         )
       );
 
@@ -641,7 +644,7 @@ export default function TodolistsPage() {
 
       toast({
         title: 'Undo Successful',
-        description: 'Tasks have been restored.',
+        description: `${selectedTasks.updatedTasks.length} tasks have been restored.`,
       });
     } catch (error) {
       console.error('Failed to undo delete:', error);
@@ -1085,12 +1088,49 @@ export default function TodolistsPage() {
         });
       }
 
+       // Adding undo option after completing tasks
+      toast({
+        title: 'Tasks Completed',
+        description: `${completedTasks} tasks have been completed.`,
+        action: (
+          <ToastAction
+            altText="Undo"
+            onClick={() => undoTasksComplete(selectedTaskIds)}
+          >
+            Undo
+          </ToastAction>
+        ),
+      });
+
       setSelectedTaskIds([]);
     } catch (error) {
       console.error(error);
     }
     setIsLoading(false);
     setShowBulkActions(false);
+  };
+
+  const undoTasksComplete = async (taskIds: string[]) => {
+    setIsLoading(true);
+    try {
+      await fetch('/api/tasks/bulk', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ taskIds, status: 'PENDING' }),
+      });
+      setTasks((prevTasks) =>
+        prevTasks.map((task) =>
+          taskIds.includes(task._id) ? { ...task, status: 'PENDING' } : task
+        )
+      );
+      toast({
+        title: 'Undo Successful',
+        description: 'Task completion has been undone.',
+      });
+    } catch (error) {
+      console.error('Failed to undo task completion:', error);
+    }
+    setIsLoading(false);
   };
 
   const bulkMarkAsIgnored = async () => {
@@ -1153,7 +1193,6 @@ export default function TodolistsPage() {
                         <Button
                           variant="ghost"
                           size="icon"
-                          aria-label="Sort Tasks"
                         >
                           <ArrowDownUp size={16} />
                         </Button>
@@ -1176,7 +1215,13 @@ export default function TodolistsPage() {
                                 {key === 'group' && <Folder size={16} />}
                                 {key === 'title' && <FileText size={16} />}
                               </Button>
-                              <span>{key.charAt(0).toUpperCase() + key.slice(1)}</span>
+                              <span>
+                                {key === 'createdAt' && 'Created Date'}
+                                {key === 'priority' && 'Priority'}
+                                {key === 'dueDate' && 'Due Date'}
+                                {key === 'group' && 'Group'}
+                                {key === 'title' && 'Title'}
+                              </span>
                             </div>
                           ))}
                         </div>
@@ -1672,7 +1717,7 @@ export default function TodolistsPage() {
                           <AlertDialogHeader>
                             <AlertDialogTitle>Confirm Deletion</AlertDialogTitle>
                             <AlertDialogDescription>
-                              {`Are you sure you want to delete ${selectedTaskIds.length} selected task(s)? This action cannot be undone.`}
+                              {`Are you sure you want to delete ${selectedTaskIds.length} selected task(s)?`}
                             </AlertDialogDescription>
                           </AlertDialogHeader>
                           <AlertDialogFooter>
@@ -2329,40 +2374,38 @@ export default function TodolistsPage() {
                         </TooltipContent>
                       </Tooltip>
                     </TooltipProvider>
-
                     <TooltipProvider>
                       <Tooltip>
-                        <TooltipTrigger>
-                          <AlertDialog>
+                        <AlertDialog>
+                          <TooltipTrigger asChild>
                             <AlertDialogTrigger asChild>
                               <Button
                                 variant="ghost"
                                 size="icon"
-                                onClick={() => updateTaskStatus(task._id, 'IGNORED')}
                                 aria-label="Ignore Task"
                                 className="w-auto px-1"
                               >
                                 <CircleMinus size={16} />
                               </Button>
                             </AlertDialogTrigger>
-                            <AlertDialogContent>
-                              <AlertDialogHeader>
-                                <AlertDialogTitle>Confirm Ignore</AlertDialogTitle>
-                                <AlertDialogDescription>
-                                  Are you sure you want to ignore this task? This action can be undone later.
-                                </AlertDialogDescription>
-                              </AlertDialogHeader>
-                              <AlertDialogFooter>
-                                <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                <AlertDialogAction
-                                  onClick={() => updateTaskStatus(task._id, 'IGNORED')}
-                                >
-                                  Ignore
-                                </AlertDialogAction>
-                              </AlertDialogFooter>
-                            </AlertDialogContent>
-                          </AlertDialog>
-                        </TooltipTrigger>
+                          </TooltipTrigger>
+                          <AlertDialogContent>
+                            <AlertDialogHeader>
+                              <AlertDialogTitle>Confirm Ignore</AlertDialogTitle>
+                              <AlertDialogDescription>
+                                Are you sure you want to ignore this task? This action can be undone later.
+                              </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                              <AlertDialogCancel>Cancel</AlertDialogCancel>
+                              <AlertDialogAction
+                                onClick={() => updateTaskStatus(task._id, 'IGNORED')}
+                              >
+                                Ignore
+                              </AlertDialogAction>
+                            </AlertDialogFooter>
+                          </AlertDialogContent>
+                        </AlertDialog>
                         <TooltipContent>
                           <p>Ignore task</p>
                         </TooltipContent>
@@ -2377,7 +2420,6 @@ export default function TodolistsPage() {
                               <Button
                                 variant="ghost"
                                 size="icon"
-                                onClick={() => deleteTask(task._id)}
                                 aria-label="Delete Task"
                                 className="w-auto px-1"
                               >
@@ -2388,7 +2430,7 @@ export default function TodolistsPage() {
                               <AlertDialogHeader>
                                 <AlertDialogTitle>Confirm Deletion</AlertDialogTitle>
                                 <AlertDialogDescription>
-                                  Are you sure you want to delete this task? This action cannot be undone.
+                                  Are you sure you want to delete this task?.
                                 </AlertDialogDescription>
                               </AlertDialogHeader>
                               <AlertDialogFooter>
