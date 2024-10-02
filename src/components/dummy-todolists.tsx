@@ -57,7 +57,7 @@ const userId = generateId();
 const defaultTasks: Task[] = [
   {
     _id: generateId(),
-    title: 'Click the check button on the left side to mark task as completed',
+    title: 'Mark task as completed',
     tags: ['welcome'],
     group: 'Getting Started',
     description: '',
