@@ -19,7 +19,7 @@ const SignIn: React.FC = () => {
   const router = useRouter();
   const { toast } = useToast();
   const { callbackUrl, verified } = router.query;
-  const imageSrc = '/logo.svg';
+  const imageSrc = '/icon.svg';
   const { status } = useSession();
 
   useEffect(() => {
@@ -100,7 +100,7 @@ const SignIn: React.FC = () => {
       >
         <div className="flex items-center justify-center space-x-2 mb-6">
           <Link href="/" className="flex items-center space-x-2">
-            <Image src={imageSrc} alt="Logo" width={40} height={40} priority className="rounded-full border"/>
+            <Image src={imageSrc} alt="Logo" width={40} height={40} priority />
             <div className="text-3xl font-bold text-center">
               Let&apos;s Focus
             </div>

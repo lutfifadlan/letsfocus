@@ -29,7 +29,9 @@ const Header: React.FC = () => {
         <div className="flex justify-between h-16 items-center flex-wrap">
           <div className="flex-shrink-0 flex items-center space-x-2">
             <Link href="/" className="flex items-center space-x-2">
-              <Image src="/logo.svg" alt="logo" width={40} height={40} priority className="rounded-full border" />
+              <Button variant="ghost" size="icon" className="p-0 m-0">
+                <Image src="/icon.svg" alt="logo" width={40} height={40} priority className="borded-none shadow-none" />
+              </Button>
               <div className="text-lg sm:text-2xl font-bold text-center">
                 Let&apos;s Focus
               </div>

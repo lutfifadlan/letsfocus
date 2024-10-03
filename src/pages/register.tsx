@@ -27,7 +27,7 @@ const Register: React.FC = () => {
   const [showPassword, setShowPassword] = useState(false);
   const router = useRouter();
   const { toast } = useToast();
-  const imageSrc = '/logo.svg'
+  const imageSrc = '/icon.svg'
 
   useEffect(() => {
     if (status === 'authenticated') {
@@ -117,7 +117,7 @@ const Register: React.FC = () => {
       >
         <div className="flex items-center justify-center space-x-2 mb-6">
           <Link href="/" className="flex items-center space-x-2">
-            <Image src={imageSrc} alt="logo" width={40} height={40} priority className="rounded-full border"/>
+            <Image src={imageSrc} alt="logo" width={40} height={40} priority/>
             <div className="text-3xl font-bold text-center">
               Let&apos;s Focus
             </div>

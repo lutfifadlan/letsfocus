@@ -1337,24 +1337,6 @@ export default function TodolistsPage() {
         <CardContent>
           <div className="flex flex-col gap-0 mb-2">
             <div className={`flex flex-row gap-2 ${isFileTextButtonClicked ? 'items-start justify-start' : 'items-center justify-center'}`}>
-              <TooltipProvider>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      onClick={() => setIsCurrentlyFocused(!isCurrentlyFocused)}
-                      aria-label="Toggle Currently Focused"
-                      className={`w-auto px-1.5 ${isCurrentlyFocused ? 'bg-yellow-100 dark:bg-yellow-900' : ''}`}
-                    >
-                      <Rocket size={16} />
-                    </Button>
-                  </TooltipTrigger>
-                  <TooltipContent>
-                    { isCurrentlyFocused ? <p>Remove focus</p> : <p>Let&apos;s focus</p> }
-                  </TooltipContent>
-                </Tooltip>
-              </TooltipProvider>
               <div className="flex flex-col gap-2 w-full text-sm">
                 <Input
                   placeholder="Add task"
@@ -1388,6 +1370,24 @@ export default function TodolistsPage() {
                   />
                 )}
               </div>
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => setIsCurrentlyFocused(!isCurrentlyFocused)}
+                      aria-label="Toggle Currently Focused"
+                      className={`w-auto px-1.5 ${isCurrentlyFocused ? 'bg-blue-400 dark:bg-blue-400 dark:text-black' : ''}`}
+                    >
+                      <Rocket size={16} />
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    { isCurrentlyFocused ? <p>Remove focus</p> : <p>Let&apos;s focus</p> }
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
               <TooltipProvider>
                 <Tooltip>
                   <TooltipTrigger asChild>
@@ -2047,6 +2047,7 @@ export default function TodolistsPage() {
                           onClick={() => bulkUpdateCurrentlyFocused(true)}
                           aria-label="Mark as Currently Focused"
                           disabled={selectedTaskIds.length === 0}
+                          className={`w-auto px-1.5 bg-blue-400 dark:text-black`}
                         >
                           <Rocket size={16} />
                         </Button>
@@ -2162,7 +2163,7 @@ export default function TodolistsPage() {
                                 size="icon"
                                 onClick={() => updateTaskCurrentlyFocused(task._id, false)}
                                 aria-label="Currently Focused"
-                                className="w-auto px-1 bg-yellow-100 dark:bg-yellow-900"
+                                className="w-auto px-1 bg-blue-300"
                               >
                                 <Rocket size={16} />
                               </Button>
@@ -2684,4 +2685,3 @@ export default function TodolistsPage() {
     </Layout>
   );
 }
-  
