@@ -695,11 +695,12 @@ export default function TodolistsPage() {
         throw new Error(errorData.message || 'Failed to update task group');
       }
 
-      setTasks((prevTasks) =>
-        prevTasks.map((task) =>
+      setTasks((prevTasks) => {
+        const updatedTasks = prevTasks.map((task) =>
           task._id === taskId ? { ...task, group: groupName ?? '' } : task
-        )
-      );
+        );
+        return sortTasks(updatedTasks) || updatedTasks;
+      });
 
       toast({
         title: 'Group Updated',
@@ -736,11 +737,12 @@ export default function TodolistsPage() {
         throw new Error(errorData.message || 'Failed to update task');
       }
   
-      setTasks((prevTasks) =>
-        prevTasks.map((task) =>
+      setTasks((prevTasks) => {
+        const updatedTasks = prevTasks.map((task) =>
           task._id === taskId ? { ...task, isCurrentlyFocused } : task
-        )
-      );
+        );
+        return sortTasks(updatedTasks) || updatedTasks;
+      });
   
       toast({
         title: 'Task Updated',
@@ -756,6 +758,7 @@ export default function TodolistsPage() {
         duration: 3000,
       });
     }
+
     setIsLoading(false);
   };
 
@@ -814,11 +817,13 @@ export default function TodolistsPage() {
         throw new Error(errorData.message || 'Failed to update task title');
       }
 
-      setTasks((prevTasks) =>
-        prevTasks.map((task) =>
+      setTasks((prevTasks) => {
+        const updatedTasks = prevTasks.map((task) =>
           task._id === taskId ? { ...task, title: newTitle } : task
-        )
-      );
+        );
+        const sortedTasks = sortTasks(updatedTasks);
+        return sortedTasks ? sortedTasks : updatedTasks;
+      });
 
       toast({
         title: 'Title Updated',
@@ -853,11 +858,13 @@ export default function TodolistsPage() {
         throw new Error(errorData.message || 'Failed to update task priority');
       }
 
-      setTasks((prevTasks) =>
-          prevTasks.map((task) =>
+      setTasks((prevTasks) => {
+        const updatedTasks = prevTasks.map((task) =>
           task._id === taskId ? { ...task, priority: newPriority } : task
-        )
-      );
+        );
+        const sortedTasks = sortTasks(updatedTasks);
+        return sortedTasks ? sortedTasks : updatedTasks;
+      });
 
       toast({
         title: 'Priority Updated',
@@ -930,11 +937,12 @@ export default function TodolistsPage() {
         throw new Error(errorData.message || 'Failed to update task due date');
       }
 
-      setTasks((prevTasks) =>
-        prevTasks.map((task) =>
+      setTasks((prevTasks) => {
+        const updatedTasks = prevTasks.map((task) =>
           task._id === taskId ? { ...task, dueDate: newDueDate } : task
-        )
-      );
+        );
+        return sortTasks(updatedTasks) || updatedTasks;
+      });
 
       toast({
         title: 'Due Date Updated',

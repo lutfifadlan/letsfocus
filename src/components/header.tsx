@@ -37,7 +37,7 @@ const Header: React.FC = () => {
           <div className="flex-shrink-0 flex items-center space-x-2">
             <Link href="/" className="flex items-center space-x-2">
               <Button variant="ghost" size="icon" className="p-0 m-0">
-                <Image src="/logo.svg" alt="logo" width={40} height={40} priority className="borded-none shadow-none" />
+                <Image src="/logo.png" alt="logo" width={40} height={40} priority className="borded-none shadow-none" />
               </Button>
               <div className="text-lg sm:text-2xl font-bold text-center">
                 Let&apos;s Focus
