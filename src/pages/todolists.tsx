@@ -1013,11 +1013,12 @@ export default function TodolistsPage() {
         body: JSON.stringify({ taskIds: selectedTaskIds, group: groupName }),
       });
       if (!response.ok) throw new Error('Failed to bulk assign group');
-      setTasks((prevTasks) =>
-        prevTasks.map((task) =>
+      setTasks((prevTasks) => {
+        const updatedTasks = prevTasks.map((task) =>
           selectedTaskIds.includes(task._id) ? { ...task, group: groupName } : task
-        )
-      );
+        );
+        return sortTasks(updatedTasks) || updatedTasks;
+      });
       setSelectedTaskIds([]);
     } catch (error) {
       console.error(error);
@@ -1057,11 +1058,12 @@ export default function TodolistsPage() {
         headers: { 'Content-Type': 'application/json' },
       });
       if (!response.ok) throw new Error('Failed to bulk assign due date');
-      setTasks((prevTasks) =>
-        prevTasks.map((task) =>
+      setTasks((prevTasks) => {
+        const updatedTasks = prevTasks.map((task) =>
           selectedTaskIds.includes(task._id) ? { ...task, dueDate } : task
-        )
-      );
+        );
+        return sortTasks(updatedTasks) || updatedTasks;
+      });
       setSelectedTaskIds([]);
     } catch (error) {
       console.error(error);
@@ -1079,11 +1081,12 @@ export default function TodolistsPage() {
         headers: { 'Content-Type': 'application/json' },
       });
       if (!response.ok) throw new Error('Failed to bulk assign priority');
-      setTasks((prevTasks) =>
-        prevTasks.map((task) =>
+      setTasks((prevTasks) => {
+        const updatedTasks = prevTasks.map((task) =>
           selectedTaskIds.includes(task._id) ? { ...task, priority } : task
-        )
-      );
+        );
+        return sortTasks(updatedTasks) || updatedTasks;
+      });
       setSelectedTaskIds([]);
     } catch (error) {
       console.error(error);
@@ -1101,11 +1104,12 @@ export default function TodolistsPage() {
         headers: { 'Content-Type': 'application/json' },
       });
       if (!response.ok) throw new Error('Failed to bulk complete tasks');
-      setTasks((prevTasks) =>
-        prevTasks.map((task) =>
+      setTasks((prevTasks) => {
+        const updatedTasks = prevTasks.map((task) =>
           selectedTaskIds.includes(task._id) ? { ...task, status: 'COMPLETED' } : task
-        )
-      );
+        );
+        return sortTasks(updatedTasks) || updatedTasks;
+      });
 
       const totalTasks =  incompleteTasks.length;
       const completedTasks = selectedTaskIds.length;
@@ -1213,11 +1217,13 @@ export default function TodolistsPage() {
         headers: { 'Content-Type': 'application/json' },
       });
       if (!response.ok) throw new Error('Failed to bulk ignore tasks');
-      setTasks((prevTasks) =>
-        prevTasks.map((task) =>
+      setTasks((prevTasks) => {
+        const updatedTasks = prevTasks.map((task) =>
           selectedTaskIds.includes(task._id) ? { ...task, status: 'IGNORED' } : task
-        )
-      );
+        );
+        const sortedTasks = sortTasks(updatedTasks);
+        return sortedTasks ? sortedTasks : updatedTasks;
+      });
       setSelectedTaskIds([]);
     } catch (error) {
       console.error(error);
@@ -1235,11 +1241,13 @@ export default function TodolistsPage() {
         headers: { 'Content-Type': 'application/json' },
       });
       if (!response.ok) throw new Error('Failed to bulk update currently working status');
-      setTasks((prevTasks) =>
-        prevTasks.map((task) =>
+      setTasks((prevTasks) => {
+        const updatedTasks = prevTasks.map((task) =>
           selectedTaskIds.includes(task._id) ? { ...task, isCurrentlyFocused } : task
-        )
-      );
+        );
+        const sortedTasks = sortTasks(updatedTasks);
+        return sortedTasks ? sortedTasks : updatedTasks;
+      });
       setSelectedTaskIds([]);
     } catch (error) {
       console.error(error);
