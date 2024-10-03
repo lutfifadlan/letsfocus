@@ -13,7 +13,6 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
   const { status } = useSession();
   const [isHeaderVisible, setIsHeaderVisible] = useState(false);
 
-  // Show header only on hover if not on the landing page
   const handleMouseEnter = () => setIsHeaderVisible(true);
   const handleMouseLeave = () => setIsHeaderVisible(false);
 
