@@ -239,6 +239,16 @@ export default function TodolistsPage() {
       return newSortDirection;
     });
   };
+  const getActiveSortOption = () => {
+    const activeSort = Object.entries(sortOptions).find(([, value]) => value);
+    if (activeSort) {
+      const [key] = activeSort;
+      const direction = sortDirection[key as keyof typeof sortDirection];
+      const displayKey = key === 'createdAt' ? 'Created Date' : key === 'dueDate' ? 'Due Date' : key.charAt(0).toUpperCase() + key.slice(1);
+      return `${displayKey} (${direction})`;
+    }
+    return 'None';
+  };
 
   const fetchTasksAndGroups = async () => {
     setIsLoading(true);
@@ -695,11 +705,12 @@ export default function TodolistsPage() {
         throw new Error(errorData.message || 'Failed to update task group');
       }
 
-      setTasks((prevTasks) =>
-        prevTasks.map((task) =>
+      setTasks((prevTasks) => {
+        const updatedTasks = prevTasks.map((task) =>
           task._id === taskId ? { ...task, group: groupName ?? '' } : task
-        )
-      );
+        );
+        return sortTasks(updatedTasks) || updatedTasks;
+      });
 
       toast({
         title: 'Group Updated',
@@ -736,11 +747,12 @@ export default function TodolistsPage() {
         throw new Error(errorData.message || 'Failed to update task');
       }
   
-      setTasks((prevTasks) =>
-        prevTasks.map((task) =>
+      setTasks((prevTasks) => {
+        const updatedTasks = prevTasks.map((task) =>
           task._id === taskId ? { ...task, isCurrentlyFocused } : task
-        )
-      );
+        );
+        return sortTasks(updatedTasks) || updatedTasks;
+      });
   
       toast({
         title: 'Task Updated',
@@ -756,6 +768,7 @@ export default function TodolistsPage() {
         duration: 3000,
       });
     }
+
     setIsLoading(false);
   };
 
@@ -814,11 +827,13 @@ export default function TodolistsPage() {
         throw new Error(errorData.message || 'Failed to update task title');
       }
 
-      setTasks((prevTasks) =>
-        prevTasks.map((task) =>
+      setTasks((prevTasks) => {
+        const updatedTasks = prevTasks.map((task) =>
           task._id === taskId ? { ...task, title: newTitle } : task
-        )
-      );
+        );
+        const sortedTasks = sortTasks(updatedTasks);
+        return sortedTasks ? sortedTasks : updatedTasks;
+      });
 
       toast({
         title: 'Title Updated',
@@ -853,11 +868,13 @@ export default function TodolistsPage() {
         throw new Error(errorData.message || 'Failed to update task priority');
       }
 
-      setTasks((prevTasks) =>
-          prevTasks.map((task) =>
+      setTasks((prevTasks) => {
+        const updatedTasks = prevTasks.map((task) =>
           task._id === taskId ? { ...task, priority: newPriority } : task
-        )
-      );
+        );
+        const sortedTasks = sortTasks(updatedTasks);
+        return sortedTasks ? sortedTasks : updatedTasks;
+      });
 
       toast({
         title: 'Priority Updated',
@@ -930,11 +947,12 @@ export default function TodolistsPage() {
         throw new Error(errorData.message || 'Failed to update task due date');
       }
 
-      setTasks((prevTasks) =>
-        prevTasks.map((task) =>
+      setTasks((prevTasks) => {
+        const updatedTasks = prevTasks.map((task) =>
           task._id === taskId ? { ...task, dueDate: newDueDate } : task
-        )
-      );
+        );
+        return sortTasks(updatedTasks) || updatedTasks;
+      });
 
       toast({
         title: 'Due Date Updated',
@@ -1005,11 +1023,12 @@ export default function TodolistsPage() {
         body: JSON.stringify({ taskIds: selectedTaskIds, group: groupName }),
       });
       if (!response.ok) throw new Error('Failed to bulk assign group');
-      setTasks((prevTasks) =>
-        prevTasks.map((task) =>
+      setTasks((prevTasks) => {
+        const updatedTasks = prevTasks.map((task) =>
           selectedTaskIds.includes(task._id) ? { ...task, group: groupName } : task
-        )
-      );
+        );
+        return sortTasks(updatedTasks) || updatedTasks;
+      });
       setSelectedTaskIds([]);
     } catch (error) {
       console.error(error);
@@ -1049,11 +1068,12 @@ export default function TodolistsPage() {
         headers: { 'Content-Type': 'application/json' },
       });
       if (!response.ok) throw new Error('Failed to bulk assign due date');
-      setTasks((prevTasks) =>
-        prevTasks.map((task) =>
+      setTasks((prevTasks) => {
+        const updatedTasks = prevTasks.map((task) =>
           selectedTaskIds.includes(task._id) ? { ...task, dueDate } : task
-        )
-      );
+        );
+        return sortTasks(updatedTasks) || updatedTasks;
+      });
       setSelectedTaskIds([]);
     } catch (error) {
       console.error(error);
@@ -1071,11 +1091,12 @@ export default function TodolistsPage() {
         headers: { 'Content-Type': 'application/json' },
       });
       if (!response.ok) throw new Error('Failed to bulk assign priority');
-      setTasks((prevTasks) =>
-        prevTasks.map((task) =>
+      setTasks((prevTasks) => {
+        const updatedTasks = prevTasks.map((task) =>
           selectedTaskIds.includes(task._id) ? { ...task, priority } : task
-        )
-      );
+        );
+        return sortTasks(updatedTasks) || updatedTasks;
+      });
       setSelectedTaskIds([]);
     } catch (error) {
       console.error(error);
@@ -1093,11 +1114,12 @@ export default function TodolistsPage() {
         headers: { 'Content-Type': 'application/json' },
       });
       if (!response.ok) throw new Error('Failed to bulk complete tasks');
-      setTasks((prevTasks) =>
-        prevTasks.map((task) =>
+      setTasks((prevTasks) => {
+        const updatedTasks = prevTasks.map((task) =>
           selectedTaskIds.includes(task._id) ? { ...task, status: 'COMPLETED' } : task
-        )
-      );
+        );
+        return sortTasks(updatedTasks) || updatedTasks;
+      });
 
       const totalTasks =  incompleteTasks.length;
       const completedTasks = selectedTaskIds.length;
@@ -1205,11 +1227,13 @@ export default function TodolistsPage() {
         headers: { 'Content-Type': 'application/json' },
       });
       if (!response.ok) throw new Error('Failed to bulk ignore tasks');
-      setTasks((prevTasks) =>
-        prevTasks.map((task) =>
+      setTasks((prevTasks) => {
+        const updatedTasks = prevTasks.map((task) =>
           selectedTaskIds.includes(task._id) ? { ...task, status: 'IGNORED' } : task
-        )
-      );
+        );
+        const sortedTasks = sortTasks(updatedTasks);
+        return sortedTasks ? sortedTasks : updatedTasks;
+      });
       setSelectedTaskIds([]);
     } catch (error) {
       console.error(error);
@@ -1227,11 +1251,13 @@ export default function TodolistsPage() {
         headers: { 'Content-Type': 'application/json' },
       });
       if (!response.ok) throw new Error('Failed to bulk update currently working status');
-      setTasks((prevTasks) =>
-        prevTasks.map((task) =>
+      setTasks((prevTasks) => {
+        const updatedTasks = prevTasks.map((task) =>
           selectedTaskIds.includes(task._id) ? { ...task, isCurrentlyFocused } : task
-        )
-      );
+        );
+        const sortedTasks = sortTasks(updatedTasks);
+        return sortedTasks ? sortedTasks : updatedTasks;
+      });
       setSelectedTaskIds([]);
     } catch (error) {
       console.error(error);
@@ -1282,9 +1308,11 @@ export default function TodolistsPage() {
                       <PopoverTrigger asChild>
                         <Button
                           variant="ghost"
-                          size="icon"
+                          size="sm"
+                          className="flex items-center space-x-1"
                         >
                           <ArrowDownUp size={16} />
+                          <span>{getActiveSortOption()}</span>
                         </Button>
                       </PopoverTrigger>
                       <PopoverContent className="w-48 p-2 text-sm">
@@ -1298,7 +1326,7 @@ export default function TodolistsPage() {
                                 aria-label={`Sort by ${key}`}
                                 onClick={() => handleSortChange(key as keyof typeof sortOptions)}
                               >
-                                {sortDirection[key as keyof typeof sortDirection] === 'asc' ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+                                {sortDirection[key as keyof typeof sortDirection] === 'asc' ? <ChevronDown size={16} /> : <ChevronUp size={16} />}
                                 {key === 'createdAt' && <CalendarArrowDown size={16} />}
                                 {key === 'priority' && <Flag size={16} />}
                                 {key === 'dueDate' && <CalendarIcon size={16} />}
