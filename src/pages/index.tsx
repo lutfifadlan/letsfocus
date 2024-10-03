@@ -9,6 +9,7 @@ import ShineBorder from "@/components/ui/shine-border";
 import { useTheme } from "next-themes";
 import LandingArrow from "@/components/arrows/landing";
 import AngryUnderline from "@/components/underline/angry";
+import BlurIn from "@/components/ui/blur-in";
 
 export default function Home() {
   const router = useRouter();
@@ -29,9 +30,14 @@ export default function Home() {
       <main className="flex flex-col items-center justify-center min-h-screen px-4">
         {/* Hero Section */}
         <section className="text-center mt-4">
-          <h1 className="text-3xl md:text-5xl font-extrabold text-gray-900 dark:text-white">
-            Clear Your Mind. Break It Down. <br/>
-            What You Need is <AngryUnderline>Focus</AngryUnderline>. <br />
+          <h1 className="text-3xl md:text-5xl font-extrabold text-gray-900">
+            <span className="inline-block rounded-sm px-1.5 py-0.5 mb-1">Clear Your Mind. Break It Down.</span> <br/>
+            <span className="inline-block bg-blue-400 rounded-sm px-1.5 py-0.5 mb-1">
+              What You Need is {' '}
+              <AngryUnderline>
+                <BlurIn word="Focus" duration={1} className="inline-block text-3xl md:text-5xl" />
+              </AngryUnderline>
+            </span>
           </h1>
           <p className="mt-6 text-lg md:text-2xl text-gray-700 dark:text-gray-300 max-w-4xl mx-auto">
             Modern, simple, and powerful todo list app that helps you get things done.
