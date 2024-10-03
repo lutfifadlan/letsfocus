@@ -14,9 +14,7 @@ import {
   Plus, Trash, Tag, Folder, PlusCircle, Edit, FileText, Save, X,
   CalendarIcon, SquareCheck, Trash2, ChevronsUp, ChevronUp,
   ChevronDown, Flag, CalendarArrowDown, ArrowDownUp, CopyCheck,
-  MinusCircle,
-  Rocket,
-  CircleMinus
+  MinusCircle, Rocket, CircleMinus
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { ToastAction } from '@/components/ui/toast';
@@ -49,6 +47,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 
 const FormSchema = z.object({
   calendar: z.object({
@@ -85,6 +84,7 @@ export default function TodolistsPage() {
       dueDate: false,
       group: false,
       title: false,
+      focus: false,
     };
   });
   const [sortDirection, setSortDirection] = useState(() => {
@@ -95,6 +95,7 @@ export default function TodolistsPage() {
       dueDate: 'desc',
       group: 'desc',
       title: 'desc',
+      focus: 'desc',
     };
   });
   const [newTask, setNewTask] = useState('');
@@ -198,6 +199,13 @@ export default function TodolistsPage() {
             return 0;
           });
           break;
+        case 'focus':
+          sortedTasks.sort((a, b) => {
+            if (a.isCurrentlyFocused && !b.isCurrentlyFocused) return -direction;
+            if (!a.isCurrentlyFocused && b.isCurrentlyFocused) return direction;
+            return 0;
+          });
+        break;
         case 'title':
           sortedTasks.sort((a, b) =>
             direction * a.title.localeCompare(b.title)
@@ -991,8 +999,10 @@ export default function TodolistsPage() {
     try {
       const response = await fetch('/api/tasks/bulk', {
         method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json'
+        },
         body: JSON.stringify({ taskIds: selectedTaskIds, group: groupName }),
-        headers: { 'Content-Type': 'application/json' },
       });
       if (!response.ok) throw new Error('Failed to bulk assign group');
       setTasks((prevTasks) =>
@@ -1294,6 +1304,7 @@ export default function TodolistsPage() {
                                 {key === 'dueDate' && <CalendarIcon size={16} />}
                                 {key === 'group' && <Folder size={16} />}
                                 {key === 'title' && <FileText size={16} />}
+                                {key === 'focus' && <Rocket size={16} />}
                               </Button>
                               <span>
                                 {key === 'createdAt' && 'Created Date'}
@@ -1301,6 +1312,7 @@ export default function TodolistsPage() {
                                 {key === 'dueDate' && 'Due Date'}
                                 {key === 'group' && 'Group'}
                                 {key === 'title' && 'Title'}
+                                {key === 'focus' && 'Focus'}
                               </span>
                             </div>
                           ))}
@@ -1385,6 +1397,179 @@ export default function TodolistsPage() {
                   </TooltipTrigger>
                   <TooltipContent>
                     { isCurrentlyFocused ? <p>Remove focus</p> : <p>Let&apos;s focus</p> }
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger>
+                    <Popover open={isCalendarPickerOpen} onOpenChange={setIsCalendarPickerOpen}>
+                      <PopoverTrigger asChild>
+                        <Button
+                          onClick={() => setIsCalendarPickerOpen(!isCalendarPickerOpen)}
+                          aria-label="Add Due Date"
+                          variant="ghost"
+                          size="icon"
+                          className="w-auto px-1"
+                        >
+                          <CalendarIcon size={16} />
+                        </Button>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-52 text-sm">
+                        <div className="flex flex-col space-y-1">
+                          <p className="flex justify-start items-center">Select Due Date</p>
+                          <div className="flex items-center justify-center space-x-1">
+                            <Form {...form}>
+                              <form
+                                onSubmit={form.handleSubmit((data) => {
+                                  setDueDate(data.datePicker.to);
+                                  setIsCalendarPickerOpen(false);
+                                })}
+                                className="flex flex-col justify-center text-center items-center space-y-2"
+                              >
+                                <div className="flex justify-center items-center space-x-1">
+                                  <CalendarDatePicker
+                                    date={{ from: dueDate || new Date(), to: dueDate || new Date() }}
+                                    onDateSelect={({ from, to }) => {
+                                      form.setValue("datePicker", { from, to });
+                                      setDueDate(from);
+                                      setIsCalendarPickerOpen(false);
+                                    }}
+                                    variant="outline"
+                                    numberOfMonths={1}
+                                    className="min-w-[150px] border rounded-md ml-3 mt-2 justify-center items-center"
+                                  />
+                                  <Button
+                                    variant="outline"
+                                    type="button"
+                                    onClick={() => {
+                                      setDueDate(null);
+                                      setIsCalendarPickerOpen(false);
+                                    }}
+                                    className="px-2 py-1 mt-2"
+                                  >
+                                    <X size={16} />
+                                  </Button>
+                                </div>
+                                <div className="grid grid-cols-2 gap-2 mt-2">
+                                  <Button
+                                    variant="outline"
+                                    type="button"
+                                    onClick={() => {
+                                      setDueDate(new Date());
+                                      setIsCalendarPickerOpen(false);
+                                    }}
+                                    className="px-2 py-1"
+                                  >
+                                    Today
+                                  </Button>
+                                  <Button
+                                    variant="outline"
+                                    type="button"
+                                    onClick={() => {
+                                      const tomorrow = new Date();
+                                      tomorrow.setDate(tomorrow.getDate() + 1);
+                                      setDueDate(tomorrow);
+                                      setIsCalendarPickerOpen(false);
+                                    }}
+                                    className="px-2 py-1"
+                                  >
+                                    Tomorrow
+                                  </Button>
+                                </div>
+                              </form>
+                            </Form>
+                          </div>
+                        </div>
+                      </PopoverContent>
+                    </Popover>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>Set due date</p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger>
+                    <Popover open={showPriorityDropdown} onOpenChange={setShowPriorityDropdown}>
+                      <PopoverTrigger asChild>
+                        <Button
+                          variant="ghost"
+                          aria-label="priority"
+                          size="icon"
+                          onClick={() => setShowPriorityDropdown(!showPriorityDropdown)}
+                          className="w-auto px-1.5"
+                        >
+                          {priority === 'High' && (
+                            <div className="flex items-center">
+                              <ChevronsUp size={16} className="text-red-500" />
+                            </div>
+                          )}
+                          {priority === 'Medium' && (
+                            <div className="flex items-center">
+                              <ChevronUp size={16} />
+                            </div>
+                          )}
+                          {priority === 'Low' && (
+                            <div className="flex items-center">
+                              <ChevronDown size={16} />
+                            </div>
+                          )}
+                          {!priority && (
+                            <div className="flex items-center">
+                              <Flag size={16} />
+                            </div>
+                          )}
+                        </Button>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-36 text-sm">
+                        <p className="flex justify-start items-center mb-2">Select Priority</p>
+                        <div
+                          className="flex items-center space-x-2 p-2 rounded-md cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-900"
+                          onClick={() => {
+                            setPriority('High');
+                            setShowPriorityDropdown(false);
+                          }}
+                        >
+                          <ChevronsUp size={16} className="text-red-500" />
+                          <span>High</span>
+                        </div>
+                        <div
+                          className="flex items-center space-x-2 p-2 rounded-md cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-900"
+                          onClick={() => {
+                            setPriority('Medium');
+                            setShowPriorityDropdown(false);
+                          }}
+                        >
+                          <ChevronUp size={16} />
+                          <span>Medium</span>
+                        </div>
+                        <div
+                          className="flex items-center space-x-2 p-2 rounded-md cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-900"
+                          onClick={() => {
+                            setPriority('Low');
+                            setShowPriorityDropdown(false);
+                          }}
+                        >
+                          <ChevronDown size={16} />
+                          <span>Low</span>
+                        </div>
+                        <div
+                          className="flex items-center space-x-2 p-2 rounded-md cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-900"
+                          onClick={() => {
+                            setPriority('');
+                            setShowPriorityDropdown(false);
+                          }}
+                        >
+                          <Flag size={16} />
+                          <span>No Priority</span>
+                        </div>
+                      </PopoverContent>
+                    </Popover>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>Set priority</p>
                   </TooltipContent>
                 </Tooltip>
               </TooltipProvider>
@@ -1545,179 +1730,6 @@ export default function TodolistsPage() {
               <TooltipProvider>
                 <Tooltip>
                   <TooltipTrigger>
-                    <Popover open={showPriorityDropdown} onOpenChange={setShowPriorityDropdown}>
-                      <PopoverTrigger asChild>
-                        <Button
-                          variant="ghost"
-                          aria-label="priority"
-                          size="icon"
-                          onClick={() => setShowPriorityDropdown(!showPriorityDropdown)}
-                          className="w-auto px-1.5"
-                        >
-                          {priority === 'High' && (
-                            <div className="flex items-center">
-                              <ChevronsUp size={16} className="text-red-500" />
-                            </div>
-                          )}
-                          {priority === 'Medium' && (
-                            <div className="flex items-center">
-                              <ChevronUp size={16} />
-                            </div>
-                          )}
-                          {priority === 'Low' && (
-                            <div className="flex items-center">
-                              <ChevronDown size={16} />
-                            </div>
-                          )}
-                          {!priority && (
-                            <div className="flex items-center">
-                              <Flag size={16} />
-                            </div>
-                          )}
-                        </Button>
-                      </PopoverTrigger>
-                      <PopoverContent className="w-36 text-sm">
-                        <p className="flex justify-start items-center mb-2">Select Priority</p>
-                        <div
-                          className="flex items-center space-x-2 p-2 rounded-md cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-900"
-                          onClick={() => {
-                            setPriority('High');
-                            setShowPriorityDropdown(false);
-                          }}
-                        >
-                          <ChevronsUp size={16} className="text-red-500" />
-                          <span>High</span>
-                        </div>
-                        <div
-                          className="flex items-center space-x-2 p-2 rounded-md cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-900"
-                          onClick={() => {
-                            setPriority('Medium');
-                            setShowPriorityDropdown(false);
-                          }}
-                        >
-                          <ChevronUp size={16} />
-                          <span>Medium</span>
-                        </div>
-                        <div
-                          className="flex items-center space-x-2 p-2 rounded-md cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-900"
-                          onClick={() => {
-                            setPriority('Low');
-                            setShowPriorityDropdown(false);
-                          }}
-                        >
-                          <ChevronDown size={16} />
-                          <span>Low</span>
-                        </div>
-                        <div
-                          className="flex items-center space-x-2 p-2 rounded-md cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-900"
-                          onClick={() => {
-                            setPriority('');
-                            setShowPriorityDropdown(false);
-                          }}
-                        >
-                          <Flag size={16} />
-                          <span>No Priority</span>
-                        </div>
-                      </PopoverContent>
-                    </Popover>
-                  </TooltipTrigger>
-                  <TooltipContent>
-                    <p>Set priority</p>
-                  </TooltipContent>
-                </Tooltip>
-              </TooltipProvider>
-              <TooltipProvider>
-                <Tooltip>
-                  <TooltipTrigger>
-                    <Popover open={isCalendarPickerOpen} onOpenChange={setIsCalendarPickerOpen}>
-                      <PopoverTrigger asChild>
-                        <Button
-                          onClick={() => setIsCalendarPickerOpen(!isCalendarPickerOpen)}
-                          aria-label="Add Due Date"
-                          variant="ghost"
-                          size="icon"
-                          className="w-auto px-1"
-                        >
-                          <CalendarIcon size={16} />
-                        </Button>
-                      </PopoverTrigger>
-                      <PopoverContent className="w-52 text-sm">
-                        <div className="flex flex-col space-y-1">
-                          <p className="flex justify-start items-center">Select Due Date</p>
-                          <div className="flex items-center justify-center space-x-1">
-                            <Form {...form}>
-                              <form
-                                onSubmit={form.handleSubmit((data) => {
-                                  setDueDate(data.datePicker.to);
-                                  setIsCalendarPickerOpen(false);
-                                })}
-                                className="flex flex-col justify-center text-center items-center space-y-2"
-                              >
-                                <div className="flex justify-center items-center space-x-1">
-                                  <CalendarDatePicker
-                                    date={{ from: dueDate || new Date(), to: dueDate || new Date() }}
-                                    onDateSelect={({ from, to }) => {
-                                      form.setValue("datePicker", { from, to });
-                                      setDueDate(from);
-                                      setIsCalendarPickerOpen(false);
-                                    }}
-                                    variant="outline"
-                                    numberOfMonths={1}
-                                    className="min-w-[150px] border rounded-md ml-3 mt-2 justify-center items-center"
-                                  />
-                                  <Button
-                                    variant="outline"
-                                    type="button"
-                                    onClick={() => {
-                                      setDueDate(null);
-                                      setIsCalendarPickerOpen(false);
-                                    }}
-                                    className="px-2 py-1 mt-2"
-                                  >
-                                    <X size={16} />
-                                  </Button>
-                                </div>
-                                <div className="grid grid-cols-2 gap-2 mt-2">
-                                  <Button
-                                    variant="outline"
-                                    type="button"
-                                    onClick={() => {
-                                      setDueDate(new Date());
-                                      setIsCalendarPickerOpen(false);
-                                    }}
-                                    className="px-2 py-1"
-                                  >
-                                    Today
-                                  </Button>
-                                  <Button
-                                    variant="outline"
-                                    type="button"
-                                    onClick={() => {
-                                      const tomorrow = new Date();
-                                      tomorrow.setDate(tomorrow.getDate() + 1);
-                                      setDueDate(tomorrow);
-                                      setIsCalendarPickerOpen(false);
-                                    }}
-                                    className="px-2 py-1"
-                                  >
-                                    Tomorrow
-                                  </Button>
-                                </div>
-                              </form>
-                            </Form>
-                          </div>
-                        </div>
-                      </PopoverContent>
-                    </Popover>
-                  </TooltipTrigger>
-                  <TooltipContent>
-                    <p>Set due date</p>
-                  </TooltipContent>
-                </Tooltip>
-              </TooltipProvider>
-              <TooltipProvider>
-                <Tooltip>
-                  <TooltipTrigger>
                     <Button
                       onClick={() => handleAddTask(newTaskDescription)}
                       aria-label="Add Task"
@@ -1794,90 +1806,58 @@ export default function TodolistsPage() {
                     <TooltipTrigger>
                       <AlertDialog>
                         <AlertDialogTrigger asChild>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            aria-label="Delete Tasks"
-                            disabled={selectedTaskIds.length === 0}
-                          >
-                            <Trash2 size={16} />
+                          <Button onClick={() => {}} aria-label="Mark as Completed" variant="ghost" size="icon" disabled={selectedTaskIds.length === 0}>
+                            <SquareCheck size={16} />
                           </Button>
                         </AlertDialogTrigger>
                         <AlertDialogContent>
                           <AlertDialogHeader>
-                            <AlertDialogTitle>Confirm Deletion</AlertDialogTitle>
+                            <AlertDialogTitle>Confirm Completion</AlertDialogTitle>
                             <AlertDialogDescription>
-                              {`Are you sure you want to delete ${selectedTaskIds.length} selected task(s)?`}
+                              Are you sure you want to mark {selectedTaskIds.length} task(s) as completed?
                             </AlertDialogDescription>
                           </AlertDialogHeader>
                           <AlertDialogFooter>
                             <AlertDialogCancel>Cancel</AlertDialogCancel>
-                            <AlertDialogAction
-                              onClick={() => deleteSelectedTasks()}
-                            >
-                              Delete
+                            <AlertDialogAction onClick={bulkMarkAsCompleted}>
+                              Complete
                             </AlertDialogAction>
                           </AlertDialogFooter>
                         </AlertDialogContent>
                       </AlertDialog>
                     </TooltipTrigger>
                     <TooltipContent>
-                      <p>Delete selected tasks</p>
+                      <p>Mark selected tasks as completed</p>
                     </TooltipContent>
                   </Tooltip>
                 </TooltipProvider>
                 <TooltipProvider>
                   <Tooltip>
-                    <TooltipTrigger>
-                      <Popover>
-                        <PopoverTrigger asChild>
-                          <Button aria-label="Bulk Assign Group" variant="ghost" size="icon" disabled={selectedTaskIds.length === 0}>
-                            <Folder size={16} />
+                    <TooltipTrigger asChild>
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            aria-label="Set Focus Status"
+                            disabled={selectedTaskIds.length === 0}
+                            className="w-auto px-1.5"
+                          >
+                            <Rocket size={16} />
                           </Button>
-                        </PopoverTrigger>
-                        <PopoverContent className="w-52">
-                          <div className="space-y-2 text-sm">
-                            <p>Select a group for selected tasks</p>
-                            {groups.map((group) => (
-                              <Button
-                                key={group._id}
-                                variant="ghost"
-                                className="w-full justify-start"
-                                onClick={() => bulkAssignGroup(group.name)}
-                              >
-                                {group.name}
-                              </Button>
-                            ))}
-                          </div>
-                        </PopoverContent>
-                      </Popover>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent>
+                          <DropdownMenuItem onClick={() => bulkUpdateCurrentlyFocused(true)} className="cursor-pointer">
+                            Set as Focused
+                          </DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => bulkUpdateCurrentlyFocused(false)} className="cursor-pointer">
+                            Remove Focus
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
                     </TooltipTrigger>
                     <TooltipContent>
-                      <p>Assign group to selected tasks</p>
-                    </TooltipContent>
-                  </Tooltip>
-                </TooltipProvider>
-                <TooltipProvider>
-                  <Tooltip>
-                    <TooltipTrigger>
-                      <Popover>
-                        <PopoverTrigger asChild>
-                          <Button aria-label="Bulk Assign Tags" variant="ghost" size="icon" disabled={selectedTaskIds.length === 0}>
-                            <Tag size={16} />
-                          </Button>
-                        </PopoverTrigger>
-                        <PopoverContent className="w-52 text-sm">
-                          <InputTags
-                            type="text"
-                            value={tags}
-                            onChange={(newTags) => bulkAssignTags(newTags as string[])}
-                            placeholder="Assign tags"
-                          />
-                        </PopoverContent>
-                      </Popover>
-                    </TooltipTrigger>
-                    <TooltipContent>
-                      <p>Assign tags to selected tasks</p>
+                      <p>Set focus status</p>
                     </TooltipContent>
                   </Tooltip>
                 </TooltipProvider>
@@ -1948,118 +1928,179 @@ export default function TodolistsPage() {
                         <p>Set due date for selected tasks</p>
                       </TooltipContent>
                     </Tooltip>
-                  </TooltipProvider>
-                  <TooltipProvider>
-                    <Tooltip>
-                      <TooltipTrigger>
-                        <Popover>
-                          <PopoverTrigger asChild>
-                            <Button aria-label="Bulk Assign Priority" variant="ghost" size="icon" disabled={selectedTaskIds.length === 0}>
-                              <Flag size={16} />
-                            </Button>
-                          </PopoverTrigger>
-                          <PopoverContent className="w-36 text-sm">
-                            <p className="flex justify-start items-center mb-2">Select Priority</p>
-                            <div
-                              className="flex items-center space-x-2 p-2 rounded-md cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-900"
-                              onClick={() => bulkAssignPriority('High')}
+                </TooltipProvider>
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger>
+                      <Popover>
+                        <PopoverTrigger asChild>
+                          <Button aria-label="Bulk Assign Priority" variant="ghost" size="icon" disabled={selectedTaskIds.length === 0}>
+                            <Flag size={16} />
+                          </Button>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-36 text-sm">
+                          <p className="flex justify-start items-center mb-2">Select Priority</p>
+                          <div
+                            className="flex items-center space-x-2 p-2 rounded-md cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-900"
+                            onClick={() => bulkAssignPriority('High')}
+                          >
+                            <ChevronsUp size={16} className="text-red-500" />
+                            <span>High</span>
+                          </div>
+                          <div
+                            className="flex items-center space-x-2 p-2 rounded-md cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-900"
+                            onClick={() => bulkAssignPriority('Medium')}
+                          >
+                            <ChevronUp size={16} />
+                            <span>Medium</span>
+                          </div>
+                          <div
+                            className="flex items-center space-x-2 p-2 rounded-md cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-900"
+                            onClick={() => bulkAssignPriority('Low')}
+                          >
+                            <ChevronDown size={16} />
+                            <span>Low</span>
+                          </div>
+                          <div
+                            className="flex items-center space-x-2 p-2 rounded-md cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-900"
+                            onClick={() => bulkAssignPriority('')}
+                          >
+                            <Flag size={16} />
+                            <span>No Priority</span>
+                          </div>
+                        </PopoverContent>
+                      </Popover>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p>Set priority for selected tasks</p>
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger>
+                      <Popover>
+                        <PopoverTrigger asChild>
+                          <Button aria-label="Bulk Assign Group" variant="ghost" size="icon" disabled={selectedTaskIds.length === 0}>
+                            <Folder size={16} />
+                          </Button>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-52">
+                          <div className="space-y-2 text-sm">
+                            <p>Select a group for selected tasks</p>
+                            {groups.map((group) => (
+                              <Button
+                                key={group._id}
+                                variant="ghost"
+                                className="w-full justify-start"
+                                onClick={() => bulkAssignGroup(group.name)}
+                              >
+                                {group.name}
+                              </Button>
+                            ))}
+                          </div>
+                        </PopoverContent>
+                      </Popover>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p>Assign group to selected tasks</p>
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger>
+                      <Popover>
+                        <PopoverTrigger asChild>
+                          <Button aria-label="Bulk Assign Tags" variant="ghost" size="icon" disabled={selectedTaskIds.length === 0}>
+                            <Tag size={16} />
+                          </Button>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-52 text-sm">
+                          <InputTags
+                            type="text"
+                            value={tags}
+                            onChange={(newTags) => bulkAssignTags(newTags as string[])}
+                            placeholder="Assign tags"
+                          />
+                        </PopoverContent>
+                      </Popover>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p>Assign tags to selected tasks</p>
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger>
+                      <AlertDialog>
+                        <AlertDialogTrigger asChild>
+                          <Button onClick={() => {}} aria-label="Mark as Ignored" variant="ghost" size="icon" disabled={selectedTaskIds.length === 0}>
+                            <MinusCircle size={16} />
+                          </Button>
+                        </AlertDialogTrigger>
+                        <AlertDialogContent>
+                          <AlertDialogHeader>
+                            <AlertDialogTitle>Confirm Ignore</AlertDialogTitle>
+                            <AlertDialogDescription>
+                              Are you sure you want to ignore {selectedTaskIds.length} selected task(s)? This action can be undone later.
+                            </AlertDialogDescription>
+                          </AlertDialogHeader>
+                          <AlertDialogFooter>
+                            <AlertDialogCancel>Cancel</AlertDialogCancel>
+                            <AlertDialogAction onClick={bulkMarkAsIgnored}>
+                              Ignore
+                            </AlertDialogAction>
+                          </AlertDialogFooter>
+                        </AlertDialogContent>
+                      </AlertDialog>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p>Mark selected tasks as ignored</p>
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger>
+                      <AlertDialog>
+                        <AlertDialogTrigger asChild>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            aria-label="Delete Tasks"
+                            disabled={selectedTaskIds.length === 0}
+                          >
+                            <Trash2 size={16} />
+                          </Button>
+                        </AlertDialogTrigger>
+                        <AlertDialogContent>
+                          <AlertDialogHeader>
+                            <AlertDialogTitle>Confirm Deletion</AlertDialogTitle>
+                            <AlertDialogDescription>
+                              {`Are you sure you want to delete ${selectedTaskIds.length} selected task(s)?`}
+                            </AlertDialogDescription>
+                          </AlertDialogHeader>
+                          <AlertDialogFooter>
+                            <AlertDialogCancel>Cancel</AlertDialogCancel>
+                            <AlertDialogAction
+                              onClick={() => deleteSelectedTasks()}
                             >
-                              <ChevronsUp size={16} className="text-red-500" />
-                              <span>High</span>
-                            </div>
-                            <div
-                              className="flex items-center space-x-2 p-2 rounded-md cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-900"
-                              onClick={() => bulkAssignPriority('Medium')}
-                            >
-                              <ChevronUp size={16} />
-                              <span>Medium</span>
-                            </div>
-                            <div
-                              className="flex items-center space-x-2 p-2 rounded-md cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-900"
-                              onClick={() => bulkAssignPriority('Low')}
-                            >
-                              <ChevronDown size={16} />
-                              <span>Low</span>
-                            </div>
-                            <div
-                              className="flex items-center space-x-2 p-2 rounded-md cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-900"
-                              onClick={() => bulkAssignPriority('')}
-                            >
-                              <Flag size={16} />
-                              <span>No Priority</span>
-                            </div>
-                          </PopoverContent>
-                        </Popover>
-                      </TooltipTrigger>
-                      <TooltipContent>
-                        <p>Set priority for selected tasks</p>
-                      </TooltipContent>
-                    </Tooltip>
-                  </TooltipProvider>
-                  <TooltipProvider>
-                    <Tooltip>
-                      <TooltipTrigger>
-                        <Button onClick={() => bulkMarkAsCompleted()} aria-label="Mark as Completed" variant="ghost" size="icon" disabled={selectedTaskIds.length === 0}>
-                          <SquareCheck size={16} />
-                        </Button>
-                      </TooltipTrigger>
-                      <TooltipContent>
-                        <p>Mark selected tasks as completed</p>
-                      </TooltipContent>
-                    </Tooltip>
-                  </TooltipProvider>
-                  <TooltipProvider>
-                    <Tooltip>
-                      <TooltipTrigger>
-                        <AlertDialog>
-                          <AlertDialogTrigger asChild>
-                            <Button onClick={() => bulkMarkAsIgnored()} aria-label="Mark as Ignored" variant="ghost" size="icon" disabled={selectedTaskIds.length === 0}>
-                              <MinusCircle size={16} />
-                            </Button>
-                          </AlertDialogTrigger>
-                          <AlertDialogContent>
-                            <AlertDialogHeader>
-                              <AlertDialogTitle>Confirm Ignore</AlertDialogTitle>
-                              <AlertDialogDescription>
-                                Are you sure you want to ignore the selected tasks? This action can be undone later.
-                              </AlertDialogDescription>
-                            </AlertDialogHeader>
-                            <AlertDialogFooter>
-                              <AlertDialogCancel>Cancel</AlertDialogCancel>
-                              <AlertDialogAction onClick={() => bulkMarkAsIgnored()}>
-                                Ignore
-                              </AlertDialogAction>
-                            </AlertDialogFooter>
-                          </AlertDialogContent>
-                        </AlertDialog>
-                      </TooltipTrigger>
-                      <TooltipContent>
-                        <p>Mark selected tasks as ignored</p>
-                      </TooltipContent>
-                    </Tooltip>
-                  </TooltipProvider>
-                  <TooltipProvider>
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={() => bulkUpdateCurrentlyFocused(true)}
-                          aria-label="Mark as Currently Focused"
-                          disabled={selectedTaskIds.length === 0}
-                          className={`w-auto px-1.5 bg-blue-400 dark:bg-blue-400 dark:text-black`}
-                        >
-                          <Rocket size={16} />
-                        </Button>
-                      </TooltipTrigger>
-                      <TooltipContent>
-                        <p>Let&apos;s focus</p>
-                      </TooltipContent>
-                    </Tooltip>
-                  </TooltipProvider>
-                </div>
+                              Delete
+                            </AlertDialogAction>
+                          </AlertDialogFooter>
+                        </AlertDialogContent>
+                      </AlertDialog>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p>Delete selected tasks</p>
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
               </div>
-            )}
+            </div>
+          )}
   
           <div className="space-y-2">
             {incompleteTasks.length > 0 ? (
@@ -2098,6 +2139,29 @@ export default function TodolistsPage() {
                         </Tooltip>
                       </TooltipProvider>
                     )}
+
+                    {
+                      task.isCurrentlyFocused && (
+                        <TooltipProvider>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                onClick={() => updateTaskCurrentlyFocused(task._id, false)}
+                                aria-label="Currently Focused"
+                                className="w-auto px-1 bg-blue-400 dark:bg-blue-400 dark:text-black"
+                              >
+                                <Rocket size={16} />
+                              </Button>
+                            </TooltipTrigger>
+                            <TooltipContent>
+                              {task.isCurrentlyFocused ? <p>Remove focus</p> : <p>Let&apos;s focus</p>}
+                            </TooltipContent>
+                          </Tooltip>
+                        </TooltipProvider>
+                      )
+                    }
 
                     {
                       task.priority && task.priority !== '' ?
@@ -2151,29 +2215,6 @@ export default function TodolistsPage() {
                         </Tooltip>
                       </TooltipProvider>
                       : null
-                    }
-
-                    {
-                      task.isCurrentlyFocused && (
-                        <TooltipProvider>
-                          <Tooltip>
-                            <TooltipTrigger asChild>
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                onClick={() => updateTaskCurrentlyFocused(task._id, false)}
-                                aria-label="Currently Focused"
-                                className="w-auto px-1 bg-blue-400 dark:bg-blue-400 dark:text-black"
-                              >
-                                <Rocket size={16} />
-                              </Button>
-                            </TooltipTrigger>
-                            <TooltipContent>
-                              {task.isCurrentlyFocused ? <p>Remove focus</p> : <p>Let&apos;s focus</p>}
-                            </TooltipContent>
-                          </Tooltip>
-                        </TooltipProvider>
-                      )
                     }
 
                     <div className="flex flex-col gap-1 w-full">
@@ -2238,6 +2279,121 @@ export default function TodolistsPage() {
                     </div>
 
                     {
+                      !task.isCurrentlyFocused && (
+                        <TooltipProvider>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                onClick={() => updateTaskCurrentlyFocused(task._id, !task.isCurrentlyFocused)}
+                                aria-label="Toggle Currently Focused"
+                                className={`w-auto px-1.5 ${task.isCurrentlyFocused ? 'bg-yellow-100 dark:bg-yellow-900' : ''}`}
+                              >
+                                <Rocket size={16} />
+                              </Button>
+                            </TooltipTrigger>
+                            <TooltipContent>
+                              {task.isCurrentlyFocused ? <p>Remove focus</p> : <p>Let&apos;s focus</p>}
+                            </TooltipContent>
+                          </Tooltip>
+                        </TooltipProvider>
+                      )
+                    }
+
+                    <TooltipProvider>
+                      <Tooltip>
+                        <TooltipTrigger>
+                          <Popover>
+                            <PopoverTrigger asChild>
+                              <Button
+                                variant="ghost"
+                                aria-label="Update Task Due Date"
+                                size="icon"
+                                onClick={() => {
+                                  setEditingTaskDueDateId(
+                                    editingTaskDueDateId === task._id ? null : task._id
+                                  );
+                                  setExistingTaskDueDate(
+                                    editingTaskDueDateId ? null : task.dueDate || null
+                                  );
+                                }}
+                                className="w-auto px-1"
+                              >
+                                <CalendarIcon size={16} />
+                              </Button>
+                            </PopoverTrigger>
+                            <PopoverContent className="w-52 text-sm">
+                              <div className="flex flex-col space-y-1">
+                                <p className="text-center">Select Due Date</p>
+                                <div className="flex items-center justify-center space-x-1">
+                                  <div className="flex flex-col justify-center text-center items-center space-y-2">
+                                    <div className="flex justify-center items-center space-x-1">
+                                      <CalendarDatePicker
+                                        date={{
+                                          from: existingTaskDueDate
+                                            ? new Date(existingTaskDueDate)
+                                            : new Date(),
+                                          to: existingTaskDueDate
+                                            ? new Date(existingTaskDueDate)
+                                            : new Date(),
+                                        }}
+                                        onDateSelect={({ from }) => {
+                                          setExistingTaskDueDate(from);
+                                          updateTaskDueDate(task._id, from);
+                                        }}
+                                        variant="outline"
+                                        numberOfMonths={1}
+                                        className="min-w-[150px] border rounded-md ml-3 mt-2 justify-center items-center"
+                                      />
+                                      <Button
+                                        variant="outline"
+                                        onClick={() => {
+                                          setExistingTaskDueDate(null);
+                                          updateTaskDueDate(task._id, null);
+                                        }}
+                                        className="px-2 py-1 mt-2"
+                                      >
+                                        <X size={16} />
+                                      </Button>
+                                    </div>
+                                    <div className="grid grid-cols-2 gap-2 mt-2">
+                                      <Button
+                                        variant="outline"
+                                        onClick={() => {
+                                          setExistingTaskDueDate(new Date());
+                                          updateTaskDueDate(task._id, new Date());
+                                        }}
+                                        className="px-2 py-1"
+                                      >
+                                        Today
+                                      </Button>
+                                      <Button
+                                        variant="outline"
+                                        onClick={() => {
+                                          const tomorrow = new Date();
+                                          tomorrow.setDate(tomorrow.getDate() + 1);
+                                          setExistingTaskDueDate(tomorrow);
+                                          updateTaskDueDate(task._id, tomorrow);
+                                        }}
+                                        className="px-2 py-1"
+                                      >
+                                        Tomorrow
+                                      </Button>
+                                    </div>
+                                  </div>
+                                </div>
+                              </div>
+                            </PopoverContent>
+                          </Popover>
+                        </TooltipTrigger>
+                        <TooltipContent>
+                          <p>Set due date</p>
+                        </TooltipContent>
+                      </Tooltip>
+                    </TooltipProvider>
+
+                    {
                       !task.priority || (task.priority  && task.priority === '') ?
                       <TooltipProvider>
                         <Tooltip>
@@ -2289,29 +2445,6 @@ export default function TodolistsPage() {
                         </Tooltip>
                       </TooltipProvider>
                     : null}
-
-                    {
-                      !task.isCurrentlyFocused && (
-                        <TooltipProvider>
-                          <Tooltip>
-                            <TooltipTrigger asChild>
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                onClick={() => updateTaskCurrentlyFocused(task._id, !task.isCurrentlyFocused)}
-                                aria-label="Toggle Currently Focused"
-                                className={`w-auto px-1.5 ${task.isCurrentlyFocused ? 'bg-yellow-100 dark:bg-yellow-900' : ''}`}
-                              >
-                                <Rocket size={16} />
-                              </Button>
-                            </TooltipTrigger>
-                            <TooltipContent>
-                              {task.isCurrentlyFocused ? <p>Remove focus</p> : <p>Let&apos;s focus</p>}
-                            </TooltipContent>
-                          </Tooltip>
-                        </TooltipProvider>
-                      )
-                    }
 
                     <TooltipProvider>
                       <Tooltip>
@@ -2440,97 +2573,6 @@ export default function TodolistsPage() {
 
                     <TooltipProvider>
                       <Tooltip>
-                        <TooltipTrigger>
-                          <Popover>
-                            <PopoverTrigger asChild>
-                              <Button
-                                variant="ghost"
-                                aria-label="Update Task Due Date"
-                                size="icon"
-                                onClick={() => {
-                                  setEditingTaskDueDateId(
-                                    editingTaskDueDateId === task._id ? null : task._id
-                                  );
-                                  setExistingTaskDueDate(
-                                    editingTaskDueDateId ? null : task.dueDate || null
-                                  );
-                                }}
-                                className="w-auto px-1"
-                              >
-                                <CalendarIcon size={16} />
-                              </Button>
-                            </PopoverTrigger>
-                            <PopoverContent className="w-52 text-sm">
-                              <div className="flex flex-col space-y-1">
-                                <p className="text-center">Select Due Date</p>
-                                <div className="flex items-center justify-center space-x-1">
-                                  <div className="flex flex-col justify-center text-center items-center space-y-2">
-                                    <div className="flex justify-center items-center space-x-1">
-                                      <CalendarDatePicker
-                                        date={{
-                                          from: existingTaskDueDate
-                                            ? new Date(existingTaskDueDate)
-                                            : new Date(),
-                                          to: existingTaskDueDate
-                                            ? new Date(existingTaskDueDate)
-                                            : new Date(),
-                                        }}
-                                        onDateSelect={({ from }) => {
-                                          setExistingTaskDueDate(from);
-                                          updateTaskDueDate(task._id, from);
-                                        }}
-                                        variant="outline"
-                                        numberOfMonths={1}
-                                        className="min-w-[150px] border rounded-md ml-3 mt-2 justify-center items-center"
-                                      />
-                                      <Button
-                                        variant="outline"
-                                        onClick={() => {
-                                          setExistingTaskDueDate(null);
-                                          updateTaskDueDate(task._id, null);
-                                        }}
-                                        className="px-2 py-1 mt-2"
-                                      >
-                                        <X size={16} />
-                                      </Button>
-                                    </div>
-                                    <div className="grid grid-cols-2 gap-2 mt-2">
-                                      <Button
-                                        variant="outline"
-                                        onClick={() => {
-                                          setExistingTaskDueDate(new Date());
-                                          updateTaskDueDate(task._id, new Date());
-                                        }}
-                                        className="px-2 py-1"
-                                      >
-                                        Today
-                                      </Button>
-                                      <Button
-                                        variant="outline"
-                                        onClick={() => {
-                                          const tomorrow = new Date();
-                                          tomorrow.setDate(tomorrow.getDate() + 1);
-                                          setExistingTaskDueDate(tomorrow);
-                                          updateTaskDueDate(task._id, tomorrow);
-                                        }}
-                                        className="px-2 py-1"
-                                      >
-                                        Tomorrow
-                                      </Button>
-                                    </div>
-                                  </div>
-                                </div>
-                              </div>
-                            </PopoverContent>
-                          </Popover>
-                        </TooltipTrigger>
-                        <TooltipContent>
-                          <p>Set due date</p>
-                        </TooltipContent>
-                      </Tooltip>
-                    </TooltipProvider>
-                    <TooltipProvider>
-                      <Tooltip>
                         <AlertDialog>
                           <TooltipTrigger asChild>
                             <AlertDialogTrigger asChild>
@@ -2650,15 +2692,19 @@ export default function TodolistsPage() {
                       <Badge
                         variant="outline"
                         className={
-                          task.dueDate < new Date() && !isSameDay(task.dueDate, new Date())
+                          new Date(task.dueDate) < new Date() && !isSameDay(new Date(task.dueDate), new Date())
                             ? 'bg-red-400 text-black'
-                            : isSameDay(task.dueDate, new Date())
+                            : isSameDay(new Date(task.dueDate), new Date())
                             ? 'bg-yellow-200 text-black'
                             : 'bg-green-200 text-black'
                         }
                       >
                         <CalendarIcon size={12} className="mr-1" />
-                        {isSameDay(task.dueDate, new Date()) ? 'Today' : isSameDay(task.dueDate, new Date(new Date().setDate(new Date().getDate() + 1))) ? 'Tomorrow' : format(task.dueDate, 'PPP')}
+                        {isSameDay(new Date(task.dueDate), new Date())
+                          ? 'Today'
+                          : isSameDay(new Date(task.dueDate), new Date(new Date().setDate(new Date().getDate() + 1)))
+                          ? 'Tomorrow'
+                          : format(new Date(task.dueDate), 'PPP')}
                       </Badge>
                     )}
                     {task.group && (

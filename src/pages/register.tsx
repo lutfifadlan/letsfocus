@@ -27,7 +27,7 @@ const Register: React.FC = () => {
   const [showPassword, setShowPassword] = useState(false);
   const router = useRouter();
   const { toast } = useToast();
-  const imageSrc = '/icon.svg'
+  const imageSrc = '/logo.svg'
 
   useEffect(() => {
     if (status === 'authenticated') {

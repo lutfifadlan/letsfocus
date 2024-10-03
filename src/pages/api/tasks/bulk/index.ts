@@ -31,7 +31,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     } else if (status === 'DELETED') {
       deletedAt = new Date();
     }
-  
+
     try {
       await Task.updateMany({ _id: { $in: taskIds }, userId: user._id }, {
         tags,

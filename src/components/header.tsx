@@ -15,6 +15,13 @@ const Header: React.FC = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isMounted, setIsMounted] = useState(false);
 
+  const handleSignOut = () => {
+    localStorage.removeItem('sortOptions');
+    localStorage.removeItem('sortDirection');
+  
+    signOut({ callbackUrl: '/' });
+  };
+
   useEffect(() => {
     setIsMounted(true);
   }, []);
@@ -82,7 +89,7 @@ const Header: React.FC = () => {
                 )}
                 {session ? (
                   <Button
-                    onClick={() => signOut({ callbackUrl: '/' })}
+                    onClick={handleSignOut}
                     variant="ghost"
                     className="border-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
                   >
