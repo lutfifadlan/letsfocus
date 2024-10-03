@@ -239,6 +239,16 @@ export default function TodolistsPage() {
       return newSortDirection;
     });
   };
+  const getActiveSortOption = () => {
+    const activeSort = Object.entries(sortOptions).find(([, value]) => value);
+    if (activeSort) {
+      const [key] = activeSort;
+      const direction = sortDirection[key as keyof typeof sortDirection];
+      const displayKey = key === 'createdAt' ? 'Created Date' : key === 'dueDate' ? 'Due Date' : key.charAt(0).toUpperCase() + key.slice(1);
+      return `${displayKey} (${direction})`;
+    }
+    return 'None';
+  };
 
   const fetchTasksAndGroups = async () => {
     setIsLoading(true);
@@ -1298,9 +1308,11 @@ export default function TodolistsPage() {
                       <PopoverTrigger asChild>
                         <Button
                           variant="ghost"
-                          size="icon"
+                          size="sm"
+                          className="flex items-center space-x-1"
                         >
                           <ArrowDownUp size={16} />
+                          <span>{getActiveSortOption()}</span>
                         </Button>
                       </PopoverTrigger>
                       <PopoverContent className="w-48 p-2 text-sm">
@@ -1314,7 +1326,7 @@ export default function TodolistsPage() {
                                 aria-label={`Sort by ${key}`}
                                 onClick={() => handleSortChange(key as keyof typeof sortOptions)}
                               >
-                                {sortDirection[key as keyof typeof sortDirection] === 'asc' ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+                                {sortDirection[key as keyof typeof sortDirection] === 'asc' ? <ChevronDown size={16} /> : <ChevronUp size={16} />}
                                 {key === 'createdAt' && <CalendarArrowDown size={16} />}
                                 {key === 'priority' && <Flag size={16} />}
                                 {key === 'dueDate' && <CalendarIcon size={16} />}
