@@ -2047,7 +2047,7 @@ export default function TodolistsPage() {
                           onClick={() => bulkUpdateCurrentlyFocused(true)}
                           aria-label="Mark as Currently Focused"
                           disabled={selectedTaskIds.length === 0}
-                          className={`w-auto px-1.5 bg-blue-400 dark:text-black`}
+                          className={`w-auto px-1.5 bg-blue-400 dark:bg-blue-400 dark:text-black`}
                         >
                           <Rocket size={16} />
                         </Button>
@@ -2163,7 +2163,7 @@ export default function TodolistsPage() {
                                 size="icon"
                                 onClick={() => updateTaskCurrentlyFocused(task._id, false)}
                                 aria-label="Currently Focused"
-                                className="w-auto px-1 bg-blue-300"
+                                className="w-auto px-1 bg-blue-400 dark:bg-blue-400 dark:text-black"
                               >
                                 <Rocket size={16} />
                               </Button>

@@ -31,7 +31,7 @@ export default function Home() {
         {/* Hero Section */}
         <section className="text-center mt-4">
           <h1 className="text-3xl md:text-5xl font-extrabold text-gray-900">
-            <span className="inline-block rounded-sm px-1.5 py-0.5 mb-1">Clear Your Mind. Break It Down.</span> <br/>
+            <span className="inline-block rounded-sm px-1.5 py-0.5 mb-1 dark:text-white">Clear Your Mind. Break It Down.</span> <br/>
             <span className="inline-block bg-blue-400 rounded-sm px-1.5 py-0.5 mb-1">
               What You Need is {' '}
               <AngryUnderline>
