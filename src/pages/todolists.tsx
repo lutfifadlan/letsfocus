@@ -14,7 +14,7 @@ import {
   Plus, Trash, Tag, Folder, PlusCircle, Edit, FileText, Save, X,
   CalendarIcon, SquareCheck, Trash2, ChevronsUp, ChevronUp,
   ChevronDown, Flag, CalendarArrowDown, ArrowDownUp, CopyCheck,
-  MinusCircle, Rocket, CircleMinus
+  MinusCircle, Rocket, CircleMinus, Sparkles, XSquare
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { ToastAction } from '@/components/ui/toast';
@@ -59,6 +59,97 @@ const FormSchema = z.object({
     to: z.date(),
   }),
 });
+
+interface GeneratedTasksApprovalProps {
+  tasks: Task[];
+  onApprove: (task: Task) => void;
+  onReject: (taskId: string) => void;
+  onApproveAll: () => void;
+  onRejectAll: () => void;
+}
+
+const GeneratedTasksApproval: React.FC<GeneratedTasksApprovalProps> = ({ 
+  tasks, 
+  onApprove, 
+  onReject, 
+  onApproveAll, 
+  onRejectAll 
+}) => (
+  <Card className="p-4 mb-4 text-sm">
+    <CardHeader>
+      <CardTitle className="text-lg font-normal">Generated Tasks</CardTitle>
+    </CardHeader>
+    <CardContent>
+      <div className="space-y-2 text-sm">
+        {tasks.map((task) => (
+          <div key={task._id} className="flex items-center justify-between border-b">
+            <span className="flex-grow text-sm">{task.title}</span>
+            <div className="flex space-x-2">
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      onClick={() => onApprove(task)}
+                      variant="ghost"
+                      size="icon"
+                    >
+                      <Plus size={16}/>
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>Approve Task</p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      onClick={() => onReject(task._id)}
+                      variant="ghost"
+                      size="icon"
+                    >
+                      <X size={16}/>
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>Reject Task</p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+            </div>
+          </div>
+        ))}
+      </div>
+      <div className="flex justify-end space-x-2 mt-4">
+        <TooltipProvider>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button onClick={onApproveAll} variant="ghost" size="icon">
+                <CopyCheck size={16} />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>
+              <p>Approve All Tasks</p>
+            </TooltipContent>
+          </Tooltip>
+        </TooltipProvider>
+        <TooltipProvider>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button onClick={onRejectAll} variant="ghost" size="icon">
+                <XSquare size={16} />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>
+              <p>Reject All Tasks</p>
+            </TooltipContent>
+          </Tooltip>
+        </TooltipProvider>
+      </div>
+    </CardContent>
+  </Card>
+);
 
 export default function TodolistsPage() {
   const form = useForm<z.infer<typeof FormSchema>>({
@@ -126,10 +217,81 @@ export default function TodolistsPage() {
   const [priority, setPriority] = useState('');
   const [showPriorityDropdown, setShowPriorityDropdown] = useState(false);
   const [isCurrentlyFocused, setIsCurrentlyFocused] = useState(false);
-  
+  const [showAiInput, setShowAiInput] = useState(false);
+  const [aiInput, setAiInput] = useState('');
+  const [generatedTasks, setGeneratedTasks] = useState<Task[]>([]);
+
   const { status } = useSession();
   const { toast } = useToast();
   const incompleteTasks = tasks.filter((task) => task.status !== 'COMPLETED' && !task.isDeleted && task.status !== 'IGNORED');
+
+  const handleGenerateTodoListsWithAI = async () => {
+    if (!aiInput.trim()) return;
+  
+    setIsLoading(true);
+    try {
+      const response = await fetch('/api/ai', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ todolistsInput: aiInput, modelType: 'openrouter' }),
+      });
+  
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Failed to generate tasks');
+      }
+  
+      const data = await response.json();
+      const generatedTasksData = data.tasks.map((title: string) => ({
+        _id: Math.random().toString(36).substr(2, 9), // Temporary ID
+        title,
+        status: 'PENDING',
+        isDeleted: false,
+        isCurrentlyFocused: false,
+        priority: '',
+        dueDate: null,
+        group: null,
+        tags: [],
+        description: '',
+      }));
+  
+      setGeneratedTasks(generatedTasksData);
+      setAiInput('');
+      setShowAiInput(false);
+    } catch (error) {
+      console.error('Failed to generate tasks:', error);
+      toast({
+        title: 'Error',
+        description: `${(error as Error).message}`,
+        variant: 'destructive',
+        duration: 3000,
+      });
+    }
+    setIsLoading(false);
+  };
+
+  const handleApproveAllTasks = () => {
+    generatedTasks.forEach((task) => {
+      addTask(task.title, null, '');
+    });
+    setGeneratedTasks([]);
+    toast({
+      title: 'Success',
+      description: 'All generated tasks have been approved and added.',
+      duration: 3000,
+    });
+  };
+
+  const handleRejectAllTasks = () => {
+    setGeneratedTasks([]);
+    toast({
+      title: 'Info',
+      description: 'All generated tasks have been rejected.',
+      duration: 3000,
+    });
+  };
 
   const handleAddTask = (description: string) => {
     addTask(description, dueDate, priority);
@@ -1300,7 +1462,25 @@ export default function TodolistsPage() {
         <CardHeader>
           <div className="flex justify-between items-center space-x-1">
             <CardTitle className="text-center text-2xl">To-Do Lists</CardTitle>
-            <div className="flex justify-center items-center space-x-1 text-sm">
+            <div className="flex justify-center items-center space-x-1">
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      onClick={() => setShowAiInput(!showAiInput)}
+                      aria-label="Show AI Input"
+                      variant="ghost"
+                      size="icon"
+                      className="w-auto px-1.5"
+                    >
+                      <Sparkles size={16} />
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>Use AI to generate tasks</p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
               <TooltipProvider>
                 <Tooltip>
                   <TooltipTrigger>
@@ -1376,11 +1556,69 @@ export default function TodolistsPage() {
         </CardHeader>
         <CardContent>
           <div className="flex flex-col gap-0 mb-2">
+            <div className={`flex flex-row items-center justify-start ${showAiInput ? 'gap-2' : ''}`}>
+              {showAiInput && (
+                <>
+                  <div className="flex flex-col gap-2 w-full">
+                    <Input
+                      placeholder="Input your prompt here to generate tasks"
+                      className="w-full shadow-none border-none flex-1 text-sm"
+                      type="text"
+                      value={aiInput}
+                      onChange={(e) => setAiInput(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') {
+                          handleGenerateTodoListsWithAI();
+                        }
+                      }}
+                      aria-label="AI Input"
+                      autoFocus
+                    />
+                  </div>
+                  <TooltipProvider>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Button
+                            onClick={handleGenerateTodoListsWithAI}
+                            disabled={!aiInput.trim() || isLoading}
+                            variant="ghost"
+                            size="icon"
+                            className="w-auto px-1.5"
+                          >
+                            {isLoading ? (
+                              <div className="animate-spin h-5 w-5 border-2 border-white border-t-transparent rounded-full" />
+                            ) : (
+                              <Sparkles size={16} />
+                            )}
+                          </Button>
+                        </TooltipTrigger>
+                        <TooltipContent>
+                          <p>Generate tasks using AI</p>
+                        </TooltipContent>
+                      </Tooltip>
+                    </TooltipProvider>
+                  </>
+              )}
+            </div>
+            {generatedTasks.length > 0 && (
+              <GeneratedTasksApproval
+                tasks={generatedTasks}
+                onApprove={(task) => {
+                  addTask(task.title, null, '');
+                  setGeneratedTasks(generatedTasks.filter((t) => t._id !== task._id));
+                }}
+                onReject={(taskId) => {
+                  setGeneratedTasks(generatedTasks.filter((t) => t._id !== taskId));
+                }}
+                onApproveAll={handleApproveAllTasks}
+                onRejectAll={handleRejectAllTasks}
+              />
+              )}
             <div className={`flex flex-row gap-2 ${isFileTextButtonClicked ? 'items-start justify-start' : 'items-center justify-center'}`}>
-              <div className="flex flex-col gap-2 w-full text-sm">
+              <div className="flex flex-col gap-2 w-full">
                 <Input
                   placeholder="Add task"
-                  className="w-full shadow-none border-none text-sm flex-1"
+                  className="w-full shadow-none border-none flex-1"
                   type="text"
                   value={newTask}
                   onChange={(e) => setNewTask(e.target.value)}
@@ -2751,7 +2989,7 @@ export default function TodolistsPage() {
                 </div>
               ))
             ) : (
-              <p className="text-gray-500 text-center">No tasks yet. Add one to get started!</p>
+              <p className="text-gray-500 text-center text-sm">No tasks yet. Add one to get started!</p>
             )}
           </div>
         </CardContent>

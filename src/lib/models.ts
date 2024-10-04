@@ -35,6 +35,13 @@ const TaskSchema = new mongoose.Schema({
   isCurrentlyFocused: { type: Boolean, default: false },
 }, { timestamps: true });
 
+const UserPlanSchema = new mongoose.Schema({
+  userId: { type: String, required: true, unique: true },
+  credit: { type: Number, required: true },
+  isDeleted: { type: Boolean, default: false },
+}, { timestamps: true });
+
 export const User = mongoose.models.User || mongoose.model('User', UserSchema);
 export const Task = mongoose.models.Task || mongoose.model('Task', TaskSchema);
 export const Group = mongoose.models.Group || mongoose.model('Group', GroupSchema);
+export const UserPlan = mongoose.models.UserPlan || mongoose.model('UserPlan', UserPlanSchema);

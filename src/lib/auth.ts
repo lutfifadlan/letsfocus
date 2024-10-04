@@ -2,7 +2,7 @@ import NextAuth, { NextAuthOptions } from "next-auth";
 import GoogleProvider from "next-auth/providers/google";
 import CredentialsProvider from "next-auth/providers/credentials";
 import bcrypt from "bcryptjs";
-import { User } from "@/lib/models";
+import { User, UserPlan } from "@/lib/models";
 import { connectDB } from "@/lib/mongodb";
 import "next-auth/jwt";
 
@@ -74,6 +74,11 @@ export const authOptions: NextAuthOptions = {
             isVerified: true,
           });
           existingUser = await newUser.save();
+          const userPlan = new UserPlan({
+            userId: existingUser._id,
+            credit: 0,
+          });
+          await userPlan.save();
         }
       }
       return true;
