@@ -71,7 +71,6 @@ const FormSchema = z.object({
   }),
 });
 
-
 const GeneratedTasksApproval: React.FC<GeneratedTasksApprovalProps> = ({ 
   tasks, 
   onApprove,
@@ -170,6 +169,7 @@ const CurrentDateTime: React.FC = () => {
   );
 };
 
+
 export default function TodolistsPage() {
   const form = useForm<z.infer<typeof FormSchema>>({
     resolver: zodResolver(FormSchema),
@@ -245,6 +245,7 @@ export default function TodolistsPage() {
 
   const { status } = useSession();
   const { toast } = useToast();
+
   const incompleteTasks = tasks.filter((task) => {
     const baseCondition = task.status !== 'COMPLETED' && !task.isDeleted && task.status !== 'IGNORED';
     const filterCondition = 
@@ -256,6 +257,41 @@ export default function TodolistsPage() {
       task.description.toLowerCase().includes(searchTerm.toLowerCase());
     return baseCondition && filterCondition && searchCondition;
   });
+
+  const updateTaskStats = (updatedTask: Task, action: 'complete' | 'uncomplete' | 'duedate', previousDueDate: Date | null = null) => {
+    setTaskStats((prevStats) => {
+      const newStats = { ...prevStats };
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+  
+      const updateDueDateStats = (date: Date | null, increment: boolean) => {
+        if (date) {
+          if (isSameDay(new Date(date), today)) {
+            newStats.dueToday += increment ? 1 : -1;
+          } else if (new Date(date) < today) {
+            newStats.overdue += increment ? 1 : -1;
+          }
+        }
+      };
+  
+      if (action === 'complete') {
+        if (isSameDay(new Date(updatedTask.updatedAt), today)) {
+          newStats.completedToday++;
+        }
+        updateDueDateStats(updatedTask.dueDate, false);
+      } else if (action === 'uncomplete') {
+        if (isSameDay(new Date(updatedTask.updatedAt), today)) {
+          newStats.completedToday--;
+        }
+        updateDueDateStats(updatedTask.dueDate, true);
+      } else if (action === 'duedate') {
+        updateDueDateStats(previousDueDate, false);
+        updateDueDateStats(updatedTask.dueDate, true);
+      }
+  
+      return newStats;
+    });
+  };
 
   const handleGenerateTodoListsWithAI = async () => {
     if (!aiInput.trim()) return;
@@ -560,16 +596,20 @@ export default function TodolistsPage() {
           }),
         });
         const data = await response.json();
-
+  
         setTasks((prevTasks) => {
           if (!prevTasks) return [];
           const updatedTasks = [...prevTasks, data];
           const sortedTasks = sortTasks(updatedTasks);
           return sortedTasks ? sortedTasks : updatedTasks;
         });
+  
+        // Update stats for the newly added task
+        updateTaskStats(data, 'duedate');
+  
         setNewTask('');
         setTags([]);
-
+  
         toast({
           title: 'Task Added',
           description: `Task "${data.title}" has been added.`,
@@ -601,6 +641,11 @@ export default function TodolistsPage() {
   const undoAdd = async (taskId: string) => {
     setIsLoading(true);
     try {
+      const taskToRemove = tasks.find(task => task._id === taskId);
+      if (!taskToRemove) {
+        throw new Error('Task not found');
+      }
+  
       const response = await fetch(`/api/tasks/${taskId}`, {
         method: 'DELETE',
         headers: {
@@ -614,6 +659,9 @@ export default function TodolistsPage() {
       }
   
       setTasks((prevTasks) => prevTasks.filter((task) => task._id !== taskId));
+  
+      // Revert the stats
+      updateTaskStats(taskToRemove, 'duedate', taskToRemove.dueDate);
   
       toast({
         title: 'Undo Successful',
@@ -661,6 +709,8 @@ export default function TodolistsPage() {
         const errorData = await response.json();
         throw new Error(errorData.message || 'Failed to update task');
       }
+
+      updateTaskStats(updatedTask, updatedTask.status === 'COMPLETED' ? 'complete' : 'uncomplete');
 
       if (updatedTask.status === 'COMPLETED') {
         confetti({
@@ -1128,6 +1178,13 @@ export default function TodolistsPage() {
   const updateTaskDueDate = async (taskId: string, newDueDate: Date | null) => {
     setIsLoading(true);
     try {
+      const taskToUpdate = tasks.find(task => task._id === taskId);
+      if (!taskToUpdate) {
+        throw new Error('Task not found');
+      }
+  
+      const previousDueDate = taskToUpdate.dueDate;
+  
       const response = await fetch(`/api/tasks/${taskId}`, {
         method: 'PUT',
         headers: {
@@ -1140,14 +1197,18 @@ export default function TodolistsPage() {
         const errorData = await response.json();
         throw new Error(errorData.message || 'Failed to update task due date');
       }
-
+  
+      const { updatedTask } = await response.json();
+  
       setTasks((prevTasks) => {
         const updatedTasks = prevTasks.map((task) =>
           task._id === taskId ? { ...task, dueDate: newDueDate } : task
         );
         return sortTasks(updatedTasks) || updatedTasks;
       });
-
+  
+      updateTaskStats(updatedTask, 'duedate', previousDueDate);
+  
       toast({
         title: 'Due Date Updated',
         description: 'Task due date has been updated.',
@@ -1256,18 +1317,32 @@ export default function TodolistsPage() {
   const bulkAssignDueDate = async (dueDate: Date | null) => {
     setIsLoading(true);
     try {
+      const tasksToUpdate = tasks.filter(task => selectedTaskIds.includes(task._id));
       const response = await fetch('/api/tasks/bulk', {
         method: 'PUT',
         body: JSON.stringify({ taskIds: selectedTaskIds, dueDate }),
         headers: { 'Content-Type': 'application/json' },
       });
       if (!response.ok) throw new Error('Failed to bulk assign due date');
+      
+      const { updatedTasks } = await response.json();
+
       setTasks((prevTasks) => {
-        const updatedTasks = prevTasks.map((task) =>
-          selectedTaskIds.includes(task._id) ? { ...task, dueDate } : task
+        const updatedTasksMap = new Map(updatedTasks.map((task: Task) => [task._id, task]));
+        const newTasks = prevTasks.map((task) =>
+          updatedTasksMap.has(task._id) ? updatedTasksMap.get(task._id) as Task : task
         );
-        return sortTasks(updatedTasks) || updatedTasks;
+        return sortTasks(newTasks as Task[]) || newTasks;
       });
+  
+      // Update stats for each updated task
+      tasksToUpdate.forEach((task) => {
+        const updatedTask = updatedTasks.find((t: Task) => t._id === task._id);
+        if (updatedTask) {
+          updateTaskStats(updatedTask, 'duedate', task.dueDate);
+        }
+      });
+  
       setSelectedTaskIds([]);
     } catch (error) {
       console.error(error);
@@ -1302,23 +1377,34 @@ export default function TodolistsPage() {
   const bulkMarkAsCompleted = async () => {
     setIsLoading(true);
     try {
+      const tasksToComplete = tasks.filter(task => selectedTaskIds.includes(task._id));
       const response = await fetch('/api/tasks/bulk', {
         method: 'PUT',
         body: JSON.stringify({ taskIds: selectedTaskIds, status: 'COMPLETED' }),
         headers: { 'Content-Type': 'application/json' },
       });
       if (!response.ok) throw new Error('Failed to bulk complete tasks');
+      
+      const { updatedTasks } = await response.json();
+  
       setTasks((prevTasks) => {
-        const updatedTasks = prevTasks.map((task) =>
-          selectedTaskIds.includes(task._id) ? { ...task, status: 'COMPLETED' } : task
+        const updatedTasksMap = new Map(updatedTasks.map((task: Task) => [task._id, task]));
+        const newTasks = prevTasks.map((task) =>
+          updatedTasksMap.has(task._id) ? updatedTasksMap.get(task._id)! : task
         );
-        return sortTasks(updatedTasks) || updatedTasks;
+        return sortTasks(newTasks as Task[]) || newTasks;
       });
-
-      const totalTasks =  incompleteTasks.length;
+  
+      tasksToComplete.forEach((task) => {
+        const updatedTask = updatedTasks.find((t: Task) => t._id === task._id);
+        if (updatedTask) {
+          updateTaskStats(updatedTask, 'complete');
+        }
+      });
+  
       const completedTasks = selectedTaskIds.length;
-
-      if (completedTasks === totalTasks) {
+  
+      if (completedTasks === incompleteTasks.length) {
         for (let i = 0; i < 5; i++) {
           setTimeout(() => {
             confetti({
@@ -1366,8 +1452,8 @@ export default function TodolistsPage() {
           ticks: 200,
         });
       }
-
-       // Adding undo option after completing tasks
+  
+      // Adding undo option after completing tasks
       toast({
         title: 'Tasks Completed',
         description: `${completedTasks} tasks have been completed.`,
@@ -1380,10 +1466,16 @@ export default function TodolistsPage() {
           </ToastAction>
         ),
       });
-
+  
       setSelectedTaskIds([]);
     } catch (error) {
       console.error(error);
+      toast({
+        title: 'Error',
+        description: 'Failed to complete tasks.',
+        variant: 'destructive',
+        duration: 3000,
+      });
     }
     setIsLoading(false);
     setShowBulkActions(false);
@@ -1392,16 +1484,29 @@ export default function TodolistsPage() {
   const undoTasksComplete = async (taskIds: string[]) => {
     setIsLoading(true);
     try {
-      await fetch('/api/tasks/bulk', {
+      const response = await fetch('/api/tasks/bulk', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ taskIds, status: 'PENDING' }),
       });
+
+      if (!response.ok) {
+        throw new Error('Failed to undo task completion');
+      }
+
+      const { updatedTasks } = await response.json();
+
       setTasks((prevTasks) =>
-        prevTasks.map((task) =>
-          taskIds.includes(task._id) ? { ...task, status: 'PENDING' } : task
-        )
+        prevTasks.map((task) => {
+          const updatedTask = updatedTasks.find((t: Task) => t._id === task._id);
+          return updatedTask ? updatedTask : task;
+        })
       );
+
+      updatedTasks.forEach((task: Task) => {
+        updateTaskStats(task, 'uncomplete');
+      });
+
       toast({
         title: 'Undo Successful',
         description: 'Task completion has been undone.',
@@ -1534,7 +1639,7 @@ export default function TodolistsPage() {
                   <Tooltip>
                     <TooltipTrigger asChild>
                       <div className="flex items-center space-x-1 cursor-pointer">
-                        <CheckCircle size={16} />
+                        <CheckCircle size={16} className="text-green-400" />
                         <span>{taskStats.completedToday}</span>
                       </div>
                     </TooltipTrigger>
@@ -1549,7 +1654,7 @@ export default function TodolistsPage() {
                   <Tooltip>
                     <TooltipTrigger asChild>
                       <div className="flex items-center space-x-1 cursor-pointer">
-                        <Clock size={16} />
+                        <Clock size={16} className="text-yellow-400" />
                         <span>{taskStats.dueToday}</span>
                       </div>
                     </TooltipTrigger>
@@ -1564,7 +1669,7 @@ export default function TodolistsPage() {
                   <Tooltip>
                     <TooltipTrigger asChild>
                       <div className="flex items-center space-x-1 cursor-pointer">
-                        <AlertCircle size={16} />
+                        <AlertCircle size={16} className="text-red-500" />
                         <span>{taskStats.overdue}</span>
                       </div>
                     </TooltipTrigger>
@@ -2229,7 +2334,7 @@ export default function TodolistsPage() {
                         ? 'bg-red-400 text-black'
                         : isSameDay(dueDate, new Date())
                         ? 'bg-yellow-200 text-black'
-                        : 'bg-green-200 text-black'
+                        : ''
                     }
                   >
                     <CalendarIcon size={12} className="mr-1" />
@@ -3156,7 +3261,7 @@ export default function TodolistsPage() {
                             ? 'bg-red-400 text-black'
                             : isSameDay(new Date(task.dueDate), new Date())
                             ? 'bg-yellow-200 text-black'
-                            : 'bg-green-200 text-black'
+                            : ''
                         }
                       >
                         <CalendarIcon size={12} className="mr-1" />

@@ -77,7 +77,6 @@ export default async function handler(
         if (isDeleted) {
           updateFields.deletedAt = new Date();
         }
-
         const result = await Task.updateOne(
           { _id: new ObjectId(taskId as string), userId: user._id },
           { $set: updateFields }
@@ -86,7 +85,9 @@ export default async function handler(
         if (result.matchedCount === 0) {
           return res.status(404).json({ message: 'Task not found' });
         }
-        res.status(200).json({ message: 'Task updated successfully' });
+
+        const updatedTask = await Task.findOne({ _id: new ObjectId(taskId as string) });
+        res.status(200).json({ message: 'Task updated successfully', updatedTask });
       } catch (error) {
         console.error(error);
         res.status(500).json({ message: 'Internal Server Error' });
