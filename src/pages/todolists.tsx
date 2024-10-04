@@ -14,9 +14,7 @@ import {
   Plus, Trash, Tag, Folder, PlusCircle, Edit, FileText, Save, X,
   CalendarIcon, SquareCheck, Trash2, ChevronsUp, ChevronUp,
   ChevronDown, Flag, CalendarArrowDown, ArrowDownUp, CopyCheck,
-  MinusCircle, Rocket, CircleMinus, Sparkles,
-  XCircle,
-  XSquare
+  MinusCircle, Rocket, CircleMinus, Sparkles, XSquare
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { ToastAction } from '@/components/ui/toast';
@@ -87,31 +85,67 @@ const GeneratedTasksApproval: React.FC<GeneratedTasksApprovalProps> = ({
           <div key={task._id} className="flex items-center justify-between border-b">
             <span className="flex-grow text-sm">{task.title}</span>
             <div className="flex space-x-2">
-              <Button
-                onClick={() => onApprove(task)}
-                variant="ghost"
-                size="icon"
-              >
-                <Plus size={16}/>
-              </Button>
-              <Button
-                onClick={() => onReject(task._id)}
-                variant="ghost"
-                size="icon"
-              >
-                <X size={16}/>
-              </Button>
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      onClick={() => onApprove(task)}
+                      variant="ghost"
+                      size="icon"
+                    >
+                      <Plus size={16}/>
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>Approve Task</p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      onClick={() => onReject(task._id)}
+                      variant="ghost"
+                      size="icon"
+                    >
+                      <X size={16}/>
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>Reject Task</p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
             </div>
           </div>
         ))}
       </div>
       <div className="flex justify-end space-x-2 mt-4">
-        <Button onClick={onApproveAll} variant="ghost" size="icon">
-          <CopyCheck size={16} />
-        </Button>
-        <Button onClick={onRejectAll} variant="ghost" size="icon">
-          <XSquare size={16} />
-        </Button>
+        <TooltipProvider>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button onClick={onApproveAll} variant="ghost" size="icon">
+                <CopyCheck size={16} />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>
+              <p>Approve All Tasks</p>
+            </TooltipContent>
+          </Tooltip>
+        </TooltipProvider>
+        <TooltipProvider>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button onClick={onRejectAll} variant="ghost" size="icon">
+                <XSquare size={16} />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>
+              <p>Reject All Tasks</p>
+            </TooltipContent>
+          </Tooltip>
+        </TooltipProvider>
       </div>
     </CardContent>
   </Card>
