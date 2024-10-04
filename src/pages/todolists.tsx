@@ -210,8 +210,6 @@ export default function TodolistsPage() {
   const [editingTaskTagsId, setEditingTaskTagsId] = useState<string | null>(null);
   const [editingTaskTags, setEditingTaskTags] = useState<string[]>([]);
   const [selectedTaskIds, setSelectedTaskIds] = useState<string[]>([]);
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const [lastDeletedTaskIds, setLastDeletedTaskIds] = useState<string[]>([]);
   const [showBulkActions, setShowBulkActions] = useState(false);
   const [isFetchLoading, setIsFetchLoading] = useState(false);
   const [priority, setPriority] = useState('');
@@ -401,16 +399,6 @@ export default function TodolistsPage() {
       return newSortDirection;
     });
   };
-  const getActiveSortOption = () => {
-    const activeSort = Object.entries(sortOptions).find(([, value]) => value);
-    if (activeSort) {
-      const [key] = activeSort;
-      const direction = sortDirection[key as keyof typeof sortDirection];
-      const displayKey = key === 'createdAt' ? 'Created Date' : key === 'dueDate' ? 'Due Date' : key.charAt(0).toUpperCase() + key.slice(1);
-      return `${displayKey} (${direction})`;
-    }
-    return 'None';
-  };
 
   const fetchTasksAndGroups = async () => {
     setIsLoading(true);
@@ -444,6 +432,12 @@ export default function TodolistsPage() {
       });
       const newGroup = await response.json();
       setGroups((prev) => [...prev, newGroup]);
+
+      toast({
+        title: 'Group Created',
+        description: `Group "${groupName}" has been created.`,
+        duration: 3000,
+      });
     } catch (error) {
       console.error('Failed to create group', error);
       toast({
@@ -467,6 +461,11 @@ export default function TodolistsPage() {
         body: JSON.stringify({ groupId }),
       });
       setGroups((prev) => prev.filter((group) => group._id !== groupId));
+      toast({
+        title: 'Group Deleted',
+        description: `Group has been deleted.`,
+        duration: 3000,
+      });
     } catch (error) {
       console.error('Failed to delete group', error);
       toast({
@@ -490,6 +489,11 @@ export default function TodolistsPage() {
         },
       });
       setGroups((prev) => prev.map((group) => group._id === groupId ? { ...group, name: newName } : group));
+      toast({
+        title: 'Group Updated',
+        description: `Group "name has been updated.`,
+        duration: 3000,
+      });
     } catch (error) {
       console.error('Failed to update group', error);
       toast({
@@ -707,7 +711,6 @@ export default function TodolistsPage() {
     setIsLoading(false);
     setSelectedTaskIds([]);
     setShowBulkActions(false);
-    setLastDeletedTaskIds([]);
   };
   
   const undoDelete = async (taskId: string) => {
@@ -756,8 +759,6 @@ export default function TodolistsPage() {
     );
     if (tasksToDelete.length === 0) return;
 
-    setLastDeletedTaskIds(selectedTaskIds);
-
     setTasks((prevTasks) =>
       prevTasks.filter((task) => !selectedTaskIds.includes(task._id))
     );
@@ -804,7 +805,6 @@ export default function TodolistsPage() {
       );
     }
     setShowBulkActions(false);
-    setLastDeletedTaskIds([]);
     setIsLoading(false);
   };
 
@@ -833,8 +833,6 @@ export default function TodolistsPage() {
             : task
         )
       );
-
-      setLastDeletedTaskIds([]);
 
       toast({
         title: 'Undo Successful',
@@ -1492,7 +1490,6 @@ export default function TodolistsPage() {
                           className="flex items-center space-x-1"
                         >
                           <ArrowDownUp size={16} />
-                          <span>{getActiveSortOption()}</span>
                         </Button>
                       </PopoverTrigger>
                       <PopoverContent className="w-48 p-2 text-sm">
