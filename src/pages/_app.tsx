@@ -5,6 +5,7 @@ import { NextUIProvider} from "@nextui-org/react";
 import { Toaster } from '@/components/ui/toaster';
 import { SessionProvider } from 'next-auth/react';
 import { SpeedInsights } from '@vercel/speed-insights/next';
+import { Analytics } from "@vercel/analytics/react"
 
 function MyApp({ Component, pageProps }: AppProps) {
   return (
@@ -18,6 +19,7 @@ function MyApp({ Component, pageProps }: AppProps) {
         </SessionProvider>
       </ThemeProvider>
       <SpeedInsights />
+      <Analytics />
     </>
   );
 }
