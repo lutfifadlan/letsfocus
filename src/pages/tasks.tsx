@@ -20,6 +20,10 @@ import {
   ArrowDown,
   Edit,
   Trash,
+  ChevronsUp,
+  ChevronUp,
+  ChevronDown,
+  Flag,
 } from 'lucide-react';
 import {
   Table,
@@ -40,18 +44,19 @@ import {
   DialogTitle,
   DialogClose,
 } from '@/components/ui/dialog';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 
 export default function TasksPage() {
   const [tasks, setTasks] = useState<Task[]>([]);
   const [filteredTasks, setFilteredTasks] = useState<Task[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [filterCriteria, setFilterCriteria] = useState({
-    createdDate: { from: null as Date | null, to: null as Date | null }, // Update to handle date range
-    completedDate: { from: null as Date | null, to: null as Date | null }, // Update to handle date range
-    dueDate: { from: null as Date | null, to: null as Date | null }, // Update to handle date range
+    createdDate: { from: null as Date | null, to: null as Date | null },
+    completedDate: { from: null as Date | null, to: null as Date | null },
+    dueDate: { from: null as Date | null, to: null as Date | null },
     showCompleted: false,
     showPending: false,
-    showIgnored: false, // Add showIgnored to filter criteria
+    showIgnored: false,
     tags: [] as string[],
     group: '',
     ignoredDate: { from: null as Date | null, to: null as Date | null },
@@ -73,7 +78,7 @@ export default function TasksPage() {
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
   const [isEditMode, setIsEditMode] = useState(false);
   const [taskFormData, setTaskFormData] = useState<Partial<Task>>({
-    priority: 'Medium', // Add default priority
+    priority: 'Medium',
   });
 
   useEffect(() => {
@@ -100,6 +105,8 @@ export default function TasksPage() {
       });
     }
   };
+
+  const priorityOrder = ['High', 'Medium', 'Low', 'No Priority'];
 
   const applyFilters = () => {
     let filtered = tasks;
@@ -150,7 +157,6 @@ export default function TasksPage() {
       });
     }
 
-    // Always exclude deleted tasks
     filtered = filtered.filter((task) => !task.isDeleted);
 
     if (filterCriteria.tags.length > 0) {
@@ -184,87 +190,68 @@ export default function TasksPage() {
 
     filtered = filtered.sort((a, b) => {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      let valueA: any;
+      let valueA: any = a[sortField as keyof Task];
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      let valueB: any;
+      let valueB: any = b[sortField as keyof Task];
   
       if (sortField === 'timeTaken') {
-        valueA =
-          a.completedAt && a.createdAt
-            ? new Date(a.completedAt).getTime() - new Date(a.createdAt).getTime()
-            : null;
-        valueB =
-          b.completedAt && b.createdAt
-            ? new Date(b.completedAt).getTime() - new Date(b.createdAt).getTime()
-            : null;
+        valueA = a.completedAt && a.createdAt
+          ? new Date(a.completedAt).getTime() - new Date(a.createdAt).getTime()
+          : null;
+        valueB = b.completedAt && b.createdAt
+          ? new Date(b.completedAt).getTime() - new Date(b.createdAt).getTime()
+          : null;
       } else if (sortField === 'completionStatus') {
         const getCompletionStatus = (task: Task) => {
           if (task.completedAt && task.dueDate) {
             const completedAt = new Date(task.completedAt);
             const dueDate = new Date(task.dueDate);
   
-            if (completedAt < dueDate) {
-              return 'Early';
-            } else if (completedAt.getTime() === dueDate.getTime()) {
-              return 'On Time';
-            } else {
-              return 'Late';
-            }
+            if (completedAt < dueDate) return 'Early';
+            if (completedAt.getTime() === dueDate.getTime()) return 'On Time';
+            return 'Late';
           }
-          return 'N/A';
+          return null;
         };
   
-        const statusA = getCompletionStatus(a);
-        const statusB = getCompletionStatus(b);
+        valueA = getCompletionStatus(a);
+        valueB = getCompletionStatus(b);
   
-        const statusOrder = ['Early', 'On Time', 'Late', 'N/A'];
+        const statusOrder = ['Early', 'On Time', 'Late'];
+  
+        if (valueA === null && valueB === null) return 0;
+        if (valueA === null) return 1;
+        if (valueB === null) return -1;
   
         return sortOrder === 'asc'
-        ? statusOrder.indexOf(statusA) - statusOrder.indexOf(statusB)
-        : statusOrder.indexOf(statusB) - statusOrder.indexOf(statusA);
-    } else {
-      valueA = a[sortField];
-        valueB = b[sortField];
-      }
-  
-      // Handle nulls
-      if (valueA == null && valueB == null) return 0;
-      if (valueA == null) return sortOrder === 'asc' ? -1 : 1;
-      if (valueB == null) return sortOrder === 'asc' ? 1 : -1;
-  
-      if (
-        sortField === 'title' ||
-        sortField === 'group' ||
-        sortField === 'description' ||
-        sortField === 'status'
-      ) {
-        const strA = typeof valueA === 'string' ? valueA.toLowerCase() : '';
-        const strB = typeof valueB === 'string' ? valueB.toLowerCase() : '';
-        return sortOrder === 'asc' ? strA.localeCompare(strB) : strB.localeCompare(strA);
-      } else if (sortField === 'tags') {
-        const tagsA = Array.isArray(valueA) ? valueA.join(', ').toLowerCase() : '';
-        const tagsB = Array.isArray(valueB) ? valueB.join(', ').toLowerCase() : '';
-        return sortOrder === 'asc' ? tagsA.localeCompare(tagsB) : tagsB.localeCompare(tagsA);
-      } else if (sortField === 'dueDate' || sortField === 'completedAt' || sortField === 'createdAt') {
-        const dateA = new Date(valueA);
-        const dateB = new Date(valueB);
-        if (isNaN(dateA.getTime()) && isNaN(dateB.getTime())) {
-            return 0;
-        } else if (isNaN(dateA.getTime())) {
-            return sortOrder === 'asc' ? -1 : 1;
-        } else if (isNaN(dateB.getTime())) {
-            return sortOrder === 'asc' ? 1 : -1;
-        } else {
-            return sortOrder === 'asc'
-                ? dateA.getTime() - dateB.getTime()
-                : dateB.getTime() - dateA.getTime();
+          ? statusOrder.indexOf(valueA) - statusOrder.indexOf(valueB)
+          : statusOrder.indexOf(valueB) - statusOrder.indexOf(valueA);
+      } else if (sortField === 'priority') {
+        const priorityA = a.priority || '';
+        const priorityB = b.priority || '';
+        
+        if (priorityA && !priorityB) return -1;
+        if (!priorityA && priorityB) return 1;
+        
+        if (priorityA && priorityB) {
+          const indexA = priorityOrder.indexOf(priorityA);
+          const indexB = priorityOrder.indexOf(priorityB);
+          return sortOrder === 'asc' ? indexA - indexB : indexB - indexA;
         }
-      } else {
-        // For numbers
-        const numA = typeof valueA === 'number' ? valueA : 0;
-        const numB = typeof valueB === 'number' ? valueB : 0;
-        return sortOrder === 'asc' ? numA - numB : numB - numA;
+        
+        return 0;
       }
+  
+      if (valueA == null && valueB == null) return 0;
+      if (valueA == null) return 1;
+      if (valueB == null) return -1;
+  
+      if (typeof valueA === 'string') valueA = valueA.toLowerCase();
+      if (typeof valueB === 'string') valueB = valueB.toLowerCase();
+  
+      if (valueA < valueB) return sortOrder === 'asc' ? -1 : 1;
+      if (valueA > valueB) return sortOrder === 'asc' ? 1 : -1;
+      return 0;
     });
 
     setFilteredTasks(filtered);
@@ -288,7 +275,7 @@ export default function TasksPage() {
     setSortField('createdAt');
   };
 
-  const handleSort = (field: keyof Task | 'timeTaken' | 'status' | 'completionStatus') => {
+  const handleSort = (field: keyof Task | 'timeTaken' | 'status' | 'completionStatus' | 'priority') => {
     const newSortOrder = sortField === field && sortOrder === 'asc' ? 'desc' : 'asc';
     setSortField(field);
     setSortOrder(newSortOrder);
@@ -394,6 +381,19 @@ export default function TasksPage() {
         });
       }
       fetchTasks();
+    }
+  };
+
+  const renderPriorityIcon = (priority: string) => {
+    switch (priority) {
+      case 'High':
+        return <ChevronsUp size={16} className="text-red-500" />;
+      case 'Medium':
+        return <ChevronUp size={16} />;
+      case 'Low':
+        return <ChevronDown size={16} />;
+      default:
+        return <Flag size={16} />;
     }
   };
 
@@ -539,7 +539,7 @@ export default function TasksPage() {
                           onCheckedChange={(checked: boolean) =>
                             setFilterCriteria({ ...filterCriteria, [item.id]: checked })
                           }
-                          className="rounded border-gray-300 focus:ring-emerald-400" // Improves the checkbox design
+                          className="rounded border-gray-300 focus:ring-emerald-400"
                         />
                         <Label htmlFor={item.id} className="text-sm font-medium">
                           {item.label}
@@ -547,7 +547,6 @@ export default function TasksPage() {
                       </div>
                     ))}
                   </div>
-
 
                   {/* Tags Filter */}
                   <div>
@@ -686,7 +685,7 @@ export default function TasksPage() {
                 <TableRow>
                   <TableHead>#</TableHead>
                   <TableHead
-                    className="cursor-pointer select-none hover:bg-gray-100"
+                    className="cursor-pointer select-none hover:bg-gray-100 dark:hover:bg-gray-800"
                     onClick={() => handleSort('title')}
                   >
                     <div className="flex flex-row items-center gap-2">
@@ -705,7 +704,7 @@ export default function TasksPage() {
                   {visibleColumns.description && <TableHead>Description</TableHead>}
                   {visibleColumns.group && (
                     <TableHead
-                      className="cursor-pointer select-none hover:bg-gray-100"
+                      className="cursor-pointer select-none hover:bg-gray-100 dark:hover:bg-gray-800"
                       onClick={() => handleSort('group')}
                     >
                       <div className="flex flex-row items-center gap-2">
@@ -723,26 +722,12 @@ export default function TasksPage() {
                     </TableHead>
                   )}
                   {visibleColumns.tags && (
-                    <TableHead
-                      className="cursor-pointer select-none hover:bg-gray-100"
-                      onClick={() => handleSort('tags')}
-                    >
-                      <div className="flex flex-row items-center gap-2">
-                        Tags
-                        {sortField === 'tags' ? (
-                          sortOrder === 'asc' ? (
-                            <ArrowDown size={16} />
-                          ) : (
-                            <ArrowUp size={16} />
-                          )
-                        ) : (
-                          <ArrowUpDown size={16} />
-                        )}
-                      </div>
+                    <TableHead>
+                      Tags
                     </TableHead>
                   )}
                   <TableHead
-                    className="cursor-pointer select-none hover:bg-gray-100"
+                    className="cursor-pointer select-none hover:bg-gray-100 dark:hover:bg-gray-800"
                     onClick={() => handleSort('dueDate')}
                   >
                     <div className="flex flex-row items-center gap-2">
@@ -760,7 +745,7 @@ export default function TasksPage() {
                   </TableHead>
                   {visibleColumns.createdAt && (
                     <TableHead
-                      className="cursor-pointer select-none hover:bg-gray-100"
+                      className="cursor-pointer select-none hover:bg-gray-100 dark:hover:bg-gray-800"
                       onClick={() => handleSort('createdAt')}
                     >
                       <div className="flex flex-row items-center gap-2">
@@ -778,7 +763,7 @@ export default function TasksPage() {
                     </TableHead>
                   )}
                   <TableHead
-                    className="cursor-pointer select-none hover:bg-gray-100"
+                    className="cursor-pointer select-none hover:bg-gray-100 dark:hover:bg-gray-800"
                     onClick={() => handleSort('completedAt')}
                   >
                     <div className="flex flex-row items-center gap-2">
@@ -795,7 +780,7 @@ export default function TasksPage() {
                     </div>
                   </TableHead>
                   <TableHead
-                    className="cursor-pointer select-none hover:bg-gray-100"
+                    className="cursor-pointer select-none hover:bg-gray-100 dark:hover:bg-gray-800"
                     onClick={() => handleSort('timeTaken')}
                   >
                     <div className="flex flex-row items-center gap-2">
@@ -812,16 +797,16 @@ export default function TasksPage() {
                     </div>
                   </TableHead>
                   <TableHead
-                    className="cursor-pointer select-none hover:bg-gray-100"
+                    className="cursor-pointer select-none hover:bg-gray-100 dark:hover:bg-gray-800"
                     onClick={() => handleSort('status')}
                   >
                     <div className="flex flex-row items-center gap-2">
                       Status
                       {sortField === 'status' ? (
                         sortOrder === 'asc' ? (
-                          <ArrowDown size={16} />
-                        ) : (
                           <ArrowUp size={16} />
+                        ) : (
+                          <ArrowDown size={16} />
                         )
                       ) : (
                         <ArrowUpDown size={16} />
@@ -830,7 +815,7 @@ export default function TasksPage() {
                   </TableHead>
                   {visibleColumns.completionStatus && (
                     <TableHead
-                      className="cursor-pointer select-none hover:bg-gray-100"
+                      className="cursor-pointer select-none hover:bg-gray-100 dark:hover:bg-gray-800"
                       onClick={() => handleSort('completionStatus')}
                     >
                       <div className="flex flex-row items-center gap-2">
@@ -849,7 +834,7 @@ export default function TasksPage() {
                   )}
                   {visibleColumns.ignoredAt && (
                     <TableHead
-                      className="cursor-pointer select-none hover:bg-gray-100"
+                      className="cursor-pointer select-none hover:bg-gray-100 dark:hover:bg-gray-800"
                       onClick={() => handleSort('ignoredAt')}
                     >
                       <div className="flex flex-row items-center gap-2">
@@ -866,6 +851,23 @@ export default function TasksPage() {
                       </div>
                     </TableHead>
                   )}
+                  <TableHead
+                    className="cursor-pointer select-none hover:bg-gray-100 dark:hover:bg-gray-800"
+                    onClick={() => handleSort('priority')}
+                  >
+                    <div className="flex flex-row items-center gap-2">
+                      Priority
+                      {sortField === 'priority' ? (
+                        sortOrder === 'asc' ? (
+                          <ArrowUp size={16} />
+                        ) : (
+                          <ArrowDown size={16} />
+                        )
+                      ) : (
+                        <ArrowUpDown size={16} />
+                      )}
+                    </div>
+                  </TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -915,11 +917,6 @@ export default function TasksPage() {
                         <Clock size={16} />
                       )}
                     </TableCell>
-                    {visibleColumns.ignoredAt && (
-                      <TableCell>
-                        {task.ignoredAt ? format(new Date(task.ignoredAt), 'PPP') : '-'}
-                      </TableCell>
-                    )}
                     {visibleColumns.completionStatus && (
                       <TableCell>
                         { task.completedAt && task.dueDate && new Date(task.completedAt).toDateString() === new Date(task.dueDate).toDateString() ? (
@@ -939,6 +936,23 @@ export default function TasksPage() {
                         )}
                       </TableCell>
                     )}
+                    {visibleColumns.ignoredAt && (
+                      <TableCell>
+                        {task.ignoredAt ? format(new Date(task.ignoredAt), 'PPP') : '-'}
+                      </TableCell>
+                    )}
+                    <TableCell>
+                      <TooltipProvider>
+                        <Tooltip>
+                          <TooltipTrigger>
+                            {renderPriorityIcon(task.priority || 'No Priority')}
+                          </TooltipTrigger>
+                          <TooltipContent>
+                            <p>{task.priority || 'No Priority'}</p>
+                          </TooltipContent>
+                        </Tooltip>
+                      </TooltipProvider>
+                    </TableCell>
                   </TableRow>
                 ))}
               </TableBody>
@@ -1053,48 +1067,47 @@ export default function TasksPage() {
                     <Label htmlFor="priority" className="text-base font-medium">
                       Priority
                     </Label>
-                    <select
-                      id="priority"
-                      name="priority"
-                      value={taskFormData.priority || 'Medium'}
-                      onChange={handleFormChange}
-                      className="border rounded p-1"
-                    >
-                      <option value="Low">Low</option>
-                      <option value="Medium">Medium</option>
-                      <option value="High">High</option>
-                    </select>
+                    <div className="flex space-x-2 mt-1">
+                      {['High', 'Medium', 'Low', ''].map((priority) => (
+                        <TooltipProvider key={priority}>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <Button
+                                variant={taskFormData.priority === priority ? 'default' : 'outline'}
+                                size="sm"
+                                onClick={() => setTaskFormData({ ...taskFormData, priority })}
+                              >
+                                {renderPriorityIcon(priority)}
+                              </Button>
+                            </TooltipTrigger>
+                            <TooltipContent>
+                              <p>{priority}</p>
+                            </TooltipContent>
+                          </Tooltip>
+                        </TooltipProvider>
+                      ))}
+                    </div>
                   </div>
                   {/* Status */}
-                  <div className="flex items-center">
-                    <Checkbox
-                      id="status"
-                      checked={taskFormData.status === 'COMPLETED'}
-                      onCheckedChange={(checked: boolean) =>
-                        setTaskFormData({
-                          ...taskFormData,
-                          status: checked ? 'COMPLETED' : 'PENDING',
-                        })
-                      }
-                    />
-                    <Label htmlFor="status" className="ml-2 text-base font-medium">
-                      Completed
+                  <div>
+                    <Label htmlFor="status" className="text-base font-medium">
+                      Status
                     </Label>
-                  </div>
-                  <div className="flex items-center">
-                    <Checkbox
-                      id="ignored"
-                      checked={taskFormData.status === 'IGNORED'}
-                      onCheckedChange={(checked: boolean) =>
-                        setTaskFormData({
-                          ...taskFormData,
-                          status: checked ? 'IGNORED' : 'PENDING',
-                        })
-                      }
-                    />
-                    <Label htmlFor="ignored" className="ml-2 text-base font-medium">
-                      Ignored
-                    </Label>
+                    <div className="flex space-x-2 mt-1">
+                      {['PENDING', 'COMPLETED', 'IGNORED'].map((status) => (
+                        <Button
+                          key={status}
+                          variant={taskFormData.status === status ? 'default' : 'outline'}
+                          size="sm"
+                          onClick={() => setTaskFormData({ ...taskFormData, status })}
+                        >
+                          {status === 'COMPLETED' ? <Check size={16} className="mr-1"/> :
+                           status === 'IGNORED' ? <X size={16} className="mr-1"/> :
+                           <Clock size={16} className="mr-1"/>}
+                          {status}
+                        </Button>
+                      ))}
+                    </div>
                   </div>
                   {/* Action Buttons */}
                   <div className="flex justify-end space-x-2 pt-4 border-t">
@@ -1122,7 +1135,7 @@ export default function TasksPage() {
                     {selectedTask.group && (
                       <div>
                         <Label className="text-base font-medium">Group</Label>
-                        <p className="text-sm text-gray-700 mt-1">
+                        <p className="text-sm text-gray-700 dark:text-gray-200 mt-1">
                           {selectedTask.group}
                         </p>
                       </div>
@@ -1149,7 +1162,7 @@ export default function TasksPage() {
                   <div className="grid grid-cols-2 gap-4">
                     <div>
                       <Label className="text-base font-medium">Created At</Label>
-                      <p className="text-sm text-gray-700 mt-1">
+                      <p className="text-sm text-gray-700 dark:text-gray-200 mt-1">
                         {selectedTask.createdAt
                           ? format(new Date(selectedTask.createdAt), 'PPpp')
                           : 'N/A'}
@@ -1157,7 +1170,7 @@ export default function TasksPage() {
                     </div>
                     <div>
                       <Label className="text-base font-medium">Due Date</Label>
-                      <p className="text-sm text-gray-700 mt-1">
+                      <p className="text-sm text-gray-700 dark:text-gray-200 mt-1">
                         {selectedTask.dueDate
                           ? format(new Date(selectedTask.dueDate), 'PPpp')
                           : 'N/A'}
@@ -1165,7 +1178,7 @@ export default function TasksPage() {
                     </div>
                     <div>
                       <Label className="text-base font-medium">Completed At</Label>
-                      <p className="text-sm text-gray-700 mt-1">
+                      <p className="text-sm text-gray-700 dark:text-gray-200 mt-1">
                         {selectedTask.completedAt
                           ? format(new Date(selectedTask.completedAt), 'PPpp')
                           : 'N/A'}
@@ -1173,7 +1186,7 @@ export default function TasksPage() {
                     </div>
                     <div>
                       <Label className="text-base font-medium">Ignored At</Label>
-                      <p className="text-sm text-gray-700 mt-1">
+                      <p className="text-sm text-gray-700 dark:text-gray-200 mt-1">
                         {selectedTask.ignoredAt
                           ? format(new Date(selectedTask.ignoredAt), 'PPpp')
                           : 'N/A'}
@@ -1181,7 +1194,7 @@ export default function TasksPage() {
                     </div>
                     <div>
                       <Label className="text-base font-medium">Time Taken</Label>
-                      <p className="text-sm text-gray-700 mt-1">
+                      <p className="text-sm text-gray-700 dark:text-gray-200 mt-1">
                         {selectedTask.completedAt && selectedTask.createdAt
                           ? formatTimeTaken(
                               new Date(selectedTask.createdAt),
@@ -1195,9 +1208,12 @@ export default function TasksPage() {
                   {/* Priority */}
                   <div>
                     <Label className="text-base font-medium">Priority</Label>
-                    <p className="text-sm text-gray-700 mt-1">
-                      {selectedTask.priority}
-                    </p>
+                    <div className="flex items-center mt-1">
+                      {renderPriorityIcon(selectedTask.priority || 'No Priority')}
+                      <span className="ml-2 text-sm text-gray-700 dark:text-gray-200">
+                        {selectedTask.priority || 'No Priority'}
+                      </span>
+                    </div>
                   </div>
 
                   {/* Status */}
@@ -1218,14 +1234,53 @@ export default function TasksPage() {
                     )}
                   </div>
 
+                  {/* Completion Status */}
+                  {selectedTask.completedAt && selectedTask.dueDate && (
+                    <div>
+                      <Label className="text-base font-medium">Completion Status</Label>
+                      <Badge
+                        variant="outline"
+                        className={`text-sm mt-1 ${
+                          new Date(selectedTask.completedAt) <= new Date(selectedTask.dueDate)
+                            ? 'text-green-500'
+                            : 'text-red-500'
+                        }`}
+                      >
+                        {new Date(selectedTask.completedAt).toDateString() === new Date(selectedTask.dueDate).toDateString()
+                          ? 'On Time'
+                          : new Date(selectedTask.completedAt) < new Date(selectedTask.dueDate)
+                          ? 'Early'
+                          : 'Late'}
+                      </Badge>
+                    </div>
+                  )}
+
                   {/* Action Buttons */}
                   <div className="flex justify-end space-x-2 pt-4 border-t">
-                    <Button variant="ghost" onClick={handleEditClick}>
-                      <Edit size={16} />
-                    </Button>
-                    <Button variant="ghost" onClick={handleDeleteClick}>
-                      <Trash size={16} />
-                    </Button>
+                    <TooltipProvider>
+                      <Tooltip>
+                        <TooltipTrigger>
+                          <Button variant="ghost" onClick={handleEditClick}>
+                            <Edit size={16} />
+                          </Button>
+                        </TooltipTrigger>
+                        <TooltipContent>
+                          <p>Edit Task</p>
+                        </TooltipContent>
+                      </Tooltip>
+                    </TooltipProvider>
+                    <TooltipProvider>
+                      <Tooltip>
+                        <TooltipTrigger>
+                          <Button variant="ghost" onClick={handleDeleteClick}>
+                            <Trash size={16} />
+                          </Button>
+                        </TooltipTrigger>
+                        <TooltipContent>
+                          <p>Delete Task</p>
+                        </TooltipContent>
+                      </Tooltip>
+                    </TooltipProvider>
                   </div>
                 </>
               )}
