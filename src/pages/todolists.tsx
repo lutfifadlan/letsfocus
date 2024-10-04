@@ -14,7 +14,10 @@ import {
   Plus, Trash, Tag, Folder, PlusCircle, Edit, FileText, Save, X,
   CalendarIcon, SquareCheck, Trash2, ChevronsUp, ChevronUp,
   ChevronDown, Flag, CalendarArrowDown, ArrowDownUp, CopyCheck,
-  MinusCircle, Rocket, CircleMinus, Sparkles, XSquare
+  MinusCircle, Rocket, CircleMinus, Sparkles, XSquare, Filter, Search,
+  AlertCircle,
+  Clock,
+  CheckCircle
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { ToastAction } from '@/components/ui/toast';
@@ -49,6 +52,14 @@ import {
 } from "@/components/ui/tooltip";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 
+interface GeneratedTasksApprovalProps {
+  tasks: Task[];
+  onApprove: (task: Task) => void;
+  onReject: (taskId: string) => void;
+  onApproveAll: () => void;
+  onRejectAll: () => void;
+}
+
 const FormSchema = z.object({
   calendar: z.object({
     from: z.date(),
@@ -60,17 +71,10 @@ const FormSchema = z.object({
   }),
 });
 
-interface GeneratedTasksApprovalProps {
-  tasks: Task[];
-  onApprove: (task: Task) => void;
-  onReject: (taskId: string) => void;
-  onApproveAll: () => void;
-  onRejectAll: () => void;
-}
 
 const GeneratedTasksApproval: React.FC<GeneratedTasksApprovalProps> = ({ 
   tasks, 
-  onApprove, 
+  onApprove,
   onReject, 
   onApproveAll, 
   onRejectAll 
@@ -151,6 +155,21 @@ const GeneratedTasksApproval: React.FC<GeneratedTasksApprovalProps> = ({
   </Card>
 );
 
+const CurrentDateTime: React.FC = () => {
+  const [dateTime, setDateTime] = useState(new Date());
+
+  useEffect(() => {
+    const timer = setInterval(() => setDateTime(new Date()), 1000);
+    return () => clearInterval(timer);
+  }, []);
+
+  return (
+    <div className="text-sm text-gray-500 flex justify-center items-center">
+      {format(dateTime, 'PPPP')} - {format(dateTime, 'HH:mm:ss')}
+    </div>
+  );
+};
+
 export default function TodolistsPage() {
   const form = useForm<z.infer<typeof FormSchema>>({
     resolver: zodResolver(FormSchema),
@@ -218,10 +237,25 @@ export default function TodolistsPage() {
   const [showAiInput, setShowAiInput] = useState(false);
   const [aiInput, setAiInput] = useState('');
   const [generatedTasks, setGeneratedTasks] = useState<Task[]>([]);
+  const [taskStats, setTaskStats] = useState({ completedToday: 0, dueToday: 0, overdue: 0 });
+  const [currentFilter, setCurrentFilter] = useState<{ type: 'group' | 'tag' | null, value: string | null }>({ type: null, value: null });
+  const [searchTerm, setSearchTerm] = useState('');
+  const [showSearch, setShowSearch] = useState(false);
+  const [showFilter, setShowFilter] = useState(false);
 
   const { status } = useSession();
   const { toast } = useToast();
-  const incompleteTasks = tasks.filter((task) => task.status !== 'COMPLETED' && !task.isDeleted && task.status !== 'IGNORED');
+  const incompleteTasks = tasks.filter((task) => {
+    const baseCondition = task.status !== 'COMPLETED' && !task.isDeleted && task.status !== 'IGNORED';
+    const filterCondition = 
+      currentFilter.type === null ? true :
+      currentFilter.type === 'group' ? task.group === currentFilter.value :
+      currentFilter.type === 'tag' ? task.tags?.includes(currentFilter.value as string) : true;
+    const searchCondition = 
+      task.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      task.description.toLowerCase().includes(searchTerm.toLowerCase());
+    return baseCondition && filterCondition && searchCondition;
+  });
 
   const handleGenerateTodoListsWithAI = async () => {
     if (!aiInput.trim()) return;
@@ -1426,17 +1460,48 @@ export default function TodolistsPage() {
     setShowBulkActions(false);
   };
 
-  useEffect(() => {
-    if (status === 'authenticated') {
-      setIsFetchLoading(true);
-      fetchTasksAndGroups().then(() => {
-        setTasks((prevTasks) => {
-          const sortedTasks = sortTasks(prevTasks);
-          return sortedTasks ? sortedTasks : prevTasks;
-        });
-        setIsFetchLoading(false);
+  const fetchTaskStats = async () => {
+    try {
+      const response = await fetch('/api/tasks/stats', {
+        method: 'GET',
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to fetch task statistics');
+      }
+
+      const data = await response.json();
+      setTaskStats(data);
+    } catch (error) {
+      console.error('Failed to fetch task statistics:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to fetch task statistics.',
+        variant: 'destructive',
+        duration: 3000,
       });
     }
+  };
+
+  useEffect(() => {
+    const fetchData = async () => {
+      if (status === 'authenticated') {
+        setIsFetchLoading(true);
+        try {
+          await Promise.all([fetchTasksAndGroups(), fetchTaskStats()]);
+          setTasks((prevTasks) => {
+            const sortedTasks = sortTasks(prevTasks);
+            return sortedTasks ? sortedTasks : prevTasks;
+          });
+        } catch (error) {
+          console.error('Error fetching data:', error);
+        } finally {
+          setIsFetchLoading(false);
+        }
+      }
+    };
+
+    fetchData();
   }, [status]);
 
   useEffect(() => {
@@ -1457,101 +1522,233 @@ export default function TodolistsPage() {
   return (
     <Layout>
       <Card className="max-w-4xl mx-auto border-none shadow-none">
-        <CardHeader>
-          <div className="flex justify-between items-center space-x-1">
-            <CardTitle className="text-center text-2xl">To-Do Lists</CardTitle>
-            <div className="flex justify-center items-center space-x-1">
-              <TooltipProvider>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <Button
-                      onClick={() => setShowAiInput(!showAiInput)}
-                      aria-label="Show AI Input"
-                      variant="ghost"
-                      size="icon"
-                      className="w-auto px-1.5"
-                    >
-                      <Sparkles size={16} />
-                    </Button>
-                  </TooltipTrigger>
-                  <TooltipContent>
-                    <p>Use AI to generate tasks</p>
-                  </TooltipContent>
-                </Tooltip>
-              </TooltipProvider>
-              <TooltipProvider>
-                <Tooltip>
-                  <TooltipTrigger>
-                    <Popover>
-                      <PopoverTrigger asChild>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className="flex items-center space-x-1"
-                        >
-                          <ArrowDownUp size={16} />
-                        </Button>
-                      </PopoverTrigger>
-                      <PopoverContent className="w-48 p-2 text-sm">
-                        <p className="mb-2">Sort By</p>
-                        <div className="space-y-2">
-                          {Object.entries(sortOptions).map(([key]) => (
-                            <div key={key} className="flex items-center space-x-2">
+        <CardHeader className="mb-2 pb-0">
+          <div className="flex justify-between items-center mb-1">
+            <div className="flex items-center space-x-2">
+              <CardTitle className="text-2xl">To-Do Lists</CardTitle>
+            </div>
+            <CurrentDateTime />
+            <div className="flex items-center space-x-3 text-sm">
+              {taskStats.completedToday > 0 && (
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <div className="flex items-center space-x-1 cursor-pointer">
+                        <CheckCircle size={16} />
+                        <span>{taskStats.completedToday}</span>
+                      </div>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p>Completed today</p>
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+              )}
+              {taskStats.dueToday > 0 && (
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <div className="flex items-center space-x-1 cursor-pointer">
+                        <Clock size={16} />
+                        <span>{taskStats.dueToday}</span>
+                      </div>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p>Due today</p>
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+              )}
+              {taskStats.overdue > 0 && (
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <div className="flex items-center space-x-1 cursor-pointer">
+                        <AlertCircle size={16} />
+                        <span>{taskStats.overdue}</span>
+                      </div>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p>Overdue</p>
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+              )}
+            </div>
+            <div className="flex justify-between items-center space-x-1">
+              <div className="flex items-center space-x-1">
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Popover open={showFilter} onOpenChange={setShowFilter}>
+                        <PopoverTrigger asChild>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            aria-label="Filter Tasks"
+                          >
+                            <Filter size={16} />
+                          </Button>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-48">
+                          <div className="space-y-2 text-sm">
+                            <p>Filter by Group or Tag</p>
+                            <Button 
+                              variant={currentFilter.type === null ? "secondary" : "outline"} 
+                              onClick={() => setCurrentFilter({ type: null, value: null })}
+                              className="w-full justify-start text-sm"
+                            >
+                              All tasks
+                            </Button>
+                            {groups.map(group => (
                               <Button
-                                variant="ghost"
-                                size="icon"
-                                aria-label={`Sort by ${key}`}
-                                onClick={() => handleSortChange(key as keyof typeof sortOptions)}
+                                key={group._id}
+                                variant={currentFilter.type === 'group' && currentFilter.value === group.name ? "secondary" : "outline"}
+                                onClick={() => setCurrentFilter({ type: 'group', value: group.name })}
+                                className="w-full justify-start text-sm"
                               >
-                                {sortDirection[key as keyof typeof sortDirection] === 'asc' ? <ChevronDown size={16} /> : <ChevronUp size={16} />}
-                                {key === 'createdAt' && <CalendarArrowDown size={16} />}
-                                {key === 'priority' && <Flag size={16} />}
-                                {key === 'dueDate' && <CalendarIcon size={16} />}
-                                {key === 'group' && <Folder size={16} />}
-                                {key === 'title' && <FileText size={16} />}
-                                {key === 'focus' && <Rocket size={16} />}
+                                <Folder className="mr-2" size={16} />{group.name}
                               </Button>
-                              <span>
-                                {key === 'createdAt' && 'Created Date'}
-                                {key === 'priority' && 'Priority'}
-                                {key === 'dueDate' && 'Due Date'}
-                                {key === 'group' && 'Group'}
-                                {key === 'title' && 'Title'}
-                                {key === 'focus' && 'Focus'}
-                              </span>
-                            </div>
-                          ))}
-                        </div>
-                      </PopoverContent>
-                    </Popover>
-                  </TooltipTrigger>
-                  <TooltipContent>
-                    <p>Sort tasks</p>
-                  </TooltipContent>
-                </Tooltip>
-              </TooltipProvider>
-              <TooltipProvider>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <Button
-                      onClick={() => setShowBulkActions(!showBulkActions)}
-                      aria-label={showBulkActions ? 'Hide Bulk Actions' : 'Show Bulk Actions'}
-                      variant="ghost"
-                      size="icon"
-                      disabled={incompleteTasks.length === 0}
-                    >
-                      <CopyCheck size={16} />
-                    </Button>
-                  </TooltipTrigger>
-                  <TooltipContent>
-                    <p>{showBulkActions ? 'Hide bulk actions' : 'Show bulk actions'}</p>
-                  </TooltipContent>
-                </Tooltip>
-              </TooltipProvider>
+                            ))}
+                            {Array.from(new Set(tasks.flatMap(task => task.tags || []))).map(tag => (
+                              <Button
+                                key={tag}
+                                variant={currentFilter.type === 'tag' && currentFilter.value === tag ? "secondary" : "outline"}
+                                onClick={() => setCurrentFilter({ type: 'tag', value: tag })}
+                                className="w-full justify-start"
+                              >
+                                <Tag className="mr-2" size={16} />{tag}
+                              </Button>
+                            ))}
+                          </div>
+                        </PopoverContent>
+                      </Popover>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p>Filter tasks</p>
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button
+                        onClick={() => setShowSearch(!showSearch)}
+                        aria-label="Search Tasks"
+                        variant="ghost"
+                        size="icon"
+                      >
+                        <Search size={16} />
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p>Search tasks</p>
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button
+                        onClick={() => setShowAiInput(!showAiInput)}
+                        aria-label="Show AI Input"
+                        variant="ghost"
+                        size="icon"
+                      >
+                        <Sparkles size={16} />
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p>Use AI to generate tasks</p>
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger>
+                      <Popover>
+                        <PopoverTrigger asChild>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            aria-label="Sort Tasks"
+                          >
+                            <ArrowDownUp size={16} />
+                          </Button>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-48 p-2">
+                          <p className="mb-2 text-sm">Sort By</p>
+                          <div className="space-y-2">
+                            {Object.entries(sortOptions).map(([key]) => (
+                              <div key={key} className="flex items-center space-x-2">
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  aria-label={`Sort by ${key}`}
+                                  onClick={() => handleSortChange(key as keyof typeof sortOptions)}
+                                >
+                                  {sortDirection[key as keyof typeof sortDirection] === 'asc' ? <ChevronDown size={16} /> : <ChevronUp size={16} />}
+                                  {key === 'createdAt' && <CalendarArrowDown size={16} />}
+                                  {key === 'priority' && <Flag size={16} />}
+                                  {key === 'dueDate' && <CalendarIcon size={16} />}
+                                  {key === 'group' && <Folder size={16} />}
+                                  {key === 'title' && <FileText size={16} />}
+                                  {key === 'focus' && <Rocket size={16} />}
+                                </Button>
+                                <span className="text-sm">
+                                  {key === 'createdAt' && 'Created Date'}
+                                  {key === 'priority' && 'Priority'}
+                                  {key === 'dueDate' && 'Due Date'}
+                                  {key === 'group' && 'Group'}
+                                  {key === 'title' && 'Title'}
+                                  {key === 'focus' && 'Focus'}
+                                </span>
+                              </div>
+                            ))}
+                          </div>
+                        </PopoverContent>
+                      </Popover>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p>Sort tasks</p>
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button
+                        onClick={() => setShowBulkActions(!showBulkActions)}
+                        aria-label={showBulkActions ? 'Hide Bulk Actions' : 'Show Bulk Actions'}
+                        variant="ghost"
+                        size="icon"
+                        disabled={incompleteTasks.length === 0}
+                      >
+                        <CopyCheck size={16} />
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p>{showBulkActions ? 'Hide bulk actions' : 'Show bulk actions'}</p>
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+              </div>
             </div>
           </div>
         </CardHeader>
         <CardContent>
+          {showSearch && (
+            <div className="flex flex-col w-full mb-2">
+              <Input
+                type="text"
+                placeholder="Search tasks by task title and description..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="w-full flex-1 text-sm"
+                autoFocus
+              />
+            </div>
+          )}
           <div className="flex flex-col gap-0 mb-2">
             <div className={`flex flex-row items-center justify-start ${showAiInput ? 'gap-2' : ''}`}>
               {showAiInput && (
@@ -2986,7 +3183,7 @@ export default function TodolistsPage() {
                 </div>
               ))
             ) : (
-              <p className="text-gray-500 text-center text-sm">No tasks yet. Add one to get started!</p>
+              <p className="text-gray-500 text-center text-sm">No task yet.</p>
             )}
           </div>
         </CardContent>

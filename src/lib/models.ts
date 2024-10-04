@@ -41,6 +41,14 @@ const UserPlanSchema = new mongoose.Schema({
   isDeleted: { type: Boolean, default: false },
 }, { timestamps: true });
 
+UserSchema.index({ email: 1, isDeleted: 1 });
+
+GroupSchema.index({ userId: 1, isDeleted: 1 });
+
+TaskSchema.index({ userId: 1, isDeleted: 1 });
+
+UserPlanSchema.index({ userId: 1, isDeleted: 1 });
+
 export const User = mongoose.models.User || mongoose.model('User', UserSchema);
 export const Task = mongoose.models.Task || mongoose.model('Task', TaskSchema);
 export const Group = mongoose.models.Group || mongoose.model('Group', GroupSchema);
