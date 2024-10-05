@@ -18,7 +18,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     return res.status(404).json({ message: 'User not found' });
   }
 
-  const { taskIds, tags, dueDate, priority, group, status, isDeleted, isCurrentlyFocused } = req.body;
+  const { taskIds, tags, dueDate, priority, group, status, isDeleted, isCurrentlyFocused, tasks } = req.body;
   let completedAt = null;
   let ignoredAt = null;
   let deletedAt = null;
@@ -50,6 +50,18 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     } catch (error) {
     console.error(error);
       res.status(500).json({ error: 'Error updating tags' });
+    }
+  } else if (req.method === 'POST') {
+    try {
+      const addedTasks = tasks.map((task: typeof Task) => ({
+        ...task,
+        userId: user._id,
+      }));
+      const newTasks = await Task.create(addedTasks);
+      res.status(200).json({ message: 'Tasks added successfully', tasks: newTasks });
+    } catch (error) {
+      console.error(error);
+      res.status(500).json({ error: 'Error adding tasks' });
     }
   } else {
     res.status(405).json({ error: 'Method not allowed' });

@@ -12,13 +12,13 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     return res.status(401).json({ message: 'Not authenticated' });
   }
 
+  await connectDB();
+
   const user = await User.findOne({ email: session.user.email, isDeleted: false });
 
   if (!user) {
     return res.status(404).json({ message: 'User not found' });
   }
-
-  await connectDB();
 
   try {
     
