@@ -301,7 +301,6 @@ export default function TodolistsPage() {
   
     setIsLoading(true);
     try {
-      console.log('aiModel: ', aiModel);
       const response = await fetch('/api/ai', {
         method: 'POST',
         headers: {
@@ -655,8 +654,6 @@ export default function TodolistsPage() {
           }),
         });
         const data = await response.json();
-
-        console.log('data in addTask', data)
   
         setTasks((prevTasks) => {
           if (!prevTasks) return [];
