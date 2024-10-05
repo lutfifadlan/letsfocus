@@ -55,7 +55,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 interface GeneratedTasksApprovalProps {
   tasks: Task[];
   onApprove: (task: Task) => void;
-  onReject: (taskId: string) => void;
+  onReject: (task: Task) => void;
   onApproveAll: () => void;
   onRejectAll: () => void;
 }
@@ -77,82 +77,88 @@ const GeneratedTasksApproval: React.FC<GeneratedTasksApprovalProps> = ({
   onReject, 
   onApproveAll, 
   onRejectAll 
-}) => (
-  <Card className="p-4 mb-4 text-sm">
-    <CardHeader>
-      <CardTitle className="text-lg font-normal">Generated Tasks</CardTitle>
-    </CardHeader>
-    <CardContent>
-      <div className="space-y-2 text-sm">
-        {tasks.map((task) => (
-          <div key={task._id} className="flex items-center justify-between border-b">
-            <span className="flex-grow text-sm">{task.title}</span>
-            <div className="flex space-x-2">
-              <TooltipProvider>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <Button
-                      onClick={() => onApprove(task)}
-                      variant="ghost"
-                      size="icon"
-                    >
-                      <Plus size={16}/>
-                    </Button>
-                  </TooltipTrigger>
-                  <TooltipContent>
-                    <p>Approve Task</p>
-                  </TooltipContent>
-                </Tooltip>
-              </TooltipProvider>
-              <TooltipProvider>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <Button
-                      onClick={() => onReject(task._id)}
-                      variant="ghost"
-                      size="icon"
-                    >
-                      <X size={16}/>
-                    </Button>
-                  </TooltipTrigger>
-                  <TooltipContent>
-                    <p>Reject Task</p>
-                  </TooltipContent>
-                </Tooltip>
-              </TooltipProvider>
+}) => {
+  console.log('tasks on GeneratedTasksApproval', tasks);
+
+  return (
+    <Card className="mb-4 text-sm">
+      <CardHeader className="p-2 text-center m-0">
+        <CardTitle className="text-sm font-semibold">Generated Tasks</CardTitle>
+      </CardHeader>
+      <CardContent className="px-4">
+        <div className="text-sm">
+          {tasks.map((task) => (
+            <div key={task._id} className="flex items-center justify-between border-b">
+              <span className="flex-grow text-sm">{task.title}</span>
+              <div className="flex">
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button
+                        onClick={() => onApprove(task)}
+                        variant="ghost"
+                        size="icon"
+                        className="w-auto px-1.5"
+                      >
+                        <Plus size={16}/>
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p>Add task</p>
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button
+                        onClick={() => onReject(task)}
+                        variant="ghost"
+                        size="icon"
+                        className="w-auto px-1.5"
+                      >
+                        <X size={16}/>
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p>Reject task</p>
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+              </div>
             </div>
-          </div>
-        ))}
-      </div>
-      <div className="flex justify-end space-x-2 mt-4">
-        <TooltipProvider>
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Button onClick={onApproveAll} variant="ghost" size="icon">
-                <CopyCheck size={16} />
-              </Button>
-            </TooltipTrigger>
-            <TooltipContent>
-              <p>Approve All Tasks</p>
-            </TooltipContent>
-          </Tooltip>
-        </TooltipProvider>
-        <TooltipProvider>
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Button onClick={onRejectAll} variant="ghost" size="icon">
-                <XSquare size={16} />
-              </Button>
-            </TooltipTrigger>
-            <TooltipContent>
-              <p>Reject All Tasks</p>
-            </TooltipContent>
-          </Tooltip>
-        </TooltipProvider>
-      </div>
-    </CardContent>
-  </Card>
-);
+          ))}
+        </div>
+        <div className="flex justify-end mt-2">
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button onClick={onApproveAll} variant="ghost" size="icon">
+                  <CopyCheck size={16} />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>
+                <p>Add all tasks</p>
+              </TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button onClick={onRejectAll} variant="ghost" size="icon">
+                  <XSquare size={16} />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>
+                <p>Reject all tasks</p>
+              </TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
 
 const CurrentDateTime: React.FC = () => {
   const [dateTime, setDateTime] = useState(new Date());
@@ -313,7 +319,6 @@ export default function TodolistsPage() {
   
       const data = await response.json();
       const generatedTasksData = data.tasks.map((title: string) => ({
-        _id: Math.random().toString(36).substr(2, 9), // Temporary ID
         title,
         status: 'PENDING',
         isDeleted: false,
@@ -340,10 +345,30 @@ export default function TodolistsPage() {
     setIsLoading(false);
   };
 
-  const handleApproveAllTasks = () => {
-    generatedTasks.forEach((task) => {
-      addTask(task.title, null, '');
+  const handleApproveTask = async (taskTitle: string) => {
+    const newTask = await addTaskFromGeneratedTasks(taskTitle);
+    if (newTask) {
+      setTasks(prevTasks => [...prevTasks, newTask]);
+      setGeneratedTasks(prevTasks => prevTasks.filter(task => task.title !== taskTitle));
+      toast({
+        title: 'Task Approved',
+        description: `Task "${taskTitle}" has been added.`,
+        duration: 3000,
+      });
+    }
+  };
+
+  const handleRejectTask = (taskTitle: string) => {
+    setGeneratedTasks(prevTasks => prevTasks.filter(task => task.title !== taskTitle));
+    toast({
+      title: 'Task Rejected',
+      description: 'The task has been removed from the list.',
+      duration: 3000,
     });
+  };
+
+  const handleApproveAllTasks = async () => {
+    await bulkAddTasks(generatedTasks);
     setGeneratedTasks([]);
     toast({
       title: 'Success',
@@ -355,7 +380,7 @@ export default function TodolistsPage() {
   const handleRejectAllTasks = () => {
     setGeneratedTasks([]);
     toast({
-      title: 'Info',
+      title: 'Rejected',
       description: 'All generated tasks have been rejected.',
       duration: 3000,
     });
@@ -576,6 +601,42 @@ export default function TodolistsPage() {
     setIsLoading(false);
   };
 
+  const addTaskFromGeneratedTasks = async (taskTitle: string) => {
+    if (taskTitle.trim()) {
+      setIsLoading(true);
+      try {
+        const response = await fetch('/api/tasks', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            title: taskTitle,
+            tags: [],
+            group: null,
+            description: '',
+            dueDate: null,
+            priority: '',
+            isCurrentlyFocused: false,
+          }),
+        });
+        const data = await response.json();
+        return data;
+      } catch (error) {
+        console.error('Failed to add task:', error);
+        toast({
+          title: 'Error',
+          description: 'Failed to add task.',
+          variant: 'destructive',
+          duration: 3000,
+        });
+      } finally {
+        setIsLoading(false);
+      }
+    }
+    return null;
+  };
+
   const addTask = async (description: string, dueDate: Date | null, priority: string) => {
     if (newTask.trim()) {
       setIsLoading(true);
@@ -596,6 +657,8 @@ export default function TodolistsPage() {
           }),
         });
         const data = await response.json();
+
+        console.log('data in addTask', data)
   
         setTasks((prevTasks) => {
           if (!prevTasks) return [];
@@ -604,7 +667,6 @@ export default function TodolistsPage() {
           return sortedTasks ? sortedTasks : updatedTasks;
         });
   
-        // Update stats for the newly added task
         updateTaskStats(data, 'duedate');
   
         setNewTask('');
@@ -625,6 +687,8 @@ export default function TodolistsPage() {
           ),
           duration: 3000,
         });
+
+        return data;
       } catch (error) {
         console.error('Failed to add task:', error);
         toast({
@@ -633,8 +697,42 @@ export default function TodolistsPage() {
           variant: 'destructive',
           duration: 3000,
         });
+      } finally {
+        setIsLoading(false);
       }
-      setIsLoading(false);
+    }
+    return null;
+  };
+
+  const bulkAddTasks = async (newTasks: Task[]) => {
+    try {
+      const response = await fetch('/api/tasks/bulk', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ tasks: newTasks }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Failed to add tasks');
+      }
+
+      const { tasks: addedTasks } = await response.json();
+      setTasks((prevTasks) => {
+        const updatedTasks = [...prevTasks, ...addedTasks];
+        sortTasks(updatedTasks);
+        return updatedTasks;
+      });
+    } catch (error) {
+      console.error('Failed to bulk add tasks:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to bulk add tasks.',
+        variant: 'destructive',
+        duration: 3000,
+      });
     }
   };
 
@@ -1685,6 +1783,23 @@ export default function TodolistsPage() {
                 <TooltipProvider>
                   <Tooltip>
                     <TooltipTrigger asChild>
+                      <Button
+                        onClick={() => setShowAiInput(!showAiInput)}
+                        aria-label="Show AI Input"
+                        variant="ghost"
+                        size="icon"
+                      >
+                        <Sparkles size={16} />
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p>Use AI to generate tasks</p>
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
                       <Popover open={showFilter} onOpenChange={setShowFilter}>
                         <PopoverTrigger asChild>
                           <Button
@@ -1748,23 +1863,6 @@ export default function TodolistsPage() {
                     </TooltipTrigger>
                     <TooltipContent>
                       <p>Search tasks</p>
-                    </TooltipContent>
-                  </Tooltip>
-                </TooltipProvider>
-                <TooltipProvider>
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <Button
-                        onClick={() => setShowAiInput(!showAiInput)}
-                        aria-label="Show AI Input"
-                        variant="ghost"
-                        size="icon"
-                      >
-                        <Sparkles size={16} />
-                      </Button>
-                    </TooltipTrigger>
-                    <TooltipContent>
-                      <p>Use AI to generate tasks</p>
                     </TooltipContent>
                   </Tooltip>
                 </TooltipProvider>
@@ -1902,13 +2000,8 @@ export default function TodolistsPage() {
             {generatedTasks.length > 0 && (
               <GeneratedTasksApproval
                 tasks={generatedTasks}
-                onApprove={(task) => {
-                  addTask(task.title, null, '');
-                  setGeneratedTasks(generatedTasks.filter((t) => t._id !== task._id));
-                }}
-                onReject={(taskId) => {
-                  setGeneratedTasks(generatedTasks.filter((t) => t._id !== taskId));
-                }}
+                onApprove={(task) => handleApproveTask(task.title)}
+                onReject={(task) => handleRejectTask(task.title)}
                 onApproveAll={handleApproveAllTasks}
                 onRejectAll={handleRejectAllTasks}
               />

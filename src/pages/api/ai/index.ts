@@ -11,7 +11,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   const { todolistsInput, modelType } = req.body;
 
   const prompt = `Create a to-do list based on the following input: ${todolistsInput}. Provide an array of tasks with titles only.
-  Don't include numbers of tasks or any other additional characters or text please.`;
+  Don't include numbers of tasks or any other additional characters or text please. Don't include bullet points or any other formatting.`;
 
   const session = await getServerSession(req, res, authOptions);
 
@@ -64,6 +64,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       model: model,
       messages: [{ role: 'user', content: prompt }],
       temperature: 0.5,
+      max_tokens: 1000,
     }),
   });
 
