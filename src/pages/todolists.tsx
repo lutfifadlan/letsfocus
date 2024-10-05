@@ -15,9 +15,7 @@ import {
   CalendarIcon, SquareCheck, Trash2, ChevronsUp, ChevronUp,
   ChevronDown, Flag, CalendarArrowDown, ArrowDownUp, CopyCheck,
   MinusCircle, Rocket, CircleMinus, Sparkles, XSquare, Filter, Search,
-  AlertCircle,
-  Clock,
-  CheckCircle
+  AlertCircle, Clock, CheckCircle, Settings, Check, Crown
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { ToastAction } from '@/components/ui/toast';
@@ -78,10 +76,8 @@ const GeneratedTasksApproval: React.FC<GeneratedTasksApprovalProps> = ({
   onApproveAll, 
   onRejectAll 
 }) => {
-  console.log('tasks on GeneratedTasksApproval', tasks);
-
   return (
-    <Card className="mb-4 text-sm">
+    <Card className="mb-4 text-sm mt-4">
       <CardHeader className="p-2 text-center m-0">
         <CardTitle className="text-sm font-semibold">Generated Tasks</CardTitle>
       </CardHeader>
@@ -175,7 +171,6 @@ const CurrentDateTime: React.FC = () => {
   );
 };
 
-
 export default function TodolistsPage() {
   const form = useForm<z.infer<typeof FormSchema>>({
     resolver: zodResolver(FormSchema),
@@ -248,6 +243,8 @@ export default function TodolistsPage() {
   const [searchTerm, setSearchTerm] = useState('');
   const [showSearch, setShowSearch] = useState(false);
   const [showFilter, setShowFilter] = useState(false);
+  const [aiModel, setAiModel] = useState('llama-3.2-3b-instruct');
+  const [userPlan, setUserPlan] = useState('');
 
   const { status } = useSession();
   const { toast } = useToast();
@@ -309,7 +306,7 @@ export default function TodolistsPage() {
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ todolistsInput: aiInput, modelType: 'openrouter' }),
+        body: JSON.stringify({ todolistsInput: aiInput, modelType: aiModel }),
       });
   
       if (!response.ok) {
@@ -657,8 +654,6 @@ export default function TodolistsPage() {
           }),
         });
         const data = await response.json();
-
-        console.log('data in addTask', data)
   
         setTasks((prevTasks) => {
           if (!prevTasks) return [];
@@ -1686,12 +1681,20 @@ export default function TodolistsPage() {
     }
   };
 
+  const fetchUserPlan = async () => {
+    const response = await fetch('/api/user-plans', {
+      method: 'GET',
+    });
+    const data = await response.json();
+    setUserPlan(data.plan);
+  };
+
   useEffect(() => {
     const fetchData = async () => {
       if (status === 'authenticated') {
         setIsFetchLoading(true);
         try {
-          await Promise.all([fetchTasksAndGroups(), fetchTaskStats()]);
+          await Promise.all([fetchTasksAndGroups(), fetchTaskStats(), fetchUserPlan()]);
           setTasks((prevTasks) => {
             const sortedTasks = sortTasks(prevTasks);
             return sortedTasks ? sortedTasks : prevTasks;
@@ -1729,6 +1732,14 @@ export default function TodolistsPage() {
           <div className="flex justify-between items-center mb-1">
             <div className="flex items-center space-x-2">
               <CardTitle className="text-2xl">To-Do Lists</CardTitle>
+              {(userPlan === "PRO_YEARLY" || userPlan === "PRO_MONTHLY") && (
+                <Badge className="ml-2">
+                  <div className="flex justify-center items-center text-xs">
+                    <Crown size={16} className="mr-1" />
+                    PRO
+                  </div>
+                </Badge>
+              )}
             </div>
             <CurrentDateTime />
             <div className="flex items-center space-x-3 text-sm">
@@ -1973,28 +1984,100 @@ export default function TodolistsPage() {
                     />
                   </div>
                   <TooltipProvider>
-                      <Tooltip>
-                        <TooltipTrigger asChild>
-                          <Button
-                            onClick={handleGenerateTodoListsWithAI}
-                            disabled={!aiInput.trim() || isLoading}
-                            variant="ghost"
-                            size="icon"
-                            className="w-auto px-1.5"
-                          >
-                            {isLoading ? (
-                              <div className="animate-spin h-5 w-5 border-2 border-white border-t-transparent rounded-full" />
-                            ) : (
-                              <Sparkles size={16} />
-                            )}
-                          </Button>
-                        </TooltipTrigger>
-                        <TooltipContent>
-                          <p>Generate tasks using AI</p>
-                        </TooltipContent>
-                      </Tooltip>
-                    </TooltipProvider>
-                  </>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <div>
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                aria-label="AI Model Settings"
+                              >
+                                <Settings size={16} />
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent className="w-48">
+                              <TooltipProvider>
+                                <Tooltip>
+                                  <TooltipTrigger asChild>
+                                    <div>
+                                      <DropdownMenuItem 
+                                        onClick={() => setAiModel("llama-3.2-3b-instruct")}
+                                        className="flex items-center justify-start cursor-pointer"
+                                      >
+                                        {aiModel === "llama-3.2-3b-instruct" && <Check className="h-4 w-4 mr-2" />}
+                                        Llama 3.2 3B Instruct
+                                      </DropdownMenuItem>
+                                    </div>
+                                  </TooltipTrigger>
+                                  <TooltipContent className="w-80">
+                                    <p>
+                                      The Llama 3.2 instruction-tuned text only models are optimized
+                                      for multilingual dialogue use cases, including agentic retrieval and summarization tasks.
+                                      Free to use.
+                                    </p>
+                                  </TooltipContent>
+                                </Tooltip>
+                              </TooltipProvider>
+                              <TooltipProvider>
+                                <Tooltip>
+                                  <TooltipTrigger asChild>
+                                    <div>
+                                      <DropdownMenuItem 
+                                        onClick={() => setAiModel("gpt-4o")}
+                                        disabled={userPlan === "FREE"}
+                                        className={`flex items-center justify-start ${userPlan === "FREE" ? "cursor-not-allowed pointer-events-none" : "cursor-pointer"}`}
+                                      >
+                                        {aiModel === "gpt-4o" && <Check className="h-4 w-4 mr-2" />}
+                                        GPT-4o
+                                      </DropdownMenuItem>
+                                    </div>
+                                  </TooltipTrigger>
+                                    <TooltipContent className="w-80">
+                                      <p>
+                                        The GPT-4o model is a version of GPT-4 optimized for performance in various generative tasks.
+                                        It is designed to excel in tasks like text generation, summarization, and language understanding across multiple languages.
+                                      </p>
+                                      {userPlan === "FREE" && (
+                                      <p className="text-red-500 mt-2">
+                                        Subscribe to the Pro plan to use this model.
+                                      </p>)}
+                                    </TooltipContent>
+                                </Tooltip>
+                              </TooltipProvider>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
+                        </div>
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        <p>AI Model Settings</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Button
+                          onClick={handleGenerateTodoListsWithAI}
+                          disabled={!aiInput.trim() || isLoading}
+                          variant="ghost"
+                          size="icon"
+                          className="w-auto px-1.5"
+                        >
+                          {isLoading ? (
+                            <div className="animate-spin h-5 w-5 border-2 border-white border-t-transparent rounded-full" />
+                          ) : (
+                            <Sparkles size={16} />
+                          )}
+                        </Button>
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        <p>Generate tasks using AI</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
+                </>
               )}
             </div>
             {generatedTasks.length > 0 && (
