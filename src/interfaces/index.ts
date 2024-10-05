@@ -18,19 +18,11 @@ export interface Task {
   isCurrentlyFocused?: boolean;
 }
 
-export interface Habit {
+export interface UserPlan {
   _id: string;
-  title: string;
-  completed: boolean;
   userId: string;
-  createdAt: Date;
-  updatedAt: Date;
-}
-
-export interface FocusTime {
-  _id: string;
-  duration: number;
-  userId: string;
+  plan: string;
+  isDeleted: boolean;
   createdAt: Date;
   updatedAt: Date;
 }

@@ -76,7 +76,6 @@ export const authOptions: NextAuthOptions = {
           existingUser = await newUser.save();
           const userPlan = new UserPlan({
             userId: existingUser._id,
-            credit: 0,
           });
           await userPlan.save();
         }

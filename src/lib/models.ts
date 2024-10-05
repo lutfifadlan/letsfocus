@@ -37,7 +37,7 @@ const TaskSchema = new mongoose.Schema({
 
 const UserPlanSchema = new mongoose.Schema({
   userId: { type: String, required: true, unique: true },
-  credit: { type: Number, required: true },
+  plan: { type: String, default: 'FREE' },
   isDeleted: { type: Boolean, default: false },
 }, { timestamps: true });
 

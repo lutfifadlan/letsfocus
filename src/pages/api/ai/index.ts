@@ -31,7 +31,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     return res.status(404).json({ message: 'User plan not found' });
   }
 
-  if (userPlan.credit <= 0 && modelType !== 'openrouter') {
+  if (userPlan.credit <= 0 && modelType !== 'llama-3.2-3b-instruct') {
     return res.status(400).json({ message: 'Insufficient credits' });
   }
 
@@ -39,14 +39,14 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   let headers = {};
   let model = '';
 
-  if (modelType === 'openai') {
+  if (modelType === 'gpt-4o') {
     apiUrl = 'https://api.openai.com/v1/chat/completions';
     headers = {
       'Content-Type': 'application/json',
       'Authorization': `Bearer ${process.env.OPENAI_API_KEY}`,
     };
     model = 'gpt-4o';
-  } else if (modelType === 'openrouter') {
+  } else if (modelType === 'llama-3.2-3b-instruct') {
     apiUrl = 'https://openrouter.ai/api/v1/chat/completions';
     headers = {
       'Content-Type': 'application/json',
@@ -54,22 +54,29 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     };
     model = 'meta-llama/llama-3.2-3b-instruct:free';
   } else {
-    return res.status(400).json({ message: 'Invalid API type' });
+    return res.status(400).json({ message: 'Invalid model type' });
   }
 
-  const response = await fetch(apiUrl, {
-    method: 'POST',
-    headers: headers,
-    body: JSON.stringify({
-      model: model,
-      messages: [{ role: 'user', content: prompt }],
-      temperature: 0.5,
-      max_tokens: 1000,
-    }),
-  });
+  let response;
+  try {
+    response = await fetch(apiUrl, {
+      method: 'POST',
+      headers: headers,
+      body: JSON.stringify({
+        model: model,
+        messages: [{ role: 'user', content: prompt }],
+        temperature: 0.5,
+        max_tokens: 1000,
+      }),
+    });
+  } catch (error) {
+    return res.status(500).json({ message: 'Failed to generate to-do list', error: (error as Error).message });
+  }
+
+  userPlan.credit -= 1;
+  await userPlan.save();
 
   const data = await response.json();
-  // Extract task titles from the response
   const tasks = data.choices[0].message.content.split('\n').map((task: string) => task.trim()).filter((task: string) => task);
 
   res.status(200).json({ tasks });
