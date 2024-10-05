@@ -41,7 +41,7 @@ export default async function handler(
 
     case 'PUT':
       try {
-        const { title, status, isDeleted, description, tags, group, dueDate, priority, isCurrentlyFocused } = req.body;
+        const { title, status, isDeleted, description, tags, group, dueDate, priority, isCurrentlyFocused, order } = req.body;
 
         const updateFields: Partial<{
           title: string;
@@ -56,6 +56,7 @@ export default async function handler(
           deletedAt: Date;
           priority: string;
           isCurrentlyFocused: boolean;
+          order: number;
         }> = {};
 
         if (title !== undefined) updateFields.title = title;
@@ -77,6 +78,28 @@ export default async function handler(
         if (isDeleted) {
           updateFields.deletedAt = new Date();
         }
+
+        if (order !== undefined) {
+          // If order is being updated, we need to handle reordering
+          const currentTask = await Task.findOne({ _id: new ObjectId(taskId as string), userId: user._id });
+          if (currentTask) {
+            if (order > currentTask.order) {
+              // Moving task down the list
+              await Task.updateMany(
+                { userId: user._id, order: { $gt: currentTask.order, $lte: order } },
+                { $inc: { order: -1 } }
+              );
+            } else if (order < currentTask.order) {
+              // Moving task up the list
+              await Task.updateMany(
+                { userId: user._id, order: { $gte: order, $lt: currentTask.order } },
+                { $inc: { order: 1 } }
+              );
+            }
+            updateFields.order = order;
+          }
+        }
+
         const result = await Task.updateOne(
           { _id: new ObjectId(taskId as string), userId: user._id },
           { $set: updateFields }

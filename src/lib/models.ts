@@ -33,6 +33,7 @@ const TaskSchema = new mongoose.Schema({
   completionStatus: { type: String },
   priority: { type: String, default: null },
   isCurrentlyFocused: { type: Boolean, default: false },
+  order: { type: Number, default: 0 }
 }, { timestamps: true });
 
 const UserPlanSchema = new mongoose.Schema({
