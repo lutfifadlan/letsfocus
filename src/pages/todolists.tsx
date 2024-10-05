@@ -16,7 +16,7 @@ import {
   ChevronDown, Flag, CalendarArrowDown, ArrowDownUp, CopyCheck,
   MinusCircle, Rocket, CircleMinus, Sparkles, XSquare, Filter, Search,
   AlertCircle, Clock, CheckCircle, Settings, Check, Crown,
-  GripVertical
+  GripVertical, RotateCcw
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { ToastAction } from '@/components/ui/toast';
@@ -247,6 +247,7 @@ export default function TodolistsPage() {
   const [showFilter, setShowFilter] = useState(false);
   const [aiModel, setAiModel] = useState('llama-3.2-3b-instruct');
   const [userPlan, setUserPlan] = useState('');
+  const [manualOrderingEnabled, setManualOrderingEnabled] = useState(true);
 
   const { status } = useSession();
   const { toast } = useToast();
@@ -396,9 +397,13 @@ export default function TodolistsPage() {
   const sortTasks = (tasks: Task[]) => {
     const sortedTasks = [...tasks];
     const priorityOrder = { High: 1, Medium: 2, Low: 3 };
-  
+
     const activeSortOption = Object.keys(sortOptions).find(key => sortOptions[key as keyof typeof sortOptions]) as keyof typeof sortOptions;
-    
+
+    if (manualOrderingEnabled) {
+      return tasks;
+    }
+
     if (activeSortOption) {
       const direction = sortDirection[activeSortOption] === 'asc' ? 1 : -1;
   
@@ -474,6 +479,7 @@ export default function TodolistsPage() {
   };
 
   const handleSortChange = (key: keyof typeof sortOptions) => {
+    setManualOrderingEnabled(false);
     setSortOptions((prev: typeof sortOptions) => {
       const newSortOptions = Object.keys(prev).reduce((acc, currKey) => {
         acc[currKey as keyof typeof sortOptions] = currKey === key ? true : false;
@@ -494,13 +500,28 @@ export default function TodolistsPage() {
     });
   };
 
+  const handleFilterChange = (type: 'group' | 'tag' | null, value: string | null) => {
+    setCurrentFilter({ type, value });
+    if (type !== null) {
+      setManualOrderingEnabled(false);
+    } else {
+      setManualOrderingEnabled(true);
+      toast({
+        title: "Manual Ordering Enabled",
+        description: "Manual ordering has been re-enabled.",
+        duration: 3000,
+      });
+    }
+  };
+
   const fetchTasksAndGroups = async () => {
     setIsLoading(true);
     try {
       const response = await fetch('/api/tasks-groups');
       const data = await response.json();
       const fetchedTasks = data.tasks?.filter((task: Task) => !task.isDeleted && task.status !== 'COMPLETED') || [];
-      setTasks(sortTasks(fetchedTasks) || []);
+      const sortedTasks = manualOrderingEnabled ? fetchedTasks.sort((a: Task, b: Task) => a.order - b.order) : sortTasks(fetchedTasks);
+      setTasks(sortedTasks || []);
       setGroups(data.groups || []);
     } catch (error) {
       console.error('Failed to fetch tasks and groups:', error);
@@ -1691,7 +1712,7 @@ export default function TodolistsPage() {
     setUserPlan(data.plan);
   };
 
-   const updateTaskOrder = async (taskId: string, prevTaskId: string | undefined, nextTaskId: string | undefined) => {
+  const updateTaskOrder = async (taskId: string, prevTaskId: string | undefined, nextTaskId: string | undefined) => {
     const response = await fetch(`/api/tasks/reorder`, {
       method: 'PUT',
       headers: {
@@ -1701,12 +1722,53 @@ export default function TodolistsPage() {
     });
 
     if (!response.ok) {
+      toast({
+        title: 'Error',
+        description: 'Failed to update task order.',
+        variant: 'destructive',
+        duration: 3000,
+      });
       const errorData = await response.json();
       throw new Error(errorData.message || 'Failed to update task order');
     }
+
+    toast({
+      title: 'Task Order Updated',
+      description: 'The task order has been updated.',
+      duration: 3000,
+    });
+  };
+
+  const clearSortingAndFiltering = () => {
+    setSortOptions({
+      createdAt: true,
+      priority: false,
+      dueDate: false,
+      group: false,
+      title: false,
+      focus: false,
+    });
+    setCurrentFilter({ type: null, value: null });
+    setManualOrderingEnabled(true);
+    localStorage.removeItem('sortOptions');
+    localStorage.removeItem('sortDirection');
+    toast({
+      title: "Manual Ordering Enabled",
+      description: "Sorting and filtering have been cleared. Manual ordering is now enabled.",
+      duration: 3000,
+    });
   };
 
   const onDragEnd = async (result: DropResult) => {
+    if (!manualOrderingEnabled) {
+      toast({
+        title: "Manual Ordering Disabled",
+        description: "Please clear sorting and filtering to enable manual ordering.",
+        duration: 3000,
+      });
+      return;
+    }
+
     if (!result.destination) {
       return;
     }
@@ -1873,7 +1935,7 @@ export default function TodolistsPage() {
                             <p>Filter by Group or Tag</p>
                             <Button 
                               variant={currentFilter.type === null ? "secondary" : "outline"} 
-                              onClick={() => setCurrentFilter({ type: null, value: null })}
+                              onClick={() => handleFilterChange(null, null)}
                               className="w-full justify-start text-sm"
                             >
                               All tasks
@@ -1882,7 +1944,7 @@ export default function TodolistsPage() {
                               <Button
                                 key={group._id}
                                 variant={currentFilter.type === 'group' && currentFilter.value === group.name ? "secondary" : "outline"}
-                                onClick={() => setCurrentFilter({ type: 'group', value: group.name })}
+                                onClick={() => handleFilterChange('group', group.name)}
                                 className="w-full justify-start text-sm"
                               >
                                 <Folder className="mr-2" size={16} />{group.name}
@@ -1892,7 +1954,7 @@ export default function TodolistsPage() {
                               <Button
                                 key={tag}
                                 variant={currentFilter.type === 'tag' && currentFilter.value === tag ? "secondary" : "outline"}
-                                onClick={() => setCurrentFilter({ type: 'tag', value: tag })}
+                                onClick={() => handleFilterChange('tag', tag)}
                                 className="w-full justify-start"
                               >
                                 <Tag className="mr-2" size={16} />{tag}
@@ -1972,6 +2034,24 @@ export default function TodolistsPage() {
                     </TooltipTrigger>
                     <TooltipContent>
                       <p>Sort tasks</p>
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button
+                        onClick={clearSortingAndFiltering}
+                        aria-label="Clear Sorting and Filtering"
+                        variant="ghost"
+                        size="icon"
+                        disabled={manualOrderingEnabled}
+                      >
+                        <RotateCcw size={16} />
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p>Clear sorting and filtering to enable manual ordering</p>
                     </TooltipContent>
                   </Tooltip>
                 </TooltipProvider>
@@ -2891,12 +2971,12 @@ export default function TodolistsPage() {
           )}
   
           <DragDropContext onDragEnd={onDragEnd}>
-            <Droppable droppableId="tasks">
+            <Droppable droppableId="tasks" isDropDisabled={!manualOrderingEnabled}>
               {(provided) => (
                 <div {...provided.droppableProps} ref={provided.innerRef} className="space-y-2">
                   {incompleteTasks.length > 0 ? (
                     incompleteTasks.map((task, index) => (
-                      <Draggable key={task._id} draggableId={task._id} index={index}>
+                      <Draggable key={task._id} draggableId={task._id} index={index} isDragDisabled={!manualOrderingEnabled}>
                         {(provided, snapshot) => (
                           <div
                             ref={provided.innerRef}

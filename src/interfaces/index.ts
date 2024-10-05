@@ -16,6 +16,7 @@ export interface Task {
   completionStatus?: string;
   priority?: string;
   isCurrentlyFocused?: boolean;
+  order: number;
 }
 
 export interface UserPlan {
