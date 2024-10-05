@@ -70,7 +70,8 @@ const defaultTasks: Task[] = [
     completedAt: null,
     deletedAt: null,
     ignoredAt: null,
-    completionStatus: 'N/A'
+    completionStatus: 'N/A',
+    order: 1,
   },
   {
     _id: generateId(),
@@ -87,7 +88,8 @@ const defaultTasks: Task[] = [
     completedAt: null,
     deletedAt: null,
     ignoredAt: null,
-    completionStatus: 'N/A'
+    completionStatus: 'N/A',
+    order: 2,
   },
 ];
 
@@ -241,7 +243,8 @@ export default function DummyTodolists() {
           completedAt: null,
           deletedAt: null,
           ignoredAt: null,
-          completionStatus: 'N/A'
+          completionStatus: 'N/A',
+          order: 1,
         };
         setTasks((prevTasks) => [...prevTasks, newTaskObj]);
         setNewTask('');

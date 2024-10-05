@@ -38,6 +38,9 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         const { title, tags, group, description, dueDate, priority, isCurrentlyFocused } = req.body;
         const userId = user._id;
 
+        const highestOrderTask = await Task.findOne({ userId }).sort({ order: -1 });
+        const newOrder = highestOrderTask ? highestOrderTask.order + 1 : 1;
+
         const taskData = {
           title,
           userId,
@@ -47,6 +50,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
           dueDate,
           priority,
           isCurrentlyFocused,
+          order: newOrder,
         };
 
         const newTask = await Task.create(taskData);
