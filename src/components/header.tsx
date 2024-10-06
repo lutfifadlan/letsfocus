@@ -4,7 +4,7 @@ import { useSession, signOut } from 'next-auth/react';
 import { useRouter } from 'next/router';
 import { Button } from "@/components/ui/button";
 import Image from 'next/image';
-import { Menu, LogIn, LogOut, List, BarChart2, ListChecks } from 'lucide-react';
+import { Menu, LogIn, LogOut, List, ChartNoAxesCombined, ListChecks } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover"
 import { ThemeToggle } from "@/components/ui/theme-toggle"
@@ -18,7 +18,9 @@ const Header: React.FC = () => {
   const handleSignOut = () => {
     localStorage.removeItem('sortOptions');
     localStorage.removeItem('sortDirection');
-  
+    localStorage.removeItem('manualOrderingEnabled');
+    localStorage.removeItem('currentFilter');
+
     signOut({ callbackUrl: '/' });
   };
 
@@ -60,7 +62,7 @@ const Header: React.FC = () => {
                   variant="ghost"
                   className="border-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
                 >
-                  <BarChart2 className="w-5 h-5" />
+                  <ChartNoAxesCombined className="w-5 h-5" />
                 </Button>
                 <Button
                   onClick={() => router.push('/tasks')}
@@ -131,7 +133,7 @@ const Header: React.FC = () => {
                     variant="ghost"
                     className="w-full mt-2 border-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
                   >
-                    <BarChart2 className="w-5 h-5" />
+                    <ChartNoAxesCombined className="w-5 h-5" />
                   </Button>
                   <Button
                     onClick={() => router.push('/tasks')}
