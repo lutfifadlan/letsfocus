@@ -42,6 +42,14 @@ const UserPlanSchema = new mongoose.Schema({
   isDeleted: { type: Boolean, default: false },
 }, { timestamps: true });
 
+const ContactMessageSchema = new mongoose.Schema({
+  email: { type: String, required: true },
+  message: { type: String, required: true },
+  isResolved: { type: Boolean, default: false },
+  resolvedAt: Date,
+  isDeleted: { type: Boolean, default: false },
+}, { timestamps: true });
+
 UserSchema.index({ email: 1, isDeleted: 1 });
 
 GroupSchema.index({ userId: 1, isDeleted: 1 });
@@ -54,3 +62,4 @@ export const User = mongoose.models.User || mongoose.model('User', UserSchema);
 export const Task = mongoose.models.Task || mongoose.model('Task', TaskSchema);
 export const Group = mongoose.models.Group || mongoose.model('Group', GroupSchema);
 export const UserPlan = mongoose.models.UserPlan || mongoose.model('UserPlan', UserPlanSchema);
+export const ContactMessage = mongoose.models.ContactMessage || mongoose.model('ContactMessage', ContactMessageSchema);

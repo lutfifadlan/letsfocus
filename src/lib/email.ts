@@ -5,8 +5,8 @@ const plunk = new Plunk(process.env.PLUNK_API_KEY!);
 
 export async function sendVerificationEmail(user: InstanceType<typeof User>) {
   const verificationUrl = `${process.env.NEXTAUTH_URL}/api/emails/verify-email?token=${user._id}`;
-  const logoUrl = 'https://getsyncpulse.com/icon.png'; // Replace with your actual logo URL
-  const appName = 'Syncpulse'; // Replace with your actual app name
+  const logoUrl = 'https://letsfocus.today/logo.png';
+  const appName = "Let's Focus"; 
   const privacyPolicyUrl = `${process.env.NEXTAUTH_URL}/privacy-policy`; // Replace with your actual privacy policy URL
   const termsOfServiceUrl = `${process.env.NEXTAUTH_URL}/terms-of-service`; // Replace with your actual terms of service URL
 
@@ -44,6 +44,19 @@ export async function sendVerificationEmail(user: InstanceType<typeof User>) {
           </div>
         </body>
       </html>
+    `,
+  };
+
+  await plunk.emails.send(emailData);
+}
+
+export async function notifySupportOnContactMessage(email: string, message: string) {
+  const emailData = {
+    to: 'support@letsfocus.today',
+    subject: 'New Contact Us Message',
+    body: `
+      <p>You have received a new message from ${email}:</p>
+      <p>${message}</p>
     `,
   };
 
