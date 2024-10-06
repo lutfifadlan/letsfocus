@@ -24,7 +24,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
     );
   }
 
-  if (status === 'unauthenticated' && router.pathname !== '/') {
+  if (status === 'unauthenticated' && (router.pathname === '/todolists' || router.pathname === '/stats' || router.pathname === '/tasks')) {
     router.push('/signin');
     return null;
   }
@@ -53,7 +53,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
           </>
         )}
       </main>
-      {router.pathname === '/' && <Footer />} {/* Show Footer only on landing page */}
+      {router.pathname !== '/todolists' && router.pathname !== '/stats' && router.pathname !== '/tasks' && <Footer />} {/* Show Footer only on landing page */}
     </div>
   );
 };
