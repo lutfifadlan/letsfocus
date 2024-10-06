@@ -12,11 +12,10 @@ import { Task } from '@/interfaces';
 import Layout from '@/components/layout';
 import {
   Plus, Trash, Tag, Folder, PlusCircle, Edit, FileText, Save, X,
-  CalendarIcon, SquareCheck, Trash2, ChevronsUp, ChevronUp,
-  ChevronDown, Flag, CalendarArrowDown, ArrowDownUp, CopyCheck,
+  CalendarClock, SquareCheck, Trash2, ChevronsUp, ChevronUp,
+  ChevronDown, Flag, CalendarPlus, ArrowDownUp, CopyCheck,
   MinusCircle, Rocket, CircleMinus, Sparkles, XSquare, Filter, Search,
-  AlertCircle, Clock, CheckCircle, Settings, Check, Crown,
-  GripVertical, RotateCcw
+  AlertCircle, Clock, CheckCircle, Settings, Check, Crown, GripVertical
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { ToastAction } from '@/components/ui/toast';
@@ -51,6 +50,7 @@ import {
 } from "@/components/ui/tooltip";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { DragDropContext, Droppable, Draggable, DropResult } from 'react-beautiful-dnd';
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 
 interface GeneratedTasksApprovalProps {
   tasks: Task[];
@@ -192,7 +192,8 @@ export default function TodolistsPage() {
   const [sortOptions, setSortOptions] = useState(() => {
     const savedSortOptions = typeof window !== 'undefined' ? localStorage.getItem('sortOptions') : null;
     return savedSortOptions ? JSON.parse(savedSortOptions) : {
-      createdAt: true,
+      manualOrder: true,
+      createdAt: false,
       priority: false,
       dueDate: false,
       group: false,
@@ -248,6 +249,8 @@ export default function TodolistsPage() {
   const [aiModel, setAiModel] = useState('llama-3.2-3b-instruct');
   const [userPlan, setUserPlan] = useState('');
   const [manualOrderingEnabled, setManualOrderingEnabled] = useState(true);
+  const [activeSortOption, setActiveSortOption] = useState<string | null>(null);
+  const [showResetConfirmDialog, setShowResetConfirmDialog] = useState(false);
 
   const { status } = useSession();
   const { toast } = useToast();
@@ -395,15 +398,13 @@ export default function TodolistsPage() {
   };
 
   const sortTasks = (tasks: Task[]) => {
-    const sortedTasks = [...tasks];
-    const priorityOrder = { High: 1, Medium: 2, Low: 3 };
-
-    const activeSortOption = Object.keys(sortOptions).find(key => sortOptions[key as keyof typeof sortOptions]) as keyof typeof sortOptions;
-
-    if (manualOrderingEnabled) {
-      return tasks;
+    if (sortOptions.manualOrder) {
+      return tasks.sort((a, b) => a.order - b.order);
     }
 
+    const sortedTasks = [...tasks];
+    const priorityOrder = { High: 1, Medium: 2, Low: 3 };
+  
     if (activeSortOption) {
       const direction = sortDirection[activeSortOption] === 'asc' ? 1 : -1;
   
@@ -464,7 +465,7 @@ export default function TodolistsPage() {
             if (!a.isCurrentlyFocused && b.isCurrentlyFocused) return direction;
             return 0;
           });
-        break;
+          break;
         case 'title':
           sortedTasks.sort((a, b) =>
             direction * a.title.localeCompare(b.title)
@@ -479,38 +480,48 @@ export default function TodolistsPage() {
   };
 
   const handleSortChange = (key: keyof typeof sortOptions) => {
-    setManualOrderingEnabled(false);
     setSortOptions((prev: typeof sortOptions) => {
-      const newSortOptions = Object.keys(prev).reduce((acc, currKey) => {
-        acc[currKey as keyof typeof sortOptions] = currKey === key ? true : false;
-        return acc;
-      }, {} as typeof sortOptions);
-  
+      const newSortOptions = Object.fromEntries(
+        Object.keys(prev).map(k => [k, k === key])
+      ) as typeof sortOptions;
       localStorage.setItem('sortOptions', JSON.stringify(newSortOptions));
       return newSortOptions;
     });
   
-    setSortDirection((prev: typeof sortDirection) => {
+    setSortDirection((prev: Record<string, string>) => {
       const newSortDirection = {
         ...prev,
-        [key]: prev[key] === 'asc' ? 'desc' : 'asc',
+        [key]: prev[key as string] === 'asc' ? 'desc' : 'asc',
       };
       localStorage.setItem('sortDirection', JSON.stringify(newSortDirection));
       return newSortDirection;
     });
-  };
+  
+    setManualOrderingEnabled(key === 'manualOrder');
+    setActiveSortOption(key as string);
+  
+    // Immediately apply manual ordering if selected
+    if (key === 'manualOrder') {
+      setTasks(prevTasks => {
+        const sortedTasks = [...prevTasks].sort((a, b) => a.order - b.order);
+        return sortedTasks;
+      });
+    } else {
+      setTasks(prevTasks => {
+        const sortedTasks = sortTasks(prevTasks);
+        return sortedTasks ? sortedTasks : prevTasks;
+      });
+    }
+  };  
 
   const handleFilterChange = (type: 'group' | 'tag' | null, value: string | null) => {
-    setCurrentFilter({ type, value });
+    const newFilter = { type, value };
+    setCurrentFilter(newFilter);
+    localStorage.setItem('currentFilter', JSON.stringify(newFilter));
     if (type !== null) {
       setManualOrderingEnabled(false);
     } else {
       setManualOrderingEnabled(true);
-      toast({
-        title: "Manual Ordering Enabled",
-        description: "Manual ordering has been re-enabled.",
-        duration: 3000,
-      });
     }
   };
 
@@ -520,8 +531,17 @@ export default function TodolistsPage() {
       const response = await fetch('/api/tasks-groups');
       const data = await response.json();
       const fetchedTasks = data.tasks?.filter((task: Task) => !task.isDeleted && task.status !== 'COMPLETED') || [];
-      const sortedTasks = manualOrderingEnabled ? fetchedTasks.sort((a: Task, b: Task) => a.order - b.order) : sortTasks(fetchedTasks);
-      setTasks(sortedTasks || []);
+      
+      // Check if manual ordering is disabled (i.e., sorting is active)
+      if (!manualOrderingEnabled) {
+        const sortedTasks = sortTasks(fetchedTasks);
+        setTasks(sortedTasks || []);
+      } else {
+        // If manual ordering is enabled, sort by the saved order
+        const sortedTasks = fetchedTasks.sort((a: Task, b: Task) => a.order - b.order);
+        setTasks(sortedTasks || []);
+      }
+      
       setGroups(data.groups || []);
     } catch (error) {
       console.error('Failed to fetch tasks and groups:', error);
@@ -680,7 +700,7 @@ export default function TodolistsPage() {
   
         setTasks((prevTasks) => {
           if (!prevTasks) return [];
-          const updatedTasks = [...prevTasks, data];
+          const updatedTasks = [data, ...prevTasks];
           const sortedTasks = sortTasks(updatedTasks);
           return sortedTasks ? sortedTasks : updatedTasks;
         });
@@ -1739,51 +1759,31 @@ export default function TodolistsPage() {
     });
   };
 
-  const clearSortingAndFiltering = () => {
-    setSortOptions({
-      createdAt: true,
-      priority: false,
-      dueDate: false,
-      group: false,
-      title: false,
-      focus: false,
-    });
-    setCurrentFilter({ type: null, value: null });
-    setManualOrderingEnabled(true);
-    localStorage.removeItem('sortOptions');
-    localStorage.removeItem('sortDirection');
-    toast({
-      title: "Manual Ordering Enabled",
-      description: "Sorting and filtering have been cleared. Manual ordering is now enabled.",
-      duration: 3000,
-    });
-  };
-
   const onDragEnd = async (result: DropResult) => {
-    if (!manualOrderingEnabled) {
-      toast({
-        title: "Manual Ordering Disabled",
-        description: "Please clear sorting and filtering to enable manual ordering.",
-        duration: 3000,
-      });
-      return;
-    }
-
     if (!result.destination) {
       return;
     }
 
+    if (!manualOrderingEnabled) {
+      setShowResetConfirmDialog(true);
+      return;
+    }
+
+    await applyDragResult(result);
+  };
+
+  const applyDragResult = async (result: DropResult) => {
     const items = Array.from(incompleteTasks);
     const [reorderedItem] = items.splice(result.source.index, 1);
-    items.splice(result.destination.index, 0, reorderedItem);
+    items.splice(result.destination!.index, 0, reorderedItem);
 
     setTasks(items);
 
     try {
       await updateTaskOrder(
         result.draggableId,
-        items[result.destination.index - 1]?._id,
-        items[result.destination.index + 1]?._id
+        items[result.destination!.index - 1]?._id,
+        items[result.destination!.index + 1]?._id
       );
     } catch (error) {
       console.error('Failed to update task order:', error);
@@ -1796,6 +1796,16 @@ export default function TodolistsPage() {
       // Revert the change if the API call fails
       setTasks(incompleteTasks);
     }
+  };
+
+  const handleResetConfirm = () => {
+    setSortOptions({ manualOrder: true, createdAt: false, priority: false, dueDate: false, group: false, title: false, focus: false });
+    setCurrentFilter({ type: null, value: null });
+    setManualOrderingEnabled(true);
+    setShowResetConfirmDialog(false);
+    setTasks((prevTasks) => {
+      return [...prevTasks].sort((a, b) => a.order - b.order);
+    });
   };
 
   useEffect(() => {
@@ -1825,6 +1835,34 @@ export default function TodolistsPage() {
       return sortedTasks ? sortedTasks : prevTasks;
     });
   }, [sortOptions]);
+
+  useEffect(() => {
+    // Load saved states from localStorage
+    const savedSortOptions = localStorage.getItem('sortOptions');
+    const savedSortDirection = localStorage.getItem('sortDirection');
+    const savedFilter = localStorage.getItem('currentFilter');
+    const savedManualOrdering = localStorage.getItem('manualOrderingEnabled');
+  
+    if (savedSortOptions) {
+      setSortOptions(JSON.parse(savedSortOptions));
+    }
+    if (savedSortDirection) {
+      setSortDirection(JSON.parse(savedSortDirection));
+    }
+    if (savedFilter) {
+      setCurrentFilter(JSON.parse(savedFilter));
+    }
+    if (savedManualOrdering !== null) {
+      setManualOrderingEnabled(JSON.parse(savedManualOrdering));
+    }
+  }, []);
+
+  useEffect(() => {
+    localStorage.setItem('sortOptions', JSON.stringify(sortOptions));
+    localStorage.setItem('sortDirection', JSON.stringify(sortDirection));
+    localStorage.setItem('currentFilter', JSON.stringify(currentFilter));
+    localStorage.setItem('manualOrderingEnabled', JSON.stringify(manualOrderingEnabled));
+  }, [sortOptions, sortDirection, currentFilter, manualOrderingEnabled]);
 
   if (status === 'loading' || isFetchLoading || isLoading) {
     return (
@@ -1920,6 +1958,23 @@ export default function TodolistsPage() {
                 <TooltipProvider>
                   <Tooltip>
                     <TooltipTrigger asChild>
+                      <Button
+                        onClick={() => setShowSearch(!showSearch)}
+                        aria-label="Search Tasks"
+                        variant="ghost"
+                        size="icon"
+                      >
+                        <Search size={16} />
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p>Search tasks</p>
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
                       <Popover open={showFilter} onOpenChange={setShowFilter}>
                         <PopoverTrigger asChild>
                           <Button
@@ -1971,23 +2026,6 @@ export default function TodolistsPage() {
                 </TooltipProvider>
                 <TooltipProvider>
                   <Tooltip>
-                    <TooltipTrigger asChild>
-                      <Button
-                        onClick={() => setShowSearch(!showSearch)}
-                        aria-label="Search Tasks"
-                        variant="ghost"
-                        size="icon"
-                      >
-                        <Search size={16} />
-                      </Button>
-                    </TooltipTrigger>
-                    <TooltipContent>
-                      <p>Search tasks</p>
-                    </TooltipContent>
-                  </Tooltip>
-                </TooltipProvider>
-                <TooltipProvider>
-                  <Tooltip>
                     <TooltipTrigger>
                       <Popover>
                         <PopoverTrigger asChild>
@@ -2002,30 +2040,39 @@ export default function TodolistsPage() {
                         <PopoverContent className="w-48 p-2">
                           <p className="mb-2 text-sm">Sort By</p>
                           <div className="space-y-2">
-                            {Object.entries(sortOptions).map(([key]) => (
+                            {Object.entries(sortOptions).map(([key, isActive]) => (
                               <div key={key} className="flex items-center space-x-2">
                                 <Button
-                                  variant="ghost"
+                                  variant={isActive ? "secondary" : "ghost"}
                                   size="icon"
-                                  aria-label={`Sort by ${key}`}
+                                  className="w-full justify-start"
                                   onClick={() => handleSortChange(key as keyof typeof sortOptions)}
                                 >
-                                  {sortDirection[key as keyof typeof sortDirection] === 'asc' ? <ChevronDown size={16} /> : <ChevronUp size={16} />}
-                                  {key === 'createdAt' && <CalendarArrowDown size={16} />}
-                                  {key === 'priority' && <Flag size={16} />}
-                                  {key === 'dueDate' && <CalendarIcon size={16} />}
-                                  {key === 'group' && <Folder size={16} />}
-                                  {key === 'title' && <FileText size={16} />}
-                                  {key === 'focus' && <Rocket size={16} />}
+                                  <div className="flex items-center space-x-2 p-1">
+                                    {isActive ? <Check size={16} /> : null}
+                                    {key !== 'manualOrder' && (
+                                      (key === 'dueDate' || key === 'priority' || key === 'focus')
+                                        ? (sortDirection[key as keyof typeof sortDirection] === 'asc' ? <ChevronUp size={16} /> : <ChevronDown size={16} />)
+                                        : (sortDirection[key as keyof typeof sortDirection] === 'asc' ? <ChevronDown size={16} /> : <ChevronUp size={16} />)
+                                    )}
+                                    {key === 'manualOrder' && <GripVertical size={16} />}
+                                    {key === 'createdAt' && <CalendarPlus size={16} />}
+                                    {key === 'priority' && <Flag size={16} />}
+                                    {key === 'dueDate' && <CalendarClock size={16} />}
+                                    {key === 'group' && <Folder size={16} />}
+                                    {key === 'title' && <FileText size={16} />}
+                                    {key === 'focus' && <Rocket size={16} />}
+                                    <span className="text-sm">
+                                      {key === 'manualOrder' && 'Manual Order'}
+                                      {key === 'createdAt' && 'Created Date'}
+                                      {key === 'priority' && 'Priority'}
+                                      {key === 'dueDate' && 'Due Date'}
+                                      {key === 'group' && 'Group'}
+                                      {key === 'title' && 'Title'}
+                                      {key === 'focus' && 'Focus'}
+                                    </span>
+                                  </div>
                                 </Button>
-                                <span className="text-sm">
-                                  {key === 'createdAt' && 'Created Date'}
-                                  {key === 'priority' && 'Priority'}
-                                  {key === 'dueDate' && 'Due Date'}
-                                  {key === 'group' && 'Group'}
-                                  {key === 'title' && 'Title'}
-                                  {key === 'focus' && 'Focus'}
-                                </span>
                               </div>
                             ))}
                           </div>
@@ -2034,24 +2081,6 @@ export default function TodolistsPage() {
                     </TooltipTrigger>
                     <TooltipContent>
                       <p>Sort tasks</p>
-                    </TooltipContent>
-                  </Tooltip>
-                </TooltipProvider>
-                <TooltipProvider>
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <Button
-                        onClick={clearSortingAndFiltering}
-                        aria-label="Clear Sorting and Filtering"
-                        variant="ghost"
-                        size="icon"
-                        disabled={manualOrderingEnabled}
-                      >
-                        <RotateCcw size={16} />
-                      </Button>
-                    </TooltipTrigger>
-                    <TooltipContent>
-                      <p>Clear sorting and filtering to enable manual ordering</p>
                     </TooltipContent>
                   </Tooltip>
                 </TooltipProvider>
@@ -2280,7 +2309,7 @@ export default function TodolistsPage() {
                           size="icon"
                           className="w-auto px-1"
                         >
-                          <CalendarIcon size={16} />
+                          <CalendarClock size={16} />
                         </Button>
                       </PopoverTrigger>
                       <PopoverContent className="w-52 text-sm">
@@ -2391,7 +2420,7 @@ export default function TodolistsPage() {
                           )}
                         </Button>
                       </PopoverTrigger>
-                      <PopoverContent className="w-36 text-sm">
+                      <PopoverContent className="w-40 text-sm">
                         <p className="flex justify-start items-center mb-2">Select Priority</p>
                         <div
                           className="flex items-center space-x-2 p-2 rounded-md cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-900"
@@ -2637,10 +2666,12 @@ export default function TodolistsPage() {
                         ? 'bg-red-400 text-black'
                         : isSameDay(dueDate, new Date())
                         ? 'bg-yellow-200 text-black'
+                        : isSameDay(new Date(dueDate), new Date(new Date().setDate(new Date().getDate() + 1)))
+                        ? 'bg-orange-200 text-black'
                         : ''
                     }
                   >
-                    <CalendarIcon size={12} className="mr-1" />
+                    <CalendarClock size={12} className="mr-1" />
                     {isSameDay(dueDate, new Date()) ? 'Today' : isSameDay(dueDate, new Date(new Date().setDate(new Date().getDate() + 1))) ? 'Tomorrow' : format(dueDate, 'PPP')}
                   </Badge>
                 )}
@@ -2735,7 +2766,7 @@ export default function TodolistsPage() {
                       <Popover>
                         <PopoverTrigger asChild>
                           <Button aria-label="Bulk Assign Due Date" variant="ghost" size="icon" disabled={selectedTaskIds.length === 0}>
-                            <CalendarIcon size={16} />
+                            <CalendarClock size={16} />
                           </Button>
                         </PopoverTrigger>
                         <PopoverContent className="w-52">
@@ -2971,12 +3002,12 @@ export default function TodolistsPage() {
           )}
   
           <DragDropContext onDragEnd={onDragEnd}>
-            <Droppable droppableId="tasks" isDropDisabled={!manualOrderingEnabled}>
+            <Droppable droppableId="tasks">
               {(provided) => (
                 <div {...provided.droppableProps} ref={provided.innerRef} className="space-y-2">
                   {incompleteTasks.length > 0 ? (
                     incompleteTasks.map((task, index) => (
-                      <Draggable key={task._id} draggableId={task._id} index={index} isDragDisabled={!manualOrderingEnabled}>
+                      <Draggable key={task._id} draggableId={task._id} index={index}>
                         {(provided, snapshot) => (
                           <div
                             ref={provided.innerRef}
@@ -2986,12 +3017,25 @@ export default function TodolistsPage() {
                               snapshot.isDragging ? 'bg-gray-100 dark:bg-gray-800' : ''
                             } group relative`}
                           >
-                            <div
-                              {...provided.dragHandleProps}
-                              className="absolute left-0 top-0 bottom-0 w-8 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity cursor-move -ml-8"
-                            >
-                              <GripVertical size={16} className="text-gray-400" />
-                            </div>
+                            <TooltipProvider>
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <div
+                                    {...provided.dragHandleProps}
+                                    className={`absolute left-0 top-0 bottom-0 mb-1 w-8 flex items-center justify-center opacity-0 group-hover:opacity-100 ${
+                                      manualOrderingEnabled ? '' : 'cursor-not-allowed'
+                                    } transition-opacity -ml-8`}
+                                  >
+                                    <GripVertical size={16} className="text-gray-400" />
+                                  </div>
+                                </TooltipTrigger>
+                                <TooltipContent>
+                                  {manualOrderingEnabled 
+                                    ? "Drag to reorder"
+                                    : "Sort with manual ordering and clear the filter first"}
+                                </TooltipContent>
+                              </Tooltip>
+                            </TooltipProvider>
 
                             <div className="flex flex-row gap-2 items-center">
                               {showBulkActions && (
@@ -3207,7 +3251,7 @@ export default function TodolistsPage() {
                                           }}
                                           className="w-auto px-1"
                                         >
-                                          <CalendarIcon size={16} />
+                                          <CalendarClock size={16} />
                                         </Button>
                                       </PopoverTrigger>
                                       <PopoverContent className="w-52 text-sm">
@@ -3583,10 +3627,12 @@ export default function TodolistsPage() {
                                     ? 'bg-red-400 text-black'
                                     : isSameDay(new Date(task.dueDate), new Date())
                                     ? 'bg-yellow-200 text-black'
+                                    : isSameDay(new Date(task.dueDate), new Date(new Date().setDate(new Date().getDate() + 1)))
+                                    ? 'bg-orange-200 text-black'
                                     : ''
                                 }
                               >
-                                <CalendarIcon size={12} className="mr-1" />
+                                <CalendarClock size={12} className="mr-1" />
                                 {isSameDay(new Date(task.dueDate), new Date())
                                   ? 'Today'
                                   : isSameDay(new Date(task.dueDate), new Date(new Date().setDate(new Date().getDate() + 1)))
@@ -3619,6 +3665,25 @@ export default function TodolistsPage() {
               )}
             </Droppable>
           </DragDropContext>
+
+          <Dialog open={showResetConfirmDialog} onOpenChange={setShowResetConfirmDialog}>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>Task Ordering Requirement</DialogTitle>
+                <DialogDescription>
+                  To re-order tasks, you need to reset the filtering and sorting options first. Once resetted, you can re-order tasks.
+                  Do you want to reset the filtering and sorting options?
+                </DialogDescription>
+              </DialogHeader>
+              <DialogFooter>
+                <Button variant="outline" onClick={() => setShowResetConfirmDialog(false)}>
+                  Cancel
+                </Button>
+                <Button onClick={handleResetConfirm}>Yes</Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
+
         </CardContent>
       </Card>
     </Layout>
