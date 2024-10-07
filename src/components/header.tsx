@@ -7,7 +7,7 @@ import Image from 'next/image';
 import { Menu, LogIn, LogOut, List, ChartNoAxesCombined, ListChecks, Crown } from 'lucide-react'; // Add Crown to imports
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover"
-import { ThemeToggle } from "@/components/ui/theme-toggle"
+import ThemeSwitcher from '@/components/theme-switcher';
 
 const Header: React.FC = () => {
   const { data: session } = useSession();
@@ -20,6 +20,7 @@ const Header: React.FC = () => {
     localStorage.removeItem('sortDirection');
     localStorage.removeItem('manualOrderingEnabled');
     localStorage.removeItem('currentFilter');
+    localStorage.removeItem('theme');
 
     signOut({ callbackUrl: '/' });
   };
@@ -80,7 +81,7 @@ const Header: React.FC = () => {
                 </Button>
               </>
             )}
-            <ThemeToggle />
+            <ThemeSwitcher />
             {!isLandingPage && (
               <>
                 {session && (
@@ -158,7 +159,7 @@ const Header: React.FC = () => {
                   </Button>
                 </>
               )}
-              <ThemeToggle />
+              <ThemeSwitcher />
               {!isLandingPage && (
                 <>
                   {session && (

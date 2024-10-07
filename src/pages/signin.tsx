@@ -19,7 +19,7 @@ const SignIn: React.FC = () => {
   const router = useRouter();
   const { toast } = useToast();
   const { callbackUrl, verified } = router.query;
-  const imageSrc = '/logo.svg';
+  const imageSrc = '/logo.png';
   const { status } = useSession();
 
   useEffect(() => {

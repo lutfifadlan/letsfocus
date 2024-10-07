@@ -36,10 +36,10 @@ class MyDocument extends Document {
           />
           <meta property="og:title" content="Let's Focus" />
           <meta property="og:description" content="Let's Focus is a modern todo list app that helps you focus on what matters most." />
-          <meta property="og:image" content="/logo.svg" />
+          <meta property="og:image" content="/logo.png" />
           <meta property="og:url" content="https://letsfocus.today" />
           <meta property="og:type" content="website" />
-          <link rel="icon" href="/logo.svg" />
+          <link rel="icon" href="/logo.png" />
         </Head>
         <body>
           <Main />

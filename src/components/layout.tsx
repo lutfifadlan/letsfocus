@@ -18,7 +18,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
 
   if (status === 'loading') {
     return (
-      <div className="py-16 flex justify-center items-center h-full">
+      <div className="py-16 flex justify-center items-center h-full min-h-screen">
         <div className="animate-spin h-8 w-8 border-4 border-t-transparent dark:border-t-black border-black dark:border-white rounded-full"></div>
       </div>
     );

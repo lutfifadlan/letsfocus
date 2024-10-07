@@ -123,7 +123,26 @@ const config: Config = {
   		}
   	}
   },
-  // eslint-disable-next-line @typescript-eslint/no-require-imports
-  plugins: [require("tailwindcss-animate")],
+  plugins: [
+		// eslint-disable-next-line @typescript-eslint/no-require-imports
+		require("tailwindcss-animate"),
+		// eslint-disable-next-line @typescript-eslint/no-require-imports
+		require("daisyui")
+	],
+	daisyui: {
+    themes: [
+			"light",
+			"dark",
+			"emerald",
+			"retro",
+			"business",
+			"coffee",
+			"autumn",
+			"aqua",
+			"corporate",
+			"forest",
+			"nord"
+		],
+  },
 };
 export default config;
