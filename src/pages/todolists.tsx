@@ -1776,7 +1776,7 @@ export default function TodolistsPage() {
   };
 
   const onDragEnd = async (result: DropResult) => {
-    if (!result.destination) {
+    if (!result.destination || result.destination.index === result.source.index) {
       return;
     }
 
@@ -1995,49 +1995,51 @@ export default function TodolistsPage() {
                 <TooltipProvider>
                   <Tooltip>
                     <TooltipTrigger asChild>
-                      <Popover open={showFilter} onOpenChange={setShowFilter}>
-                        <PopoverTrigger asChild>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            aria-label="Filter Tasks"
-                          >
-                            <Filter size={16} />
-                          </Button>
-                        </PopoverTrigger>
-                        <PopoverContent className="w-48">
-                          <div className="space-y-2 text-sm">
-                            <p>Filter by Group or Tag</p>
-                            <Button 
-                              variant={currentFilter.type === null ? "secondary" : "outline"} 
-                              onClick={() => handleFilterChange(null, null)}
-                              className="w-full justify-start text-sm"
+                      <div>
+                        <Popover open={showFilter} onOpenChange={setShowFilter}>
+                          <PopoverTrigger asChild>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              aria-label="Filter Tasks"
                             >
-                              All tasks
+                              <Filter size={16} />
                             </Button>
-                            {groups.map(group => (
-                              <Button
-                                key={group._id}
-                                variant={currentFilter.type === 'group' && currentFilter.value === group.name ? "secondary" : "outline"}
-                                onClick={() => handleFilterChange('group', group.name)}
+                          </PopoverTrigger>
+                          <PopoverContent className="w-48">
+                            <div className="space-y-2 text-sm">
+                              <p>Filter by Group or Tag</p>
+                              <Button 
+                                variant={currentFilter.type === null ? "secondary" : "outline"} 
+                                onClick={() => handleFilterChange(null, null)}
                                 className="w-full justify-start text-sm"
                               >
-                                <Folder className="mr-2" size={16} />{group.name}
+                                All tasks
                               </Button>
-                            ))}
-                            {Array.from(new Set(tasks.flatMap(task => task.tags || []))).map(tag => (
-                              <Button
-                                key={tag}
-                                variant={currentFilter.type === 'tag' && currentFilter.value === tag ? "secondary" : "outline"}
-                                onClick={() => handleFilterChange('tag', tag)}
-                                className="w-full justify-start"
-                              >
-                                <Tag className="mr-2" size={16} />{tag}
-                              </Button>
-                            ))}
-                          </div>
-                        </PopoverContent>
-                      </Popover>
+                              {groups.map(group => (
+                                <Button
+                                  key={group._id}
+                                  variant={currentFilter.type === 'group' && currentFilter.value === group.name ? "secondary" : "outline"}
+                                  onClick={() => handleFilterChange('group', group.name)}
+                                  className="w-full justify-start text-sm"
+                                >
+                                  <Folder className="mr-2" size={16} />{group.name}
+                                </Button>
+                              ))}
+                              {Array.from(new Set(tasks.flatMap(task => task.tags || []))).map(tag => (
+                                <Button
+                                  key={tag}
+                                  variant={currentFilter.type === 'tag' && currentFilter.value === tag ? "secondary" : "outline"}
+                                  onClick={() => handleFilterChange('tag', tag)}
+                                  className="w-full justify-start"
+                                >
+                                  <Tag className="mr-2" size={16} />{tag}
+                                </Button>
+                              ))}
+                            </div>
+                          </PopoverContent>
+                        </Popover>
+                      </div>
                     </TooltipTrigger>
                     <TooltipContent>
                       <p>Filter tasks</p>
@@ -2047,57 +2049,59 @@ export default function TodolistsPage() {
                 <TooltipProvider>
                   <Tooltip>
                     <TooltipTrigger asChild>
-                      <Popover>
-                        <PopoverTrigger asChild>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            aria-label="Sort Tasks"
-                          >
-                            <ArrowDownUp size={16} />
-                          </Button>
-                        </PopoverTrigger>
-                        <PopoverContent className="w-48 p-2">
-                          <p className="mb-2 text-sm">Sort By</p>
-                          <div className="space-y-2">
-                            {Object.entries(sortOptions).map(([key, isActive]) => (
-                              <div key={key} className="flex items-center space-x-2">
-                                <Button
-                                  variant={isActive ? "secondary" : "ghost"}
-                                  size="icon"
-                                  className="w-full justify-start"
-                                  onClick={() => handleSortChange(key as keyof typeof sortOptions)}
-                                >
-                                  <div className="flex items-center space-x-2 p-1">
-                                    {isActive ? <Check size={16} /> : null}
-                                    {key !== 'manualOrder' && (
-                                      (key === 'dueDate' || key === 'priority' || key === 'focus')
-                                        ? (sortDirection[key as keyof typeof sortDirection] === 'asc' ? <ChevronUp size={16} /> : <ChevronDown size={16} />)
-                                        : (sortDirection[key as keyof typeof sortDirection] === 'asc' ? <ChevronDown size={16} /> : <ChevronUp size={16} />)
-                                    )}
-                                    {key === 'manualOrder' && <GripVertical size={16} />}
-                                    {key === 'createdAt' && <CalendarPlus size={16} />}
-                                    {key === 'priority' && <Flag size={16} />}
-                                    {key === 'dueDate' && <CalendarClock size={16} />}
-                                    {key === 'group' && <Folder size={16} />}
-                                    {key === 'title' && <FileText size={16} />}
-                                    {key === 'focus' && <Rocket size={16} />}
-                                    <span className="text-sm">
-                                      {key === 'manualOrder' && 'Manual Order'}
-                                      {key === 'createdAt' && 'Created Date'}
-                                      {key === 'priority' && 'Priority'}
-                                      {key === 'dueDate' && 'Due Date'}
-                                      {key === 'group' && 'Group'}
-                                      {key === 'title' && 'Title'}
-                                      {key === 'focus' && 'Focus'}
-                                    </span>
-                                  </div>
-                                </Button>
-                              </div>
-                            ))}
-                          </div>
-                        </PopoverContent>
-                      </Popover>
+                      <div>
+                        <Popover>
+                          <PopoverTrigger asChild>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              aria-label="Sort Tasks"
+                            >
+                              <ArrowDownUp size={16} />
+                            </Button>
+                          </PopoverTrigger>
+                          <PopoverContent className="w-48 p-2">
+                            <p className="mb-2 text-sm">Sort By</p>
+                            <div className="space-y-2">
+                              {Object.entries(sortOptions).map(([key, isActive]) => (
+                                <div key={key} className="flex items-center space-x-2">
+                                  <Button
+                                    variant={isActive ? "secondary" : "ghost"}
+                                    size="icon"
+                                    className="w-full justify-start"
+                                    onClick={() => handleSortChange(key as keyof typeof sortOptions)}
+                                  >
+                                    <div className="flex items-center space-x-2 p-1">
+                                      {isActive ? <Check size={16} /> : null}
+                                      {key !== 'manualOrder' && (
+                                        (key === 'dueDate' || key === 'priority' || key === 'focus')
+                                          ? (sortDirection[key as keyof typeof sortDirection] === 'asc' ? <ChevronUp size={16} /> : <ChevronDown size={16} />)
+                                          : (sortDirection[key as keyof typeof sortDirection] === 'asc' ? <ChevronDown size={16} /> : <ChevronUp size={16} />)
+                                      )}
+                                      {key === 'manualOrder' && <GripVertical size={16} />}
+                                      {key === 'createdAt' && <CalendarPlus size={16} />}
+                                      {key === 'priority' && <Flag size={16} />}
+                                      {key === 'dueDate' && <CalendarClock size={16} />}
+                                      {key === 'group' && <Folder size={16} />}
+                                      {key === 'title' && <FileText size={16} />}
+                                      {key === 'focus' && <Rocket size={16} />}
+                                      <span className="text-sm">
+                                        {key === 'manualOrder' && 'Manual Order'}
+                                        {key === 'createdAt' && 'Created Date'}
+                                        {key === 'priority' && 'Priority'}
+                                        {key === 'dueDate' && 'Due Date'}
+                                        {key === 'group' && 'Group'}
+                                        {key === 'title' && 'Title'}
+                                        {key === 'focus' && 'Focus'}
+                                      </span>
+                                    </div>
+                                  </Button>
+                                </div>
+                              ))}
+                            </div>
+                          </PopoverContent>
+                        </Popover>
+                      </div>
                     </TooltipTrigger>
                     <TooltipContent>
                       <p>Sort tasks</p>
