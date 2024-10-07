@@ -252,7 +252,12 @@ export default function TodolistsPage() {
   const [aiModel, setAiModel] = useState('llama-3.2-3b-instruct');
   const [userPlan, setUserPlan] = useState('');
   const [manualOrderingEnabled, setManualOrderingEnabled] = useState(true);
-  const [activeSortOption, setActiveSortOption] = useState<string | null>(null);
+  const [activeSortOption, setActiveSortOption] = useState<string | null>(() => {
+    if (typeof window !== 'undefined') {
+      return localStorage.getItem('activeSortOption') || 'manualOrder';
+    }
+    return 'manualOrder';
+  });
   const [showResetConfirmDialog, setShowResetConfirmDialog] = useState(false);
   const [isAddingTaskInputFocused, setIsAddingTaskInputFocused] = useState(true);
   const [isAiInputFocused, setIsAiInputFocused] = useState(true);
@@ -505,7 +510,8 @@ export default function TodolistsPage() {
   
     setManualOrderingEnabled(key === 'manualOrder');
     setActiveSortOption(key as string);
-  
+    localStorage.setItem('activeSortOption', key as string);
+
     // Immediately apply manual ordering if selected
     if (key === 'manualOrder') {
       setTasks(prevTasks => {
@@ -707,10 +713,14 @@ export default function TodolistsPage() {
         setTasks((prevTasks) => {
           if (!prevTasks) return [];
           const updatedTasks = [data, ...prevTasks];
-          const sortedTasks = sortTasks(updatedTasks);
-          return sortedTasks ? sortedTasks : updatedTasks;
+          if (activeSortOption === 'manualOrder') {
+            return updatedTasks.sort((a, b) => a.order - b.order);
+          } else {
+            const sortedTasks = sortTasks(updatedTasks);
+            return sortedTasks ? sortedTasks : updatedTasks;
+          }
         });
-  
+
         updateTaskStats(data, 'duedate');
   
         setNewTask('');
@@ -1821,8 +1831,12 @@ export default function TodolistsPage() {
         try {
           await Promise.all([fetchTasksAndGroups(), fetchTaskStats(), fetchUserPlan()]);
           setTasks((prevTasks) => {
-            const sortedTasks = sortTasks(prevTasks);
-            return sortedTasks ? sortedTasks : prevTasks;
+            if (activeSortOption === 'manualOrder') {
+              return prevTasks.sort((a, b) => a.order - b.order);
+            } else {
+              const sortedTasks = sortTasks(prevTasks);
+              return sortedTasks ? sortedTasks : prevTasks;
+            }
           });
         } catch (error) {
           console.error('Error fetching data:', error);
@@ -1833,7 +1847,7 @@ export default function TodolistsPage() {
     };
 
     fetchData();
-  }, [status]);
+  }, [status, activeSortOption]);
 
   useEffect(() => {
     setTasks((prevTasks) => {
@@ -2135,7 +2149,7 @@ export default function TodolistsPage() {
               {showAiInput && (
                 <>
                   <div className="flex flex-col w-full">
-                    { isAiInputFocused ? (
+                    { isAiInputFocused || aiInput.trim() ? (
                       <Input
                         placeholder="Input your prompt here"
                         className="w-full shadow-none border-none flex-1 text-sm"
@@ -2263,7 +2277,7 @@ export default function TodolistsPage() {
               )}
             <div className={`flex flex-row gap-2 ${isFileTextButtonClicked ? 'items-start justify-start' : 'items-center justify-center'}`}>
               <div className="flex flex-col gap-2 w-full">
-                { isAddingTaskInputFocused ? (
+                { isAddingTaskInputFocused || newTask.trim() ? (
                     <Input
                       placeholder="Input your task here"
                       className="w-full shadow-none border-none flex-1"
@@ -2308,7 +2322,7 @@ export default function TodolistsPage() {
                       size="icon"
                       onClick={() => setIsCurrentlyFocused(!isCurrentlyFocused)}
                       aria-label="Toggle Currently Focused"
-                      className={`w-auto px-1.5 ${isCurrentlyFocused ? 'bg-blue-400 dark:bg-blue-400 dark:text-black' : ''}`}
+                      className={`w-auto px-1.5 ${isCurrentlyFocused ? 'bg-blue-400 text-black hover:bg-blue-300 dark:text-black' : 'hover:bg-blue-300 hover:text-black dark:hover:bg-blue-300 dark:hover:text-black'}`}
                     >
                       <Rocket size={16} />
                     </Button>
@@ -3102,7 +3116,7 @@ export default function TodolistsPage() {
                                           size="icon"
                                           onClick={() => updateTaskCurrentlyFocused(task._id, false)}
                                           aria-label="Currently Focused"
-                                          className="w-auto px-1 bg-blue-400 dark:bg-blue-400 dark:text-black"
+                                          className="w-auto px-1 bg-blue-400 dark:bg-blue-400 dark:text-black hover:bg-blue-300 hover:dark:bg-blue-300"
                                         >
                                           <Rocket size={16} />
                                         </Button>
