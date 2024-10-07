@@ -10,7 +10,24 @@ import { Analytics } from "@vercel/analytics/react"
 function MyApp({ Component, pageProps }: AppProps) {
   return (
     <>
-      <ThemeProvider attribute="class">
+      <ThemeProvider
+        attribute="class"
+        defaultTheme="system"
+        enableSystem
+        themes={[
+          'light',
+          'dark',
+          'emerald',
+          'retro',
+          'business',
+          'coffee',
+          'autumn',
+          'aqua',
+          'corporate',
+          'forest',
+          'nord'
+        ]}
+      >
         <SessionProvider session={pageProps.session}>
           <NextUIProvider>
             <Component {...pageProps} />

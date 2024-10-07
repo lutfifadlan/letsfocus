@@ -18,7 +18,7 @@ const Footer: React.FC = () => {
         {/* Logo and Description Section */}
         <div className="flex flex-col items-center md:items-start">
           <Link href="/" className='flex items-center justify-center gap-2'>
-            <Image src="/logo.svg" alt="logo" width={35} height={35} priority />
+            <Image src="/logo.png" alt="logo" width={35} height={35} priority />
             <h1 className="text-xl sm:text-2xl font-bold text-primary">Let&apos;s Focus</h1>
           </Link>
           <p className="mt-2 text-sm text-center md:text-left">

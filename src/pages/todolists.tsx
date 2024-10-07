@@ -51,6 +51,7 @@ import {
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { DragDropContext, Droppable, Draggable, DropResult } from 'react-beautiful-dnd';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import TaskInputPlaceholder from '@/components/task-input-placeholder';
 
 interface GeneratedTasksApprovalProps {
   tasks: Task[];
@@ -251,6 +252,7 @@ export default function TodolistsPage() {
   const [manualOrderingEnabled, setManualOrderingEnabled] = useState(true);
   const [activeSortOption, setActiveSortOption] = useState<string | null>(null);
   const [showResetConfirmDialog, setShowResetConfirmDialog] = useState(false);
+  const [isAddingTaskInputFocused, setIsAddingTaskInputFocused] = useState(false);
 
   const { status } = useSession();
   const { toast } = useToast();
@@ -1866,8 +1868,8 @@ export default function TodolistsPage() {
 
   if (status === 'loading' || isFetchLoading || isLoading) {
     return (
-      <div className="py-16 flex justify-center items-center h-full">
-        <div className="animate-spin h-8 w-8 border-4 border-t-transparent dark:border-t-black border-black dark:border-white rounded-full"></div>
+      <div className="py-16 flex justify-center items-start min-h-screen">
+        <div className="animate-spin h-8 w-8 border-4 border-t-transparent dark:border-t-black border-black dark:border-white rounded-full mt-6"/>
       </div>
     );
   }
@@ -2123,6 +2125,7 @@ export default function TodolistsPage() {
             <div className={`flex flex-row items-center justify-start ${showAiInput ? 'gap-2' : ''}`}>
               {showAiInput && (
                 <>
+                { isAddingTaskInputFocused ? (
                   <div className="flex flex-col gap-2 w-full">
                     <Input
                       placeholder="Input your prompt here to generate tasks"
@@ -2135,10 +2138,14 @@ export default function TodolistsPage() {
                           handleGenerateTodoListsWithAI();
                         }
                       }}
+                      onBlur={() => setIsAddingTaskInputFocused(false)}
                       aria-label="AI Input"
                       autoFocus
                     />
                   </div>
+                ) : (
+                  <TaskInputPlaceholder onClick={() => setIsAddingTaskInputFocused(true)} />
+                ) }
                   <TooltipProvider>
                     <Tooltip>
                       <TooltipTrigger asChild>
