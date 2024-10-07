@@ -11,7 +11,9 @@ class MyDocument extends Document {
             href="https://fonts.googleapis.com/css2?family=Grape+Nuts&family=Poppins:wght@300;400;600&family=Work+Sans:wght@300;400;600&family=Bricolage+Grotesque:wght@400;500;600;700&display=swap"
             rel="stylesheet"
           />
-          <script async src="https://cdn.seline.so/seline.js" data-token="070947bcbabaef4"></script>
+          {process.env.NODE_ENV === 'production' && (
+            <script async src="https://cdn.seline.so/seline.js" data-token="070947bcbabaef4"></script>
+          )}
           <meta name="google-site-verification" content="bzX0de0J2dmI32xsLO5RcRb8dN5YzDW2WKZXv8cAMxY" />
           <meta name="description" content="Let's Focus is a modern todo list app that helps you focus on what matters most." />
           <meta

@@ -10,6 +10,7 @@ import { useTheme } from "next-themes";
 import LandingArrow from "@/components/arrows/landing";
 import AngryUnderline from "@/components/underline/angry";
 import BlurIn from "@/components/ui/blur-in";
+import { ArrowUpDown, ChartNoAxesCombined, Folder, List, ListChecks, Sparkles } from "lucide-react";
 
 export default function Home() {
   const router = useRouter();
@@ -42,12 +43,18 @@ export default function Home() {
           <p className="mt-6 text-lg md:text-2xl text-gray-700 dark:text-gray-300 max-w-4xl mx-auto">
             Modern, simple, and powerful todo list app that helps you get things done.
           </p>
-          <div className="mt-8 flex justify-center items-center space-x-4">
-            <div/>
+          <div className="mt-8 flex justify-center items-center space-x-2">
             <div className="text-xl text-gray-700 dark:text-gray-300">
-              <RainbowButton onClick={handleGetStarted}>
-                Try Free Now
-              </RainbowButton>
+              <div className="flex flex-col items-center justify-center">
+                <div className="flex flex-row justify-center mt-4">
+                  <RainbowButton onClick={handleGetStarted}>
+                    Try Free Now
+                  </RainbowButton>
+                </div>
+                <p className="text-sm text-gray-500 dark:text-gray-400">
+                  <div className="underline hover:cursor-pointer" onClick={() => router.push('/pricing')}>See our pricing.</div>
+                </p>
+              </div>
             </div>
             <div className="flex justify-center items-center">
               <p className="text-lg text-gray-700 dark:text-gray-300">
@@ -78,59 +85,62 @@ export default function Home() {
             <div className="mt-16 grid grid-cols-1 md:grid-cols-3 gap-8">
               {/* Feature Card 1 */}
               <div className="text-center">
-                <h3 className="text-2xl font-medium text-gray-800 dark:text-gray-200">
-                  Simple Design
+                <h3 className="text-2xl font-medium text-gray-800 dark:text-gray-200 flex items-center justify-center">
+                  <ListChecks className="mr-2" />Advanced To-do List
                 </h3>
                 <p className="mt-4 text-gray-600 dark:text-gray-400">
-                    Focus on what really matters. Our to-do list app is simple and easy to use.
+                  Manage your to-do list with features like task creation, editing, deletion, completion, due date, and priority. Use advanced features like bulk actions, focus mode, and task ignore.
                 </p>
               </div>
-              {/* Feature Card 9 */}
+
+              {/* Feature Card 2 */}
               <div className="text-center">
-                <h3 className="text-2xl font-medium text-gray-800 dark:text-gray-200">
-                  Detailed Statistics
+                <h3 className="text-2xl font-medium text-gray-800 dark:text-gray-200 flex items-center justify-center">
+                  <ChartNoAxesCombined className="mr-2" /> Detailed Statistics
                 </h3>
                 <p className="mt-4 text-gray-600 dark:text-gray-400">
                   Visualize your productivity with charts and graphs. Track task completion rates, time taken, and performance over time.
                 </p>
               </div>
+
+              {/* Feature Card 5 */}
+              <div className="text-center">
+                <h3 className="text-2xl font-medium text-gray-800 dark:text-gray-200 flex items-center justify-center">
+                  <ArrowUpDown className="mr-2" /> Advanced Tasks Sorting
+                </h3>
+                <p className="mt-4 text-gray-600 dark:text-gray-400">
+                  Drag and drop tasks as you need. Sort tasks by created date, priority, due date, group, title, and focus mode.
+                </p>
+              </div>
+
+              <div className="text-center">
+                <h3 className="text-2xl font-medium text-gray-800 dark:text-gray-200 flex items-center justify-center">
+                  <List className="mr-2" /> Tasks History
+                </h3>
+                <p className="mt-4 text-gray-600 dark:text-gray-400">
+                  See tasks history along with its details and stats 
+                </p>
+              </div>
+
               {/* Feature Card 3 */}
               <div className="text-center">
-                <h3 className="text-2xl font-medium text-gray-800 dark:text-gray-200">
-                  Focus Mode
+                <h3 className="text-2xl font-medium text-gray-800 dark:text-gray-200 flex items-center justify-center">
+                  <Folder className="mr-2" /> Group and Tag Your Tasks
                 </h3>
                 <p className="mt-4 text-gray-600 dark:text-gray-400">
-                  Enable focus mode on tasks to indicate that you are working on them.
+                  Categorize your tasks with group and tags. Filter your tasks by group and tag.
                 </p>
               </div>
-              {/* Feature Card 4 */}
+
+              {/* Feature Card 6 */}
               <div className="text-center">
-                <h3 className="text-2xl font-medium text-gray-800 dark:text-gray-200">
-                  Tag and Group Your Tasks
+                <h3 className="text-2xl font-medium text-gray-800 dark:text-gray-200 flex items-center justify-center">
+                  <Sparkles className="mr-2" /> AI Features
                 </h3>
                 <p className="mt-4 text-gray-600 dark:text-gray-400">
-                  Organize tasks with tags for quick and easy filtering. Group your tasks to stay organized.
+                  Leverage advanced AI features to generate tasks for you using GPT-4o model.
                 </p>
               </div>
-              {/* Feature Card 7 */}
-              <div className="text-center">
-                <h3 className="text-2xl font-medium text-gray-800 dark:text-gray-200">
-                  Task Management
-                </h3>
-                <p className="mt-4 text-gray-600 dark:text-gray-400">
-                  Manage your tasks efficiently with features like task creation, editing, deletion, ignoring, completion, due date, and priority.
-                </p>
-              </div>
-              {/* Feature Card 8 */}
-              <div className="text-center">
-                <h3 className="text-2xl font-medium text-gray-800 dark:text-gray-200">
-                  Tasks Filtering and Sorting
-                </h3>
-                <p className="mt-4 text-gray-600 dark:text-gray-400">
-                  Filter tasks by date, status, tags, and groups. Sort tasks by priority, due date, and more to find exactly what you need quickly.
-                </p>
-              </div>
-       
             </div>
           </div>
         </section>
