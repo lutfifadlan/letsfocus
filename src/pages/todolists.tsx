@@ -52,6 +52,8 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { DragDropContext, Droppable, Draggable, DropResult } from 'react-beautiful-dnd';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import TaskInputPlaceholder from '@/components/task-input-placeholder';
+import AiInputPlaceholder from '@/components/ai-input-placeholder';
+import SearchInputPlaceholder from '@/components/search-input-placeholder';
 
 interface GeneratedTasksApprovalProps {
   tasks: Task[];
@@ -253,6 +255,8 @@ export default function TodolistsPage() {
   const [activeSortOption, setActiveSortOption] = useState<string | null>(null);
   const [showResetConfirmDialog, setShowResetConfirmDialog] = useState(false);
   const [isAddingTaskInputFocused, setIsAddingTaskInputFocused] = useState(true);
+  const [isAiInputFocused, setIsAiInputFocused] = useState(true);
+  const [isSearchInputFocused, setIsSearchInputFocused] = useState(true);
 
   const { status } = useSession();
   const { toast } = useToast();
@@ -2111,34 +2115,46 @@ export default function TodolistsPage() {
         <CardContent>
           {showSearch && (
             <div className="flex flex-col w-full mb-2">
+              { isSearchInputFocused ? (
               <Input
                 type="text"
-                placeholder="Search tasks by task title and description..."
+                placeholder="Search tasks by task title and description"
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
+                onBlur={() => setIsSearchInputFocused(false)}
                 className="w-full flex-1 text-sm"
                 autoFocus
               />
+              ) : (
+                <SearchInputPlaceholder onClick={() => setIsSearchInputFocused(true)} />
+              )}
             </div>
           )}
           <div className="flex flex-col gap-0 mb-2">
             <div className={`flex flex-row items-center justify-start ${showAiInput ? 'gap-2' : ''}`}>
               {showAiInput && (
                 <>
-                  <Input
-                    placeholder="Input your prompt here to generate tasks"
-                    className="w-full shadow-none border-none flex-1 text-sm"
-                    type="text"
-                    value={aiInput}
-                    onChange={(e) => setAiInput(e.target.value)}
-                    onKeyDown={(e) => {
-                      if (e.key === 'Enter') {
-                        handleGenerateTodoListsWithAI();
-                      }
-                    }}
-                    aria-label="AI Input"
-                    autoFocus
-                  />
+                  <div className="flex flex-col w-full">
+                    { isAiInputFocused ? (
+                      <Input
+                        placeholder="Input your prompt here"
+                        className="w-full shadow-none border-none flex-1 text-sm"
+                        type="text"
+                        value={aiInput}
+                        onChange={(e) => setAiInput(e.target.value)}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter') {
+                            handleGenerateTodoListsWithAI();
+                          }
+                        }}
+                        onBlur={() => setIsAiInputFocused(false)}
+                        aria-label="AI Input"
+                        autoFocus
+                      />
+                    ) : (
+                      <AiInputPlaceholder onClick={() => setIsAiInputFocused(true)} />
+                    )}
+                  </div>
                   <TooltipProvider>
                     <Tooltip>
                       <TooltipTrigger asChild>
@@ -2249,7 +2265,7 @@ export default function TodolistsPage() {
               <div className="flex flex-col gap-2 w-full">
                 { isAddingTaskInputFocused ? (
                     <Input
-                      placeholder="Add a new task"
+                      placeholder="Input your task here"
                       className="w-full shadow-none border-none flex-1"
                       type="text"
                       value={newTask}
