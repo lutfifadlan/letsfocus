@@ -2249,7 +2249,7 @@ export default function TodolistsPage() {
               <div className="flex flex-col gap-2 w-full">
                 { isAddingTaskInputFocused ? (
                     <Input
-                      placeholder="Add task"
+                      placeholder="Add a new task"
                       className="w-full shadow-none border-none flex-1"
                       type="text"
                       value={newTask}

@@ -13,7 +13,7 @@ const TaskInputPlaceholder: React.FC<TaskInputPlaceholderProps> = ({ onClick }) 
     >
       <div className="flex items-center space-x-2 text-sm">
         <Plus className="text-gray-400 group-hover:text-gray-600" size={16} />
-        <span className="text-gray-500 group-hover:text-gray-700 text-sm">Add a new task...</span>
+        <span className="text-gray-500 group-hover:text-gray-700 text-sm">Add a new task</span>
       </div>
     </div>
   );
