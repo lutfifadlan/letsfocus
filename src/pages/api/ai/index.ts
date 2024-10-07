@@ -31,7 +31,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     return res.status(404).json({ message: 'User plan not found' });
   }
 
-  if (userPlan.credit <= 0 && modelType !== 'llama-3.2-3b-instruct') {
+  if (!userPlan.plan.toLowerCase().includes('pro') && modelType !== 'llama-3.2-3b-instruct') {
     return res.status(400).json({ message: 'Insufficient credits' });
   }
 
@@ -72,9 +72,6 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   } catch (error) {
     return res.status(500).json({ message: 'Failed to generate to-do list', error: (error as Error).message });
   }
-
-  userPlan.credit -= 1;
-  await userPlan.save();
 
   const data = await response.json();
   const tasks = data.choices[0].message.content.split('\n').map((task: string) => task.trim()).filter((task: string) => task);

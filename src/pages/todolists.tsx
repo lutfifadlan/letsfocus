@@ -252,7 +252,7 @@ export default function TodolistsPage() {
   const [manualOrderingEnabled, setManualOrderingEnabled] = useState(true);
   const [activeSortOption, setActiveSortOption] = useState<string | null>(null);
   const [showResetConfirmDialog, setShowResetConfirmDialog] = useState(false);
-  const [isAddingTaskInputFocused, setIsAddingTaskInputFocused] = useState(false);
+  const [isAddingTaskInputFocused, setIsAddingTaskInputFocused] = useState(true);
 
   const { status } = useSession();
   const { toast } = useToast();
@@ -2028,7 +2028,7 @@ export default function TodolistsPage() {
                 </TooltipProvider>
                 <TooltipProvider>
                   <Tooltip>
-                    <TooltipTrigger>
+                    <TooltipTrigger asChild>
                       <Popover>
                         <PopoverTrigger asChild>
                           <Button
@@ -2125,27 +2125,20 @@ export default function TodolistsPage() {
             <div className={`flex flex-row items-center justify-start ${showAiInput ? 'gap-2' : ''}`}>
               {showAiInput && (
                 <>
-                { isAddingTaskInputFocused ? (
-                  <div className="flex flex-col gap-2 w-full">
-                    <Input
-                      placeholder="Input your prompt here to generate tasks"
-                      className="w-full shadow-none border-none flex-1 text-sm"
-                      type="text"
-                      value={aiInput}
-                      onChange={(e) => setAiInput(e.target.value)}
-                      onKeyDown={(e) => {
-                        if (e.key === 'Enter') {
-                          handleGenerateTodoListsWithAI();
-                        }
-                      }}
-                      onBlur={() => setIsAddingTaskInputFocused(false)}
-                      aria-label="AI Input"
-                      autoFocus
-                    />
-                  </div>
-                ) : (
-                  <TaskInputPlaceholder onClick={() => setIsAddingTaskInputFocused(true)} />
-                ) }
+                  <Input
+                    placeholder="Input your prompt here to generate tasks"
+                    className="w-full shadow-none border-none flex-1 text-sm"
+                    type="text"
+                    value={aiInput}
+                    onChange={(e) => setAiInput(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') {
+                        handleGenerateTodoListsWithAI();
+                      }
+                    }}
+                    aria-label="AI Input"
+                    autoFocus
+                  />
                   <TooltipProvider>
                     <Tooltip>
                       <TooltipTrigger asChild>
@@ -2254,38 +2247,43 @@ export default function TodolistsPage() {
               )}
             <div className={`flex flex-row gap-2 ${isFileTextButtonClicked ? 'items-start justify-start' : 'items-center justify-center'}`}>
               <div className="flex flex-col gap-2 w-full">
-                <Input
-                  placeholder="Add task"
-                  className="w-full shadow-none border-none flex-1"
-                  type="text"
-                  value={newTask}
-                  onChange={(e) => setNewTask(e.target.value)}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter') {
-                      handleAddTask(newTaskDescription);
-                    }
+                { isAddingTaskInputFocused ? (
+                    <Input
+                      placeholder="Add task"
+                      className="w-full shadow-none border-none flex-1"
+                      type="text"
+                      value={newTask}
+                      onChange={(e) => setNewTask(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') {
+                          handleAddTask(newTaskDescription);
+                        }
+                      }}
+                      onBlur={() => setIsAddingTaskInputFocused(false)}
+                      aria-label="New Task"
+                      autoFocus
+                    />
+                ) : (
+                  <TaskInputPlaceholder onClick={() => setIsAddingTaskInputFocused(true)} />
+                ) }
+              </div>
+              {isFileTextButtonClicked && (
+                <Textarea
+                  placeholder="Task description"
+                  className="w-full shadow-none resize-vertical"
+                  value={newTaskDescription}
+                  onChange={(e) => setNewTaskDescription(e.target.value)}
+                  aria-label="New Task Description"
+                  rows={1}
+                  style={{ minHeight: '2.5rem', overflow: 'hidden' }}
+                  onInput={(e) => {
+                    const target = e.target as HTMLTextAreaElement;
+                    target.style.height = 'auto';
+                    target.style.height = `${target.scrollHeight}px`;
                   }}
-                  aria-label="New Task"
                   autoFocus
                 />
-                {isFileTextButtonClicked && (
-                  <Textarea
-                    placeholder="Task description"
-                    className="w-full shadow-none resize-vertical"
-                    value={newTaskDescription}
-                    onChange={(e) => setNewTaskDescription(e.target.value)}
-                    aria-label="New Task Description"
-                    rows={1}
-                    style={{ minHeight: '2.5rem', overflow: 'hidden' }}
-                    onInput={(e) => {
-                      const target = e.target as HTMLTextAreaElement;
-                      target.style.height = 'auto';
-                      target.style.height = `${target.scrollHeight}px`;
-                    }}
-                    autoFocus
-                  />
-                )}
-              </div>
+              )}
               <TooltipProvider>
                 <Tooltip>
                   <TooltipTrigger asChild>

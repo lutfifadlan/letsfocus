@@ -232,7 +232,7 @@ const PricingTier: React.FC<PricingTierProps> = ({
     </div>
   );
 
-  const commonClassName = "w-full max-w-[350px] h-[525px] transition-all duration-300 hover:shadow-lg";
+  const commonClassName = "w-full max-w-[350px] h-[500px] transition-all duration-300 hover:shadow-lg";
   const isXendit = paymentMethod === 'xendit';
 
   if (title === "Pro") {
@@ -288,7 +288,6 @@ const PricingPage = () => {
       discountedYearlyPrice: isXendit ? 240000 : 16,
       description: 'For individuals who want to thrive',
       features: [
-        'All features from Free',
         'Advanced task management',
         'Unlimited tasks',
         'Detailed statistics and analytics',
@@ -305,7 +304,6 @@ const PricingPage = () => {
 
   return (
     <Layout>
-      <div className="mx-auto min-h-screen flex flex-col">
         <div className="flex-grow container mx-auto py-2 px-4 pb-3">
           <h1 className="text-4xl font-extrabold text-center mb-4">Upgrade to Pro</h1>
           <div className="flex justify-center items-center mb-4">
@@ -360,7 +358,6 @@ const PricingPage = () => {
             ))}
           </div>
         </div>
-      </div>
     </Layout>
   );
 };

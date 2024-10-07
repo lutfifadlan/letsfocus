@@ -40,7 +40,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     const { total, updated_at, currency, status } = attributes;
     const { custom_data } = meta;
 
-    if (!custom_data || !custom_data.user_id || !custom_data.credits) {
+    if (!custom_data || !custom_data.user_id) {
       return res.status(400).json({ message: 'Missing custom data in the webhook payload' });
     }
 

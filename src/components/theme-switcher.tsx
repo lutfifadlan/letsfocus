@@ -27,11 +27,15 @@ const themes = [
 ];
 
 const ThemeSwitcher = () => {
-  const { theme, setTheme } = useTheme();
-  const [forceRender, setForceRender] = useState(false);
+  const { setTheme, resolvedTheme } = useTheme();
+  const [mounted, setMounted] = useState(false);
   const [isPro, setIsPro] = useState(false);
   const { data: session } = useSession();
-  const { toast } = useToast();  // Initialize toast
+  const { toast } = useToast();
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   useEffect(() => {
     const fetchUserPlan = async () => {
@@ -53,23 +57,6 @@ const ThemeSwitcher = () => {
     fetchUserPlan();
   }, [session]);
 
-  useEffect(() => {
-    const savedTheme = localStorage.getItem('theme');
-    if (savedTheme && (isPro || savedTheme === 'light')) {
-      setTheme(savedTheme);
-    } else {
-      setTheme('light');
-    }
-  }, [setTheme, forceRender, isPro]);
-
-  useEffect(() => {
-    if (theme) {
-      localStorage.setItem('theme', theme);
-      document.documentElement.setAttribute('data-theme', theme);
-      setForceRender(prev => !prev);
-    }
-  }, [theme]);
-
   const handleThemeChange = (newTheme: string) => {
     if (isPro || newTheme === 'light') {
       setTheme(newTheme);
@@ -80,6 +67,10 @@ const ThemeSwitcher = () => {
     }
   };
 
+  if (!mounted) {
+    return null;
+  }
+
   return (
     <div className="theme-switcher">
       <DropdownMenu>
@@ -87,7 +78,7 @@ const ThemeSwitcher = () => {
           <Button
             variant="ghost"
             className="w-full border-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700">
-            {themes.find(t => t.name === theme)?.icon}
+            {themes.find(t => t.name === resolvedTheme)?.icon}
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent>
