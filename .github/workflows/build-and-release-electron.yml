@@ -22,7 +22,10 @@ jobs:
           bun --version
 
       - name: Install dependencies
-        run: bun install
+        run: |
+          export BUN_INSTALL="$HOME/.bun"
+          export PATH="$BUN_INSTALL/bin:$PATH"
+          bun install
 
       - name: Build/release Electron app
         uses: samuelmeuli/action-electron-builder@v1.6.0
