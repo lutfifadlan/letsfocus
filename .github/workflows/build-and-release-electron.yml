@@ -35,15 +35,6 @@ jobs:
       - name: Build Electron App
         uses: samuelmeuli/action-electron-builder@v1.6.0
         with:
-          platform: ${{ matrix.os }}
-        env:
-          GITHUB_TOKEN: ${{ secrets.ELECTRON_GITHUB_TOKEN }}
+          github_token: ${{ secrets.github_token }}
+          release: ${{ startsWith(github.ref, 'refs/tags/v') }}
 
-      # Step 5: Upload Artifacts (macOS and Windows)
-      - name: Upload build artifacts
-        uses: actions/upload-artifact@v3
-        with:
-          name: Electron-build-${{ matrix.os }}
-          path: |
-            dist/*.dmg
-            dist/*.exe
