@@ -1,7 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
-import { Globe } from 'lucide-react';
 
 const Footer: React.FC = () => {
   const [isMounted, setIsMounted] = useState(false);
@@ -59,8 +58,7 @@ const Footer: React.FC = () => {
               rel="noopener noreferrer"
               aria-label="breadcrumb"
             >
-              <Globe size={20} className="mr-2" />
-              <span>Company</span>
+              <p className="">Company</p>
             </Link>
           </div>
         </div>

@@ -3,18 +3,18 @@ import confetti from "canvas-confetti";
 import { useCallback } from "react";
 import Layout from "@/components/layout";
 import { RainbowButton } from "@/components/magicui/rainbow-button";
-import DummyTodolistsPage from "@/components/dummy-todolists";
 import { Card, CardContent } from "@/components/ui/card";
 import ShineBorder from "@/components/ui/shine-border";
-import { useTheme } from "next-themes";
 import LandingArrow from "@/components/arrows/landing";
 import AngryUnderline from "@/components/underline/angry";
+import DualUnderline from "@/components/underline/dual";
 import BlurIn from "@/components/ui/blur-in";
-import { ArrowUpDown, ChartNoAxesCombined, Folder, List, ListChecks, Sparkles } from "lucide-react";
+import { ArrowUpDown, ChartNoAxesCombined, List, ListChecks, Sparkles, MessageSquare } from "lucide-react";
+import { useTheme } from "next-themes";
 
 export default function Home() {
   const router = useRouter();
-  const theme = useTheme();
+  const { theme } = useTheme();
 
   const handleGetStarted = useCallback(() => {
     confetti({
@@ -41,9 +41,12 @@ export default function Home() {
             </span>
           </h1>
           <p className="mt-6 text-lg md:text-2xl text-gray-700 dark:text-gray-300 max-w-4xl mx-auto">
-            Modern, simple, and powerful todo list app that helps you get things done.
+            Modern, simple, and powerful todo list app that helps you {' '}
+            <DualUnderline>
+              get things done.
+            </DualUnderline>
           </p>
-          <div className="mt-8 flex justify-center items-center space-x-2">
+          <div className="mt-4 flex justify-center items-center space-x-2">
             <div className="text-xl text-gray-700 dark:text-gray-300">
               <div className="flex flex-col items-center justify-center">
                 <div className="flex flex-row justify-center mt-4">
@@ -57,93 +60,99 @@ export default function Home() {
               </div>
             </div>
             <div className="flex justify-center items-center">
-              <p className="text-lg text-gray-700 dark:text-gray-300">
-                Or try our mini app
-              </p>
               <LandingArrow />
             </div>
           </div>
         </section>
 
-        {/* Embed DummyTodolistsPage directly on the landing page */}
-        <section className="w-full mt-8">
-          <ShineBorder className="relative max-w-3xl mx-auto" color={theme.theme === "dark" ? "white" : "black"}>
-            <Card className="p-0 m-0 relative z-10 w-full h-full">
-              <CardContent>
-                <DummyTodolistsPage />
-              </CardContent>
-            </Card>
-          </ShineBorder>
-        </section>
-
         {/* Features Section */}
-        <section className="w-full mt-4 py-8">
-          <div className="max-w-6xl mx-auto px-6">
-            <h2 className="text-3xl md:text-4xl font-semibold text-center text-gray-800 dark:text-white">
-              Features That Boost Productivity
-            </h2>
-            <div className="mt-16 grid grid-cols-1 md:grid-cols-3 gap-8">
-              {/* Feature Card 1 */}
-              <div className="text-center">
-                <h3 className="text-2xl font-medium text-gray-800 dark:text-gray-200 flex items-center justify-center">
-                  <ListChecks className="mr-2" />Advanced To-do List
-                </h3>
-                <p className="mt-4 text-gray-600 dark:text-gray-400">
-                  Manage your to-do list with features like task creation, editing, deletion, completion, due date, and priority. Use advanced features like bulk actions, focus mode, and task ignore.
-                </p>
-              </div>
+        <div className="max-w-6xl mx-auto px-6 mb-6">
+          <div className="mt-8 grid grid-cols-1 md:grid-cols-3 gap-4">
+            {/* Feature Card 1 */}
+            <ShineBorder color={theme === "dark" ? "white" : "black"}>
+              <Card className="text-center h-full p-2">
+                <CardContent className="flex flex-col h-[160px] justify-between">
+                  <h3 className="text-2xl font-medium text-gray-800 dark:text-gray-200 flex items-center justify-center">
+                    <ListChecks className="mr-2" />Advanced To-do List
+                  </h3>
+                  <p className="mt-4 text-gray-600 dark:text-gray-400">
+                    Manage tasks with advanced features like bulk actions, focus mode, and task ignore. Set priorities, due dates, and more.
+                  </p>
+                </CardContent>
+              </Card>
+            </ShineBorder>
 
-              {/* Feature Card 2 */}
-              <div className="text-center">
-                <h3 className="text-2xl font-medium text-gray-800 dark:text-gray-200 flex items-center justify-center">
-                  <ChartNoAxesCombined className="mr-2" /> Detailed Statistics
-                </h3>
-                <p className="mt-4 text-gray-600 dark:text-gray-400">
-                  Visualize your productivity with charts and graphs. Track task completion rates, time taken, and performance over time.
-                </p>
-              </div>
+            {/* Feature Card 2 */}
+            <ShineBorder color={theme === "dark" ? "white" : "black"}>
+              <Card className="text-center h-full p-2">
+                <CardContent className="flex flex-col h-[160px] justify-center items-center">
+                  <h3 className="text-2xl font-medium text-gray-800 dark:text-gray-200 flex items-center justify-center">
+                    <ChartNoAxesCombined className="mr-2" /> Detailed Statistics
+                  </h3>
+                  <p className="mt-4 text-gray-600 dark:text-gray-400">
+                    Visualize productivity with charts and graphs. Track completion rates, time taken, and performance trends.
+                  </p>
+                </CardContent>
+              </Card>
+            </ShineBorder>
 
-              {/* Feature Card 5 */}
-              <div className="text-center">
-                <h3 className="text-2xl font-medium text-gray-800 dark:text-gray-200 flex items-center justify-center">
-                  <ArrowUpDown className="mr-2" /> Advanced Tasks Sorting
-                </h3>
-                <p className="mt-4 text-gray-600 dark:text-gray-400">
-                  Drag and drop tasks as you need. Sort tasks by created date, priority, due date, group, title, and focus mode.
-                </p>
-              </div>
+            {/* Feature Card 3 */}
+            <ShineBorder color={theme === "dark" ? "white" : "black"}>
+              <Card className="text-center h-full p-2">
+                <CardContent className="flex flex-col h-[160px] justify-center items-center">
+                  <h3 className="text-2xl font-medium text-gray-800 dark:text-gray-200 flex items-center justify-center">
+                    <ArrowUpDown className="mr-2" /> Sorting & Filtering
+                  </h3>
+                  <p className="mt-4 text-gray-600 dark:text-gray-400">
+                    Drag-and-drop tasks, sort by various criteria, and filter by tags and groups for efficient task management.
+                  </p>
+                </CardContent>
+              </Card>
+            </ShineBorder>
 
-              <div className="text-center">
-                <h3 className="text-2xl font-medium text-gray-800 dark:text-gray-200 flex items-center justify-center">
-                  <List className="mr-2" /> Tasks History
-                </h3>
-                <p className="mt-4 text-gray-600 dark:text-gray-400">
-                  See tasks history along with its details and stats 
-                </p>
-              </div>
+            {/* Feature Card 4 */}
+            <ShineBorder color={theme === "dark" ? "white" : "black"}>
+              <Card className="text-center h-full p-2">
+                <CardContent className="flex flex-col h-[160px] justify-center items-center">
+                  <h3 className="text-2xl font-medium text-gray-800 dark:text-gray-200 flex items-center justify-center">
+                    <List className="mr-2" /> Task History
+                  </h3>
+                  <p className="mt-4 text-gray-600 dark:text-gray-400">
+                    Access comprehensive task history with detailed information and statistics.
+                  </p>
+                </CardContent>
+              </Card>
+            </ShineBorder>
 
-              {/* Feature Card 3 */}
-              <div className="text-center">
-                <h3 className="text-2xl font-medium text-gray-800 dark:text-gray-200 flex items-center justify-center">
-                  <Folder className="mr-2" /> Group and Tag Your Tasks
-                </h3>
-                <p className="mt-4 text-gray-600 dark:text-gray-400">
-                  Categorize your tasks with group and tags. Filter your tasks by group and tag.
-                </p>
-              </div>
+            {/* Feature Card 5 */}
+            <ShineBorder color={theme === "dark" ? "white" : "black"}>
+              <Card className="text-center h-full p-2">
+                <CardContent className="flex flex-col h-[160px] justify-center items-center">
+                  <h3 className="text-2xl font-medium text-gray-800 dark:text-gray-200 flex items-center justify-center">
+                    <Sparkles className="mr-2" /> AI Assistance
+                  </h3>
+                  <p className="mt-4 text-gray-600 dark:text-gray-400">
+                    Utilize GPT-4o model to generate tasks and enhance productivity with AI-driven suggestions.
+                  </p>
+                </CardContent>
+              </Card>
+            </ShineBorder>
 
-              {/* Feature Card 6 */}
-              <div className="text-center">
-                <h3 className="text-2xl font-medium text-gray-800 dark:text-gray-200 flex items-center justify-center">
-                  <Sparkles className="mr-2" /> AI Features
-                </h3>
-                <p className="mt-4 text-gray-600 dark:text-gray-400">
-                  Leverage advanced AI features to generate tasks for you using GPT-4o model.
-                </p>
-              </div>
-            </div>
+            {/* Feature Card 6 */}
+            <ShineBorder color={theme === "dark" ? "white" : "black"}>
+              <Card className="text-center h-full p-2">
+                <CardContent className="flex flex-col h-[160px] justify-center items-center">
+                  <h3 className="text-2xl font-medium text-gray-800 dark:text-gray-200 flex items-center justify-center">
+                    <MessageSquare className="mr-2" /> Task Comments
+                  </h3>
+                  <p className="mt-4 text-gray-600 dark:text-gray-400">
+                    Add, edit, and delete comments on tasks. Collaborate and track important notes for each task.
+                  </p>
+                </CardContent>
+              </Card>
+            </ShineBorder>
           </div>
-        </section>
+        </div>
       </main>
     </Layout>
   );
