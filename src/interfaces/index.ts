@@ -32,3 +32,13 @@ export interface Tag {
   id: string;
   text: string;
 }
+
+export interface Comment {
+  _id: string;
+  taskId: string;
+  userId: string;
+  content: string;
+  isDeleted: boolean;
+  createdAt: Date;
+  updatedAt: Date;
+}
