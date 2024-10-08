@@ -17,7 +17,7 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v2
 
-      # Step 2: Set up Bun
+      # Step 2: Set up Bun and add to PATH
       - name: Install Bun
         run: |
           curl -fsSL https://bun.sh/install | bash
@@ -27,11 +27,16 @@ jobs:
 
       # Step 3: Install dependencies using Bun
       - name: Install dependencies
-        run: bun install
+        run: |
+          export BUN_INSTALL="$HOME/.bun"
+          export PATH="$BUN_INSTALL/bin:$PATH"
+          bun install
 
       # Step 4: Build Electron app for macOS or Windows
       - name: Build Electron app
         run: |
+          export BUN_INSTALL="$HOME/.bun"
+          export PATH="$BUN_INSTALL/bin:$PATH"
           if [[ "${{ matrix.os }}" == "macos-latest" ]]; then
             bun run build:mac
           elif [[ "${{ matrix.os }}" == "windows-latest" ]]; then
