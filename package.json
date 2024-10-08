@@ -4,11 +4,37 @@
   "private": true,
   "scripts": {
     "dev": "bun next dev",
+    "dev:electron": "wait-on http://localhost:3000 && electron .",
+    "dev:next-electron": "concurrently \"npm run dev\" \"npm run dev:electron\"",
     "build": "bun next build",
+    "build:electron": "bun build && electron-builder",
+    "build:all": "bun build && electron-builder --mac --win --linux",
     "build:mac": "electron-builder --mac",
     "build:win": "electron-builder --win",
+    "package": "electron-builder --dir",
+    "dist": "electron-builder",
     "start": "bun next start",
     "lint": "bun next lint"
+  },
+  "build": {
+    "appId": "letsfocus.today",
+    "files": [
+      "main.js",
+      "preload.js",
+      "out/**/*"
+    ],
+    "directories": {
+      "buildResources": "assets"
+    },
+    "mac": {
+      "target": "dmg"
+    },
+    "win": {
+      "target": "portable"
+    },
+    "linux": {
+      "target": "AppImage"
+    }
   },
   "dependencies": {
     "@hookform/resolvers": "^3.9.0",
@@ -70,12 +96,14 @@
     "@types/react-beautiful-dnd": "^13.1.8",
     "@types/react-dom": "^18",
     "daisyui": "^4.12.12",
+    "dmg-license": "^1.0.11",
     "electron": "^32.1.2",
     "electron-builder": "^25.1.7",
     "eslint": "^8",
     "eslint-config-next": "14.2.13",
     "postcss": "^8",
     "tailwindcss": "^3.4.1",
-    "typescript": "^5"
+    "typescript": "^5",
+    "wait-on": "^7.2.0"
   }
 }
