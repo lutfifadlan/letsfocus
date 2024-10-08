@@ -8,14 +8,15 @@ import {
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useSession } from 'next-auth/react';
-import { Task } from '@/interfaces';
+import { Task, Comment } from '@/interfaces';
 import Layout from '@/components/layout';
 import {
   Plus, Trash, Tag, Folder, PlusCircle, Edit, FileText, Save, X,
   CalendarClock, SquareCheck, Trash2, ChevronsUp, ChevronUp,
   ChevronDown, Flag, CalendarPlus, ArrowDownUp, CopyCheck,
   MinusCircle, Rocket, CircleMinus, Sparkles, XSquare, Filter, Search,
-  AlertCircle, Clock, CheckCircle, Settings, Check, Crown, GripVertical
+  AlertCircle, Clock, CheckCircle, Settings, Check, Crown, GripVertical,
+  MessageCircle
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { ToastAction } from '@/components/ui/toast';
@@ -54,6 +55,8 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import TaskInputPlaceholder from '@/components/task-input-placeholder';
 import AiInputPlaceholder from '@/components/ai-input-placeholder';
 import SearchInputPlaceholder from '@/components/search-input-placeholder';
+
+const MAXIMUM_COMMENT_CHARS_LENGTH = 10000;
 
 interface GeneratedTasksApprovalProps {
   tasks: Task[];
@@ -262,6 +265,11 @@ export default function TodolistsPage() {
   const [isAddingTaskInputFocused, setIsAddingTaskInputFocused] = useState(true);
   const [isAiInputFocused, setIsAiInputFocused] = useState(true);
   const [isSearchInputFocused, setIsSearchInputFocused] = useState(true);
+  const [commentContent, setCommentContent] = useState<string>('');
+  const [editingCommentId, setEditingCommentId] = useState<string | null>(null);
+  const [showCommentDialog, setShowCommentDialog] = useState(false);
+  const [activeTaskId, setActiveTaskId] = useState<string | null>(null);
+  const [taskComments, setTaskComments] = useState<Comment[]>([]);
 
   const { status } = useSession();
   const { toast } = useToast();
@@ -1773,6 +1781,175 @@ export default function TodolistsPage() {
       description: 'The task order has been updated.',
       duration: 3000,
     });
+  };
+
+  const addComment = async (taskId: string, content: string) => {
+    setIsLoading(true);
+    try {
+      const response = await fetch(`/api/tasks/comments`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ content, taskId }),
+      });
+  
+      if (!response.ok) {
+        throw new Error('Failed to add comment');
+      }
+  
+      const newComment = await response.json();
+  
+      setTasks((prevTasks) =>
+        prevTasks.map((task) =>
+          task._id === taskId
+            ? { ...task, comments: [...task.comments, newComment] }
+            : task
+        )
+      );
+  
+      setCommentContent('');
+      toast({
+        title: 'Comment Added',
+        description: 'Your comment has been added successfully.',
+        duration: 3000,
+      });
+    } catch (error) {
+      console.error('Failed to add comment:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to add comment.',
+        variant: 'destructive',
+        duration: 3000,
+      });
+    }
+    setIsLoading(false);
+  };
+  
+  const updateComment = async (taskId: string, commentId: string, content: string) => {
+    setIsLoading(true);
+    try {
+      const response = await fetch(`/api/tasks/comments/${commentId}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ content, taskId, commentId }),
+      });
+  
+      if (!response.ok) {
+        throw new Error('Failed to update comment');
+      }
+  
+      const updatedComment = await response.json();
+  
+      setTasks((prevTasks) =>
+        prevTasks.map((task) =>
+          task._id === taskId
+            ? {
+                ...task,
+                comments: task.comments.map((comment) =>
+                  comment._id === commentId ? updatedComment : comment
+                ),
+              }
+            : task
+        )
+      );
+  
+      setEditingCommentId(null);
+      toast({
+        title: 'Comment Updated',
+        description: 'Your comment has been updated successfully.',
+        duration: 3000,
+      });
+    } catch (error) {
+      console.error('Failed to update comment:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to update comment.',
+        variant: 'destructive',
+        duration: 3000,
+      });
+    }
+    setIsLoading(false);
+  };
+  
+  const deleteComment = async (taskId: string, commentId: string) => {
+    setIsLoading(true);
+    try {
+      const response = await fetch(`/api/tasks/comments/${commentId}`, {
+        method: 'DELETE',
+      });
+  
+      if (!response.ok) {
+        throw new Error('Failed to delete comment');
+      }
+  
+      setTasks((prevTasks) =>
+        prevTasks.map((task) =>
+          task._id === taskId
+            ? {
+                ...task,
+                comments: task.comments.filter((comment) => comment._id !== commentId),
+              }
+            : task
+        )
+      );
+  
+      toast({
+        title: 'Comment Deleted',
+        description: 'Your comment has been deleted successfully.',
+        duration: 3000,
+      });
+    } catch (error) {
+      console.error('Failed to delete comment:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to delete comment.',
+        variant: 'destructive',
+        duration: 3000,
+      });
+    }
+    setIsLoading(false);
+  };
+
+  const getCommentsForTask = async (taskId: string) => {
+    setIsLoading(true);
+    try { 
+      const response = await fetch(`/api/tasks/comments?taskId=${taskId}`);
+      const data = await response.json();
+      setTaskComments(data);
+      return data;
+    } catch (error) {
+      console.error('Failed to fetch comments:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to fetch comments.',
+        variant: 'destructive',
+        duration: 3000,
+      });
+    }
+    setIsLoading(false);
+  };
+
+  
+  const handleCommentDialogOpen = async (taskId: string) => {
+    setIsLoading(true);
+    try {
+      await getCommentsForTask(taskId);
+      setActiveTaskId(taskId);
+      setShowCommentDialog(true);
+    } catch (error) {
+      console.error('Failed to fetch comments:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to fetch comments.',
+        variant: 'destructive',
+        duration: 3000,
+      });
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const onDragEnd = async (result: DropResult) => {
@@ -3440,6 +3617,24 @@ export default function TodolistsPage() {
 
                               <TooltipProvider>
                                 <Tooltip>
+                                  <TooltipTrigger asChild>
+                                    <Button
+                                      variant="ghost"
+                                      size="icon"
+                                      onClick={() => handleCommentDialogOpen(task._id)}
+                                      className="w-auto px-1"
+                                    >
+                                      <MessageCircle size={16} />
+                                    </Button>
+                                  </TooltipTrigger>
+                                  <TooltipContent>
+                                    <p>Manage comments</p>
+                                  </TooltipContent>
+                                </Tooltip>
+                              </TooltipProvider>
+
+                              <TooltipProvider>
+                                <Tooltip>
                                   <TooltipTrigger>
                                     <Popover>
                                       <PopoverTrigger asChild>
@@ -3725,6 +3920,160 @@ export default function TodolistsPage() {
 
         </CardContent>
       </Card>
+      <Dialog open={showCommentDialog} onOpenChange={setShowCommentDialog}>
+        <DialogContent className="max-w-3xl overflow-y-auto text-sm">
+          <DialogHeader>
+            <DialogTitle>Task Comments</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            {activeTaskId &&
+              taskComments.map((comment: Comment) => (
+                  <div key={comment._id} className="flex items-start space-x-2">
+                    <div className="flex-grow">
+                      {editingCommentId === comment._id ? (
+                        <Textarea
+                          value={commentContent}
+                          onChange={(e) => setCommentContent(e.target.value)}
+                          className="w-full"
+                        />
+                      ) : (
+                        <>
+                          <p>{comment.content}</p>
+                          <p className="text-xs text-gray-500 mt-1">
+                          Created: {format(new Date(comment.createdAt), 'PPp')}
+                          {comment.updatedAt && comment.updatedAt !== comment.createdAt && (
+                            <> • Updated: {format(new Date(comment.updatedAt), 'PPp')}</>
+                          )}
+                        </p>
+                      </>
+                      )}
+                    </div>
+                    <div className="flex space-x-1">
+                      {editingCommentId === comment._id ? (
+                        <>
+                          <TooltipProvider>
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  onClick={() => {
+                                    updateComment(activeTaskId, comment._id, commentContent);
+                                    setEditingCommentId(null);
+                                    setCommentContent('');
+                                  }}
+                                >
+                                  <Save size={16} />
+                                </Button>
+                              </TooltipTrigger>
+                              <TooltipContent>
+                                <p>Save</p>
+                              </TooltipContent>
+                            </Tooltip>
+                          </TooltipProvider>
+                          <TooltipProvider>
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  onClick={() => {
+                                    setEditingCommentId(null);
+                                    setCommentContent('');
+                                  }}
+                                >
+                                  <X size={16} />
+                                </Button>
+                              </TooltipTrigger>
+                              <TooltipContent>
+                                <p>Cancel</p>
+                              </TooltipContent>
+                            </Tooltip>
+                          </TooltipProvider>
+                        </>
+                      ) : (
+                        <>
+                          <TooltipProvider>
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  onClick={() => {
+                                    setEditingCommentId(comment._id);
+                                    setCommentContent(comment.content);
+                                  }}
+                                >
+                                  <Edit size={16} />
+                                </Button>
+                              </TooltipTrigger>
+                              <TooltipContent>
+                                <p>Edit</p>
+                              </TooltipContent>
+                            </Tooltip>
+                          </TooltipProvider>
+                          <TooltipProvider>
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  onClick={() => deleteComment(activeTaskId, comment._id)}
+                                >
+                                  <Trash size={16} />
+                                </Button>
+                              </TooltipTrigger>
+                              <TooltipContent>
+                                <p>Delete</p>
+                              </TooltipContent>
+                            </Tooltip>
+                          </TooltipProvider>
+                        </>
+                      )}
+                    </div>
+                  </div>
+                ))}
+          </div>
+          { !editingCommentId && (
+          <div className="mt-4">
+            <Textarea
+              placeholder="Add a comment..."
+              value={commentContent}
+              onChange={(e) => setCommentContent(e.target.value)}
+              className="w-full min-h-[150px]"
+            />
+            {commentContent.length > MAXIMUM_COMMENT_CHARS_LENGTH && (
+              <p className="text-sm">Maximum character limit exceeded. {commentContent.length} / {MAXIMUM_COMMENT_CHARS_LENGTH}</p>
+            )}
+          </div>
+          )}
+          <DialogFooter className="sticky bottom-0">
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <div>
+                    <Button
+                      onClick={() => {
+                        if (activeTaskId && commentContent.length <= MAXIMUM_COMMENT_CHARS_LENGTH) {
+                          addComment(activeTaskId, commentContent);
+                          setCommentContent('');
+                        }
+                      }}
+                      disabled={!commentContent.trim() || commentContent.length > MAXIMUM_COMMENT_CHARS_LENGTH}
+                      size="icon"
+                    >
+                      <MessageCircle size={16} />
+                    </Button>
+                  </div>
+                </TooltipTrigger>
+                <TooltipContent side="left" className="mr-2">
+                  <p>Add Comment</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </Layout>
   );
 }

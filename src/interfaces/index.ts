@@ -17,6 +17,7 @@ export interface Task {
   priority?: string;
   isCurrentlyFocused?: boolean;
   order: number;
+  comments: Comment[];
 }
 
 export interface UserPlan {
@@ -31,4 +32,14 @@ export interface UserPlan {
 export interface Tag {
   id: string;
   text: string;
+}
+
+export interface Comment {
+  _id: string;
+  taskId: string;
+  userId: string;
+  content: string;
+  isDeleted: boolean;
+  createdAt: Date;
+  updatedAt: Date;
 }

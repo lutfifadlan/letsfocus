@@ -18,6 +18,13 @@ const GroupSchema = new mongoose.Schema({
   isDeleted: { type: Boolean, default: false },
 }, { timestamps: true });
 
+const CommentSchema = new mongoose.Schema({
+  taskId: { type: String, required: true },
+  userId: { type: String, required: true },
+  content: { type: String, required: true },
+  isDeleted: { type: Boolean, default: false },
+}, { timestamps: true });
+
 const TaskSchema = new mongoose.Schema({
   title: { type: String, required: true },
   description: { type: String, default: null },
@@ -33,7 +40,8 @@ const TaskSchema = new mongoose.Schema({
   completionStatus: { type: String },
   priority: { type: String, default: null },
   isCurrentlyFocused: { type: Boolean, default: false },
-  order: { type: Number, default: 0 }
+  order: { type: Number, default: 0 },
+  comments: { type: [CommentSchema], default: [] },
 }, { timestamps: true });
 
 const UserPlanSchema = new mongoose.Schema({
@@ -69,9 +77,12 @@ TaskSchema.index({ userId: 1, isDeleted: 1 });
 
 UserPlanSchema.index({ userId: 1, isDeleted: 1 });
 
+CommentSchema.index({ userId: 1,taskId: 1, isDeleted: 1 });
+
 export const User = mongoose.models.User || mongoose.model('User', UserSchema);
 export const Task = mongoose.models.Task || mongoose.model('Task', TaskSchema);
 export const Group = mongoose.models.Group || mongoose.model('Group', GroupSchema);
 export const UserPlan = mongoose.models.UserPlan || mongoose.model('UserPlan', UserPlanSchema);
 export const ContactMessage = mongoose.models.ContactMessage || mongoose.model('ContactMessage', ContactMessageSchema);
 export const Payment = mongoose.models.Payment || mongoose.model('Payment', PaymentSchema);
+export const Comment = mongoose.models.Comment || mongoose.model('Comment', CommentSchema);
