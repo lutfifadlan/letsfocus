@@ -54,7 +54,7 @@ const PaymentSchema = new mongoose.Schema({
   userId: { type: String, required: true },
   externalId: { type: String, required: true },
   amount: { type: Number, required: true },
-  paidAmount: { type: Number, required: true },
+  paidAmount: { type: Number },
   paidAt: { type: Date, required: true },
   paymentMethod: { type: String, required: true },
   currency: { type: String, required: true },

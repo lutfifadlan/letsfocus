@@ -5,6 +5,8 @@
   "scripts": {
     "dev": "bun next dev",
     "build": "bun next build",
+    "build:mac": "electron-builder --mac",
+    "build:win": "electron-builder --win",
     "start": "bun next start",
     "lint": "bun next lint"
   },
@@ -68,6 +70,7 @@
     "@types/react-beautiful-dnd": "^13.1.8",
     "@types/react-dom": "^18",
     "daisyui": "^4.12.12",
+    "electron-builder": "^25.1.7",
     "eslint": "^8",
     "eslint-config-next": "14.2.13",
     "postcss": "^8",

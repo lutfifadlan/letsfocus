@@ -15,17 +15,17 @@ const PRO_MONTHLY_VARIANT_ID = "";
 const PRO_YEARLY_VARIANT_ID = "";
 
 const lemonSqueezyProducts: { [key: string]: { productId: string; variantId: string } } = {
-  PRO_MONTHLY: {
+  'PRO-MONTHLY': {
     productId: process.env.NODE_ENV === 'production' ? PRO_MONTHLY_PRODUCT_ID : PRO_MONTHLY_DEV_PRODUCT_ID,
     variantId: process.env.NODE_ENV === 'production' ? PRO_MONTHLY_VARIANT_ID : PRO_MONTHLY_DEV_VARIANT_ID
   },
-  PRO_YEARLY: {
+  'PRO-YEARLY': {
     productId: process.env.NODE_ENV === 'production' ? PRO_YEARLY_PRODUCT_ID : PRO_YEARLY_DEV_PRODUCT_ID,
     variantId: process.env.NODE_ENV === 'production' ? PRO_YEARLY_VARIANT_ID : PRO_YEARLY_DEV_VARIANT_ID
   },
 };
 const lemonSqueezyStoreId = process.env.NODE_ENV === 'production' ? LEMONSQUEEZY_STORE_ID : LEMONSQUEEZY_DEV_STORE_ID;
-const lemonSqueezyApiKey = process.env.NODE_ENV === 'production' ? process.env.LEMON_SQUEEZY_API_KEY : process.env.LEMON_SQUEEZY_DEV_API_KEY;
+const lemonsqueezyApiKey = process.env.NODE_ENV === 'production' ? process.env.LEMON_SQUEEZY_API_KEY : process.env.LEMON_SQUEEZY_TEST_API_KEY;
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   const session = await getServerSession(req, res, authOptions);
@@ -34,11 +34,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     return res.status(401).json({ error: "Unauthorized" });
   }
 
-  const user = await User.findOne({
-    where: {
-      email: session.user.email,
-    },
-  });
+  const user = await User.findOne({ email: session.user.email });
 
   if (!user) {
     return res.status(404).json({ error: "User not found" });
@@ -51,30 +47,22 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       return res.status(400).json({ error: "Invalid plan type" });
     }
 
-    const { productId } = lemonSqueezyProducts[planType];
+    const { variantId } = lemonSqueezyProducts[planType];
 
-    // Fetch the variant ID for the product
-    const variantId = await fetchVariantId(productId);
-    if (!variantId) {
-      return res.status(500).json({ error: "Failed to fetch variant ID" });
-    }
-
-    // Prepare the Lemon Squeezy API request payload
     const payload = {
       data: {
         type: 'checkouts',
         attributes: {
           product_options: {
-            redirect_url: 'https://letsfocus.today',
             receipt_button_text: 'Return to Your Account',
+            redirect_url: 'https://letsfocus.today/payment-success',
+            receipt_link_url: 'https://letsfocus.today/todolists',
             enabled_variants: [variantId],
-          },
-          checkout_options: {
-            button_color: "#7047EB",
           },
           checkout_data: {
             custom: {
               user_id: userId,
+              planType: planType,
             },
           },
           expires_at: new Date(Date.now() + 3600000).toISOString(), // Set expiry to 1 hour from now
@@ -102,7 +90,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         headers: {
           'Accept': 'application/vnd.api+json',
           'Content-Type': 'application/vnd.api+json',
-          'Authorization': `Bearer ${process.env.LEMON_SQUEEZY_API_KEY}`,
+          'Authorization': `Bearer ${lemonsqueezyApiKey}`,
         },
         body: JSON.stringify(payload),
       });
@@ -123,30 +111,5 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   } else {
     res.setHeader('Allow', ['POST']);
     res.status(405).end(`Method ${req.method} Not Allowed`);
-  }
-}
-
-async function fetchVariantId(productId: string): Promise<string | null> {
-  try {
-    const response = await fetch(`https://api.lemonsqueezy.com/v1/products/${productId}/variants`, {
-      headers: {
-        'Accept': 'application/vnd.api+json',
-        'Authorization': `Bearer ${lemonSqueezyApiKey}`,
-      },
-    });
-
-    if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`);
-    }
-
-    const data = await response.json();
-    if (data.data && data.data.length > 0) {
-      return data.data[0].id; // Assuming the first variant is the one we want
-    } else {
-      throw new Error('No variants found for the product');
-    }
-  } catch (error) {
-    console.error('Error fetching variant ID:', error);
-    return null;
   }
 }

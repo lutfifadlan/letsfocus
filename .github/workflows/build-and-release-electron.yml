@@ -1,0 +1,90 @@
+name: Build and Release Electron App with Bun
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        os: [macos-latest, windows-latest]
+
+    steps:
+      # Step 1: Checkout the code
+      - name: Checkout code
+        uses: actions/checkout@v2
+
+      # Step 2: Set up Bun
+      - name: Install Bun
+        run: |
+          curl -fsSL https://bun.sh/install | bash
+          export BUN_INSTALL="$HOME/.bun"
+          export PATH="$BUN_INSTALL/bin:$PATH"
+          bun --version
+
+      # Step 3: Install dependencies using Bun
+      - name: Install dependencies
+        run: bun install
+
+      # Step 4: Build Electron app for macOS or Windows
+      - name: Build Electron app
+        run: |
+          if [[ "${{ matrix.os }}" == "macos-latest" ]]; then
+            bun run build:mac
+          elif [[ "${{ matrix.os }}" == "windows-latest" ]]; then
+            bun run build:win
+          fi
+
+      # Step 5: Upload build artifacts (macOS and Windows)
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v2
+        with:
+          name: Electron-build-${{ matrix.os }}
+          path: |
+            dist/*.dmg
+            dist/*.exe
+
+  release:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      # Step 1: Checkout the code
+      - name: Checkout code
+        uses: actions/checkout@v2
+
+      # Step 2: Create GitHub Release
+      - name: Create GitHub Release
+        id: create_release
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.ELECTRON_GITHUB_TOKEN }}
+        with:
+          tag_name: v${{ github.sha }}
+          release_name: Release ${{ github.sha }}
+          draft: false
+          prerelease: false
+
+      # Step 3: Upload macOS App (.dmg) to the Release
+      - name: Upload macOS Release Asset
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.ELECTRON_GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ./dist/*.dmg
+          asset_name: macOS-App.dmg
+          asset_content_type: application/octet-stream
+
+      # Step 4: Upload Windows App (.exe) to the Release
+      - name: Upload Windows Release Asset
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.ELECTRON_GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ./dist/*.exe
+          asset_name: Windows-App.exe
+          asset_content_type: application/octet-stream

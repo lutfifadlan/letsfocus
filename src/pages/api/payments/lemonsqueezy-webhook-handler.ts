@@ -4,12 +4,13 @@ import { User, UserPlan, Payment } from '@/lib/models';
 import { buffer } from 'micro';
 import crypto from 'crypto';
 import { LemonSqueezyCheckoutPayload } from '@/types';
+import { PLANS } from '@/constants';
 
 const lemonsqueezyWebhookSecret = process.env.NODE_ENV === 'production' ? process.env.LEMON_SQUEEZY_WEBHOOK_SECRET : process.env.LEMON_SQUEEZY_TEST_WEBHOOK_SECRET;
 
 export const config = {
   api: {
-    bodyParser: false, // We use micro to handle the raw body
+    bodyParser: false,
   },
 };
 
@@ -57,25 +58,30 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       return res.status(404).json({ message: 'User not found' });
     }
 
+    const paidAmount = total / 100;
+
     const payment = new Payment({
       userId: user._id,
       externalId: id,
-      amount: total / 100, // Convert cents to the actual currency value
+      amount: paidAmount,
       status: status === 'paid' ? 'PAID' : 'PENDING',
-      paidAmount: total / 100,
       paidAt: updated_at,
       paymentMethod: 'Cards',
       currency: currency,
       paymentGateway: 'LEMON_SQUEEZY',
     });
+    await payment.save();
 
-    // If the payment is successful, update the user's credit
     if (status === 'paid') {
       const userPlan = await UserPlan.findOne({ userId: user._id, isDeleted: false });
 
       if (userPlan) {
-        userPlan.plan = 'PRO';
-        await payment.save();
+        if (paidAmount === PLANS['PRO-MONTHLY'].discountedPrice) {
+          userPlan.plan = 'PRO_MONTHLY';
+        } else if (paidAmount === PLANS['PRO-YEARLY'].discountedPrice) {
+          userPlan.plan = 'PRO_YEARLY';
+        }
+
         await userPlan.save();
       } else {
         return res.status(404).json({ message: 'User plan not found' });
