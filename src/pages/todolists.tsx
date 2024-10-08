@@ -1797,18 +1797,19 @@ export default function TodolistsPage() {
       if (!response.ok) {
         throw new Error('Failed to add comment');
       }
-  
-      const newComment = await response.json();
-  
-      setTasks((prevTasks) =>
-        prevTasks.map((task) =>
-          task._id === taskId
-            ? { ...task, comments: [...task.comments, newComment] }
-            : task
-        )
-      );
-  
+      const responseData = await response.json();
       setCommentContent('');
+      setTaskComments((prevComments) => [...prevComments,
+        { 
+          _id: responseData.id, 
+          content, 
+          taskId: responseData.taskId, 
+          userId: responseData.userId, 
+          isDeleted: responseData.isDeleted, 
+          createdAt: responseData.createdAt, 
+          updatedAt: responseData.updatedAt 
+        }
+      ]);
       toast({
         title: 'Comment Added',
         description: 'Your comment has been added successfully.',
@@ -1840,23 +1841,9 @@ export default function TodolistsPage() {
       if (!response.ok) {
         throw new Error('Failed to update comment');
       }
-  
-      const updatedComment = await response.json();
-  
-      setTasks((prevTasks) =>
-        prevTasks.map((task) =>
-          task._id === taskId
-            ? {
-                ...task,
-                comments: task.comments.map((comment) =>
-                  comment._id === commentId ? updatedComment : comment
-                ),
-              }
-            : task
-        )
-      );
-  
+
       setEditingCommentId(null);
+      setTaskComments((prevComments) => prevComments.map((comment) => comment._id === commentId ? { ...comment, content } : comment));
       toast({
         title: 'Comment Updated',
         description: 'Your comment has been updated successfully.',
@@ -1884,18 +1871,9 @@ export default function TodolistsPage() {
       if (!response.ok) {
         throw new Error('Failed to delete comment');
       }
-  
-      setTasks((prevTasks) =>
-        prevTasks.map((task) =>
-          task._id === taskId
-            ? {
-                ...task,
-                comments: task.comments.filter((comment) => comment._id !== commentId),
-              }
-            : task
-        )
-      );
-  
+
+      setTaskComments((prevComments) => prevComments.filter((comment) => comment._id !== commentId));
+
       toast({
         title: 'Comment Deleted',
         description: 'Your comment has been deleted successfully.',
@@ -3921,7 +3899,7 @@ export default function TodolistsPage() {
         </CardContent>
       </Card>
       <Dialog open={showCommentDialog} onOpenChange={setShowCommentDialog}>
-        <DialogContent className="max-w-3xl overflow-y-auto text-sm">
+        <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto text-sm">
           <DialogHeader>
             <DialogTitle>Task Comments</DialogTitle>
           </DialogHeader>

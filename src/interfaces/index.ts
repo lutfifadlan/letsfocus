@@ -17,7 +17,6 @@ export interface Task {
   priority?: string;
   isCurrentlyFocused?: boolean;
   order: number;
-  comments: Comment[];
 }
 
 export interface UserPlan {
