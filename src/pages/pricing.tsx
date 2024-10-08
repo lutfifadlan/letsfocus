@@ -275,9 +275,11 @@ const PricingPage = () => {
       yearlyPrice: 0,
       description: 'For individuals who are getting started',
       features: [
-        'Basic tasks management',
+        'Basic task management',
         'Limited to 100 tasks / month',
-        'Limited AI features'
+        'Limited AI features',
+        '1 theme',
+        'Task comments'
       ],
     },
     {
@@ -291,8 +293,9 @@ const PricingPage = () => {
         'Advanced task management',
         'Unlimited tasks',
         'Detailed statistics and analytics',
-        'Task history',
-        'Advanced AI features'
+        'Tasks history',
+        'Advanced AI features',
+        '10 themes'
       ],
     },
   ];

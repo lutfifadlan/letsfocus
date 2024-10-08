@@ -8,6 +8,7 @@ export const PLANS = {
   'PRO-MONTHLY': {
     name: "Pro",
     price: 3,
+    discountedPrice: 2,
     yearly: false,
     maxTasksPerMonth: -1,
     features: [
@@ -19,6 +20,7 @@ export const PLANS = {
   'PRO-YEARLY': {
     name: "Pro",
     price: 24,
+    discountedPrice: 16,
     yearly: true,
     maxTasksPerMonth: -1,
     features: [
