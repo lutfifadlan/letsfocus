@@ -14,17 +14,34 @@ jobs:
       - name: Check out Git repository
         uses: actions/checkout@v2
 
-      - name: Install Bun
+      - name: Install Bun on macOS and Linux
+        if: runner.os != 'Windows'
         run: |
           curl -fsSL https://bun.sh/install | bash
           export BUN_INSTALL="$HOME/.bun"
           export PATH="$BUN_INSTALL/bin:$PATH"
           bun --version
 
-      - name: Install dependencies
+      - name: Install Bun on Windows
+        if: runner.os == 'Windows'
+        run: |
+          curl -fsSL https://bun.sh/install | bash
+          $env:BUN_INSTALL="$HOME/.bun"
+          $env:PATH="$env:BUN_INSTALL/bin;$env:PATH"
+          bun --version
+
+      - name: Install dependencies on macOS and Linux
+        if: runner.os != 'Windows'
         run: |
           export BUN_INSTALL="$HOME/.bun"
           export PATH="$BUN_INSTALL/bin:$PATH"
+          bun install
+
+      - name: Install dependencies on Windows
+        if: runner.os == 'Windows'
+        run: |
+          $env:BUN_INSTALL="$HOME/.bun"
+          $env:PATH="$env:BUN_INSTALL/bin;$env:PATH"
           bun install
 
       - name: Build/release Electron app
