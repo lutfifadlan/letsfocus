@@ -2437,42 +2437,44 @@ export default function TodolistsPage() {
             <div className={`flex flex-row gap-2 ${isFileTextButtonClicked ? 'items-start justify-start' : 'items-center justify-center'}`}>
               <div className="flex flex-col gap-2 w-full">
                 { isAddingTaskInputFocused || newTask.trim() ? (
-                    <Input
-                      placeholder="Input your task here"
-                      className="w-full shadow-none border-none flex-1"
-                      type="text"
-                      value={newTask}
-                      onChange={(e) => setNewTask(e.target.value)}
-                      onKeyDown={(e) => {
-                        if (e.key === 'Enter') {
-                          handleAddTask(newTaskDescription);
-                        }
-                      }}
-                      onBlur={() => setIsAddingTaskInputFocused(false)}
-                      aria-label="New Task"
-                      autoFocus
-                    />
+                  <Input
+                    placeholder="Input your task here"
+                    className="w-full shadow-none border-none flex-1"
+                    type="text"
+                    value={newTask}
+                    onChange={(e) => setNewTask(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') {
+                        handleAddTask(newTaskDescription);
+                      }
+                    }}
+                    onBlur={() => setIsAddingTaskInputFocused(false)}
+                    aria-label="New Task"
+                    autoFocus
+                  />
                 ) : (
                   <TaskInputPlaceholder onClick={() => setIsAddingTaskInputFocused(true)} />
-                ) }
+                )}
+
+                {isFileTextButtonClicked && (
+                  <Textarea
+                    placeholder="Add task description here"
+                    className="w-full shadow-none resize-vertical text-sm"
+                    value={newTaskDescription}
+                    onChange={(e) => setNewTaskDescription(e.target.value)}
+                    aria-label="New Task Description"
+                    rows={1}
+                    style={{ minHeight: '4rem', overflow: 'hidden' }}
+                    onInput={(e) => {
+                      const target = e.target as HTMLTextAreaElement;
+                      target.style.height = 'auto';
+                      target.style.height = `${target.scrollHeight}px`;
+                    }}
+                    autoFocus
+                  />
+                )}
               </div>
-              {isFileTextButtonClicked && (
-                <Textarea
-                  placeholder="Task description"
-                  className="w-full shadow-none resize-vertical"
-                  value={newTaskDescription}
-                  onChange={(e) => setNewTaskDescription(e.target.value)}
-                  aria-label="New Task Description"
-                  rows={1}
-                  style={{ minHeight: '2.5rem', overflow: 'hidden' }}
-                  onInput={(e) => {
-                    const target = e.target as HTMLTextAreaElement;
-                    target.style.height = 'auto';
-                    target.style.height = `${target.scrollHeight}px`;
-                  }}
-                  autoFocus
-                />
-              )}
+
               <TooltipProvider>
                 <Tooltip>
                   <TooltipTrigger asChild>
