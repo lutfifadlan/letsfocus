@@ -38,9 +38,9 @@ jobs:
             bun run build:win
           fi
 
-      # Step 5: Upload build artifacts (macOS and Windows)
+      # Step 5: Upload build artifacts (macOS and Windows) using v3
       - name: Upload build artifacts
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v3
         with:
           name: Electron-build-${{ matrix.os }}
           path: |
@@ -67,7 +67,7 @@ jobs:
           draft: false
           prerelease: false
 
-      # Step 3: Upload macOS App (.dmg) to the Release
+      # Step 3: Upload macOS App (.dmg) to the Release using v3
       - name: Upload macOS Release Asset
         uses: actions/upload-release-asset@v1
         env:
@@ -78,7 +78,7 @@ jobs:
           asset_name: macOS-App.dmg
           asset_content_type: application/octet-stream
 
-      # Step 4: Upload Windows App (.exe) to the Release
+      # Step 4: Upload Windows App (.exe) to the Release using v3
       - name: Upload Windows Release Asset
         uses: actions/upload-release-asset@v1
         env:
