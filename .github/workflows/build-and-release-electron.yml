@@ -33,7 +33,7 @@ jobs:
 
       # Step 4: Build using Electron Builder Action
       - name: Build Electron App
-        uses: samuelmeuli/action-electron-builder@v2
+        uses: samuelmeuli/action-electron-builder@v1.6.0
         with:
           platform: ${{ matrix.os }}
         env:
