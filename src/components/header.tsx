@@ -34,9 +34,9 @@ const Header: React.FC = () => {
   const isLandingPage = router.pathname === '/';
 
   return (
-    <header className="z-50">
+    <header className="z-50 py-4">
       <nav className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8" aria-label="breadcrumb">
-        <div className="flex justify-between h-16 items-center flex-wrap">
+        <div className="flex justify-between items-center flex-wrap">
           <div className="flex-shrink-0 flex items-center space-x-2">
             <Link href="/" className="flex items-center space-x-2">
               <Button variant="ghost" size="icon" className="p-0 m-0">
@@ -125,8 +125,8 @@ const Header: React.FC = () => {
         </div>
 
         {isMenuOpen && (
-          <div className="lg:hidden">
-            <div className="px-2 pt-2 pb-3 space-y-1 sm:px-3">
+          <div className="lg:hidden mt-4">
+            <div className="space-y-2">
               <Button
                 onClick={() => router.push('/todolists')}
                 variant="ghost"
