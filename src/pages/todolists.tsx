@@ -735,8 +735,8 @@ export default function TodolistsPage() {
         setTags([]);
   
         toast({
-          title: 'Task Added',
-          description: `Task "${data.title}" has been added.`,
+          title: 'New Task',
+          description: 'A new task has been added.',
           action: (
             <ToastAction
               altText="Undo"
@@ -1368,7 +1368,7 @@ export default function TodolistsPage() {
       });
   
       updateTaskStats(updatedTask, 'duedate', previousDueDate);
-  
+
       toast({
         title: 'Due Date Updated',
         description: 'Task due date has been updated.',
@@ -2807,7 +2807,7 @@ export default function TodolistsPage() {
                             type="text"
                             value={tags}
                             onChange={(value) => setTags(value as string[])}
-                            placeholder="Use enter or comma to add tag"
+                            placeholder="Use space, enter or comma to add tag"
                             className="w-full text-xs"
                             autoFocus
                           />
@@ -3428,10 +3428,11 @@ export default function TodolistsPage() {
                                 )
                               }
 
-                              <TooltipProvider>
-                                <Tooltip>
-                                  <TooltipTrigger>
-                                    <Popover>
+                              { !task.dueDate && (
+                                <TooltipProvider>
+                                  <Tooltip>
+                                    <TooltipTrigger>
+                                      <Popover>
                                       <PopoverTrigger asChild>
                                         <Button
                                           variant="ghost"
@@ -3517,8 +3518,9 @@ export default function TodolistsPage() {
                                   <TooltipContent>
                                     <p>Set due date</p>
                                   </TooltipContent>
-                                </Tooltip>
-                              </TooltipProvider>
+                                  </Tooltip>
+                                </TooltipProvider>
+                              )}
 
                               {
                                 !task.priority || (task.priority  && task.priority === '') ?
@@ -3613,44 +3615,46 @@ export default function TodolistsPage() {
                                 </Tooltip>
                               </TooltipProvider>
 
-                              <TooltipProvider>
-                                <Tooltip>
-                                  <TooltipTrigger>
-                                    <Popover>
-                                      <PopoverTrigger asChild>
-                                        <Button variant="ghost" size="icon" className="w-auto px-1">
-                                          <Folder size={16} />
-                                        </Button>
-                                      </PopoverTrigger>
-                                      <PopoverContent className="w-48">
-                                        <div className="space-y-2 text-sm">
-                                          <p>Change group</p>
-                                          <Button
-                                            variant="ghost"
-                                            className="w-full justify-start"
-                                            onClick={() => updateTaskGroup(task._id, null)}
-                                          >
-                                            No Group
+                              { !task.group && (
+                                <TooltipProvider>
+                                  <Tooltip>
+                                    <TooltipTrigger>
+                                      <Popover>
+                                        <PopoverTrigger asChild>
+                                          <Button variant="ghost" size="icon" className="w-auto px-1">
+                                            <Folder size={16} />
                                           </Button>
-                                          {groups.map((group) => (
+                                        </PopoverTrigger>
+                                        <PopoverContent className="w-48">
+                                          <div className="space-y-2 text-sm">
+                                            <p>Change group</p>
                                             <Button
-                                              key={group._id}
                                               variant="ghost"
                                               className="w-full justify-start"
-                                              onClick={() => updateTaskGroup(task._id, group.name)}
+                                              onClick={() => updateTaskGroup(task._id, null)}
                                             >
-                                              {group.name}
+                                              No Group
                                             </Button>
-                                          ))}
-                                        </div>
-                                      </PopoverContent>
-                                    </Popover>
-                                  </TooltipTrigger>
-                                  <TooltipContent>
-                                    <p>Change group</p>
-                                  </TooltipContent>
-                                </Tooltip>
-                              </TooltipProvider>
+                                            {groups.map((group) => (
+                                              <Button
+                                                key={group._id}
+                                                variant="ghost"
+                                                className="w-full justify-start"
+                                                onClick={() => updateTaskGroup(task._id, group.name)}
+                                              >
+                                                {group.name}
+                                              </Button>
+                                            ))}
+                                          </div>
+                                        </PopoverContent>
+                                      </Popover>
+                                    </TooltipTrigger>
+                                    <TooltipContent>
+                                      <p>Change group</p>
+                                    </TooltipContent>
+                                  </Tooltip>
+                                </TooltipProvider>
+                              )}
 
                               <TooltipProvider>
                                 <Tooltip>
@@ -3679,7 +3683,7 @@ export default function TodolistsPage() {
                                             type="text"
                                             value={editingTaskTags}
                                             onChange={(value) => setEditingTaskTags(value as string[])}
-                                            placeholder="Use enter or comma to add tag"
+                                            placeholder="Use space, enter or comma to add tag"
                                             className="w-full text-xs"
                                             autoFocus
                                           />
@@ -3702,6 +3706,7 @@ export default function TodolistsPage() {
                                                 setEditingTaskTagsId(null);
                                                 setEditingTaskTags([]);
                                               }}
+                                              disabled={JSON.stringify(editingTaskTags) === JSON.stringify(task.tags)}
                                             >
                                               <Save size={16} />
                                             </Button>
@@ -3834,36 +3839,140 @@ export default function TodolistsPage() {
 
                           <div className="flex flex-wrap gap-1 mt-1">
                             {task.dueDate && (
-                              <Badge
-                                variant="outline"
-                                className={
-                                  new Date(task.dueDate) < new Date() && !isSameDay(new Date(task.dueDate), new Date())
-                                    ? 'bg-red-400 text-black'
-                                    : isSameDay(new Date(task.dueDate), new Date())
-                                    ? 'bg-yellow-200 text-black'
-                                    : isSameDay(new Date(task.dueDate), new Date(new Date().setDate(new Date().getDate() + 1)))
-                                    ? 'bg-orange-200 text-black'
-                                    : ''
-                                }
-                              >
-                                <CalendarClock size={12} className="mr-1" />
-                                {isSameDay(new Date(task.dueDate), new Date())
-                                  ? 'Today'
-                                  : isSameDay(new Date(task.dueDate), new Date(new Date().setDate(new Date().getDate() + 1)))
-                                  ? 'Tomorrow'
-                                  : format(new Date(task.dueDate), 'PPP')}
-                              </Badge>
+                              <Popover>
+                                <PopoverTrigger asChild>
+                                  <div>
+                                    <Badge
+                                      variant="outline"
+                                      className={`
+                                        ${new Date(task.dueDate) < new Date() && !isSameDay(new Date(task.dueDate), new Date())
+                                          ? 'bg-red-400 text-black'
+                                          : isSameDay(new Date(task.dueDate), new Date())
+                                          ? 'bg-yellow-200 text-black'
+                                          : isSameDay(new Date(task.dueDate), new Date(new Date().setDate(new Date().getDate() + 1)))
+                                          ? 'bg-orange-200 text-black'
+                                          : ''
+                                        } cursor-pointer hover:bg-opacity-80 transition-colors
+                                      `}
+                                    >
+                                      <CalendarClock size={12} className="mr-1" />
+                                      {isSameDay(new Date(task.dueDate), new Date())
+                                        ? 'Today'
+                                        : isSameDay(new Date(task.dueDate), new Date(new Date().setDate(new Date().getDate() + 1)))
+                                        ? 'Tomorrow'
+                                        : format(new Date(task.dueDate), 'PPP')}
+                                    </Badge>
+                                  </div>
+                                </PopoverTrigger>
+                                <PopoverContent className="w-52 text-sm">
+                                  <div className="flex flex-col space-y-1">
+                                    <p className="">Select Due Date</p>
+                                    <div className="flex items-center justify-center space-x-1">
+                                      <div className="flex flex-col justify-center text-center items-center space-y-2">
+                                        <div className="flex justify-center items-center space-x-1">
+                                          <CalendarDatePicker
+                                            date={{
+                                              from: existingTaskDueDate
+                                                ? new Date(existingTaskDueDate)
+                                                : new Date(),
+                                              to: existingTaskDueDate
+                                                ? new Date(existingTaskDueDate)
+                                                : new Date(),
+                                            }}
+                                            onDateSelect={({ from }) => {
+                                              updateTaskDueDate(task._id, from);
+                                            }}
+                                            variant="outline"
+                                            numberOfMonths={1}
+                                            className="min-w-[150px] border rounded-md ml-3 mt-2 justify-center items-center"
+                                          />
+                                          <Button
+                                            variant="outline"
+                                            onClick={() => {
+                                              updateTaskDueDate(task._id, null);
+                                            }}
+                                            className="px-2 py-1 mt-2"
+                                          >
+                                            <X size={16} />
+                                          </Button>
+                                        </div>
+                                        <div className="grid grid-cols-2 gap-2 mt-2">
+                                          <Button
+                                            variant="outline"
+                                            onClick={() => {
+                                              updateTaskDueDate(task._id, new Date());
+                                            }}
+                                            className="px-2 py-1"
+                                          >
+                                            Today
+                                          </Button>
+                                          <Button
+                                            variant="outline"
+                                            onClick={() => {
+                                              const tomorrow = new Date();
+                                              tomorrow.setDate(tomorrow.getDate() + 1);
+                                              updateTaskDueDate(task._id, tomorrow);
+                                            }}
+                                            className="px-2 py-1"
+                                          >
+                                            Tomorrow
+                                          </Button>
+                                        </div>
+                                      </div>
+                                    </div>
+                                  </div>
+                                </PopoverContent>
+                              </Popover>
                             )}
                             {task.group && (
-                              <Badge variant="secondary">
-                                <Folder size={12} className="mr-1" />
-                                {task.group}
-                              </Badge>
+                              <Popover>
+                                <PopoverTrigger asChild>
+                                  <div>
+                                    <Badge variant="secondary" className="cursor-pointer hover:bg-opacity-80 transition-colors">
+                                      <Folder size={12} className="mr-1" />
+                                      {task.group}
+                                    </Badge>
+                                  </div>
+                                </PopoverTrigger>
+                                <PopoverContent className="w-48">
+                                  <div className="space-y-2 text-sm">
+                                    <p>Change group</p>
+                                    <Button
+                                      variant="ghost"
+                                      className="w-full justify-start"
+                                      onClick={() => updateTaskGroup(task._id, null)}
+                                    >
+                                      No Group
+                                    </Button>
+                                    {groups.map((group) => (
+                                      <Button
+                                        key={group._id}
+                                        variant="ghost"
+                                        className="w-full justify-start"
+                                        onClick={() => updateTaskGroup(task._id, group.name)}
+                                      >
+                                        {group.name}
+                                      </Button>
+                                    ))}
+                                  </div>
+                                </PopoverContent>
+                              </Popover>
                             )}
                             {task.tags?.map((tag, index) => (
-                              <Badge key={index} variant="outline">
+                              <Badge key={index} variant="outline" className="flex items-center">
                                 <Tag size={12} className="mr-1" />
                                 {tag}
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  className="h-4 w-4 p-0 ml-1"
+                                  onClick={() => {
+                                    const newTags = task.tags?.filter((t) => t !== tag);
+                                    updateTaskTags(task._id, newTags || []);
+                                  }}
+                                >
+                                  <X size={12} />
+                                </Button>
                               </Badge>
                             ))}
                           </div>
@@ -3897,7 +4006,6 @@ export default function TodolistsPage() {
               </DialogFooter>
             </DialogContent>
           </Dialog>
-
         </CardContent>
       </Card>
       <Dialog open={showCommentDialog} onOpenChange={setShowCommentDialog}>
