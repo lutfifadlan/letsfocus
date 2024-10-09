@@ -34,10 +34,10 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       if (task.status === 'COMPLETED' && task.completedAt && isSameDay(new Date(task.completedAt), today)) {
         completedToday++;
       }
-      if (task.dueDate && isSameDay(new Date(task.dueDate), today) && task.status !== 'COMPLETED') {
+      if (task.dueDate && isSameDay(new Date(task.dueDate), today) && task.status !== 'COMPLETED' && task.status !== 'IGNORED') {
         dueToday++;
       }
-      if (task.dueDate && new Date(task.dueDate) < today && !isSameDay(new Date(task.dueDate), today) && task.status !== 'COMPLETED') {
+      if (task.dueDate && new Date(task.dueDate) < today && !isSameDay(new Date(task.dueDate), today) && task.status !== 'COMPLETED' && task.status !== 'IGNORED') {
         overdue++;
       }
     });
