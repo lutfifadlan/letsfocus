@@ -22,7 +22,7 @@ interface PricingTierProps {
   description: string;
   features: string[];
   isYearly: boolean;
-  paymentMethod: 'xendit' | 'lemonsqueezy';
+  paymentMethod: string;
 }
 
 const PricingTier: React.FC<PricingTierProps> = ({
@@ -252,11 +252,13 @@ const PricingTier: React.FC<PricingTierProps> = ({
 
 const PricingPage = () => {
   const [isYearly, setIsYearly] = useState(true);
-  const [paymentMethod, setPaymentMethod] = useState<'xendit' | 'lemonsqueezy'>('xendit');
-  const isXendit = paymentMethod === 'xendit';
+  const [paymentMethod, setPaymentMethod] = useState('');
+  const [isLoading, setIsLoading] = useState(true);
+
   // Detect if the user is in Indonesia
   useEffect(() => {
-    fetch('https://ipapi.co/json/') // Replace with your preferred geolocation API
+    setIsLoading(true);
+    fetch('https://ipapi.co/json/')
       .then(response => response.json())
       .then(data => {
         if (data.country_code === 'ID') {
@@ -265,8 +267,26 @@ const PricingPage = () => {
           setPaymentMethod('lemonsqueezy');
         }
       })
-      .catch(error => console.error('Geolocation error:', error));
+      .catch(error => {
+        console.error('Geolocation error:', error);
+        setPaymentMethod('lemonsqueezy'); // Default to LemonSqueezy if there's an error
+      })
+      .finally(() => {
+        setIsLoading(false);
+      });
   }, []);
+
+  if (isLoading) {
+    return (
+      <Layout>
+        <div className="flex-grow container mx-auto py-2 px-4 pb-3 flex items-center justify-center">
+          <Loader2 className="h-8 w-8 animate-spin" />
+        </div>
+      </Layout>
+    );
+  }
+
+  const isXendit = paymentMethod === 'xendit';
 
   const pricingTiers = [
     {
@@ -275,11 +295,10 @@ const PricingPage = () => {
       yearlyPrice: 0,
       description: 'For individuals who are getting started',
       features: [
-        'Basic task management',
+        'Basic to-do lists',
         'Limited to 100 tasks / month',
         'Limited AI features',
         '1 theme',
-        'Task comments'
       ],
     },
     {
@@ -290,7 +309,7 @@ const PricingPage = () => {
       discountedYearlyPrice: isXendit ? 240000 : 16,
       description: 'For individuals who want to thrive',
       features: [
-        'Advanced task management',
+        'Advanced to-do lists',
         'Unlimited tasks',
         'Detailed statistics and analytics',
         'Tasks history',
@@ -356,7 +375,7 @@ const PricingPage = () => {
                 discountedMonthlyPrice={isYearly ? undefined : tier.discountedMonthlyPrice}
                 discountedYearlyPrice={isYearly ? tier.discountedYearlyPrice : undefined}
                 isYearly={isYearly}
-                paymentMethod={paymentMethod} // Pass the selected payment method
+                paymentMethod={paymentMethod as string} // Pass the selected payment method
               />
             ))}
           </div>

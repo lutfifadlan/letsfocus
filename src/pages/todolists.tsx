@@ -2050,7 +2050,7 @@ export default function TodolistsPage() {
   return (
     <Layout>
       <Card className="max-w-4xl mx-auto border-none shadow-none">
-        <CardHeader className="mb-2 pb-0">
+        <CardHeader className="mb-2 pt-0 pb-0">
           <div className="flex justify-between items-center mb-1">
             <div className="flex items-center space-x-2">
               <CardTitle className="text-2xl">To-Do Lists</CardTitle>

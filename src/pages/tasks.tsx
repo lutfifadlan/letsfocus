@@ -399,8 +399,8 @@ export default function TasksPage() {
 
   return (
     <Layout>
-      <div className="max-w-7xl mx-auto p-2">
-        <CardTitle className="text-center text-2xl">Tasks</CardTitle>
+      <div className="max-w-7xl mx-auto">
+        <CardTitle className="text-center text-2xl">Tasks History</CardTitle>
 
         {/* Search Bar and Toolbar */}
         <div className="mb-2 flex items-center justify-between space-x-2">
