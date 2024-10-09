@@ -25,13 +25,16 @@ const Header: React.FC = () => {
     signOut({ callbackUrl: '/' });
   };
 
+  const isLandingPage = router.pathname === '/';
+
   useEffect(() => {
     setIsMounted(true);
-  }, []);
+    if (isLandingPage) {
+      document.documentElement.classList.add('light'); // Force dark mode on landing page
+    }
+  }, [isLandingPage]);
 
   if (!isMounted) return null;
-
-  const isLandingPage = router.pathname === '/';
 
   return (
     <header className="z-50 py-4">
@@ -81,7 +84,7 @@ const Header: React.FC = () => {
                 </Button>
               </>
             )}
-            <ThemeSwitcher />
+            {!isLandingPage && <ThemeSwitcher />} {/* Conditionally render ThemeSwitcher */}
             {!isLandingPage && (
               <>
                 {session && (
@@ -159,7 +162,7 @@ const Header: React.FC = () => {
                   </Button>
                 </>
               )}
-              <ThemeSwitcher />
+              {!isLandingPage && <ThemeSwitcher />} {/* Conditionally render ThemeSwitcher */}
               {!isLandingPage && (
                 <>
                   {session && (

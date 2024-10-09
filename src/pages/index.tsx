@@ -11,6 +11,7 @@ import DualUnderline from "@/components/underline/dual";
 import BlurIn from "@/components/ui/blur-in";
 import { ArrowUpDown, ChartNoAxesCombined, List, ListChecks, Sparkles, MessageSquare } from "lucide-react";
 import { useTheme } from "next-themes";
+import Safari from "@/components/ui/safari";
 
 export default function Home() {
   const router = useRouter();
@@ -43,7 +44,7 @@ export default function Home() {
           <p className="mt-6 text-lg md:text-2xl text-gray-700 dark:text-gray-300 max-w-4xl mx-auto">
             Modern, simple, and powerful todo list app that helps you {' '}
             <DualUnderline>
-              get things done.
+              get more things done.
             </DualUnderline>
           </p>
           <div className="mt-4 flex justify-center items-center space-x-2">
@@ -64,6 +65,14 @@ export default function Home() {
             </div>
           </div>
         </section>
+
+        <div className="relative mt-6 max-w-5xl">
+          <Safari
+            url="https://letsfocus.today/todolists"
+            className="size-full"
+            src="/todolists.png"
+          />
+        </div>
 
         {/* Features Section */}
         <div className="max-w-6xl mx-auto px-6 mb-6">
