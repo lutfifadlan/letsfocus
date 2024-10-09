@@ -2,6 +2,7 @@
   "name": "letsfocus",
   "version": "0.1.6",
   "private": true,
+  "main": "main.js",
   "scripts": {
     "dev": "bun next dev",
     "dev:electron": "wait-on http://localhost:3000 && electron .",
@@ -27,12 +28,15 @@
       "buildResources": "assets"
     },
     "mac": {
+      "icon": "assets/icon.icns",
       "target": "dmg"
     },
     "win": {
+      "icon": "assets/icon.ico",
       "target": "portable"
     },
     "linux": {
+      "icon": "assets/icon.png",
       "target": "AppImage"
     }
   },
@@ -95,6 +99,7 @@
     "@types/react": "^18",
     "@types/react-beautiful-dnd": "^13.1.8",
     "@types/react-dom": "^18",
+    "concurrently": "^9.0.1",
     "daisyui": "^4.12.12",
     "dmg-license": "^1.0.11",
     "electron": "^32.1.2",
