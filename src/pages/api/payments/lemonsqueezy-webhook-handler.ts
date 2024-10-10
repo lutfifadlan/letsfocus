@@ -59,12 +59,13 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     }
 
     const paidAmount = total / 100;
+    const paymentStatus = status === 'paid' ? 'PAID' : 'PENDING';
 
     const payment = new Payment({
       userId: user._id,
       externalId: id,
       amount: paidAmount,
-      status: status === 'paid' ? 'PAID' : 'PENDING',
+      status: paymentStatus,
       paidAt: updated_at,
       paymentMethod: 'Cards',
       currency: currency,
@@ -77,18 +78,27 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
       if (userPlan) {
         if (paidAmount === PLANS['PRO-MONTHLY'].discountedPrice) {
-          userPlan.plan = 'PRO_MONTHLY';
+          userPlan.plan = 'PRO-MONTHLY';
         } else if (paidAmount === PLANS['PRO-YEARLY'].discountedPrice) {
-          userPlan.plan = 'PRO_YEARLY';
+          userPlan.plan = 'PRO-YEARLY';
         }
+
+        const currentDate = new Date();
+        const subscriptionEndDate = new Date(currentDate.setMonth(currentDate.getMonth() + 1));
+        subscriptionEndDate.setDate(subscriptionEndDate.getDate() + 1);
+
+        userPlan.subscriptionStartDate = new Date().toISOString();
+        userPlan.subscriptionEndDate = subscriptionEndDate.toISOString();
 
         await userPlan.save();
       } else {
         return res.status(404).json({ message: 'User plan not found' });
       }
-    }
 
-    res.status(200).json({ message: 'Payment processed successfully', status: payment.status });
+      res.status(200).json({ message: 'Payment processed successfully', status: payment.status });
+    } else {
+      res.status(200).json({ message: 'Payment is pending', status: payment.status });
+    }
   } catch (error) {
     console.error('Error processing Lemon Squeezy webhook:', error);
     res.status(500).json({ message: 'Internal server error' });

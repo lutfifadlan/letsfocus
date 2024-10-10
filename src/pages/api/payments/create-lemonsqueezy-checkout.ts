@@ -7,12 +7,16 @@ const LEMONSQUEEZY_DEV_STORE_ID = "127510";
 const LEMONSQUEEZY_STORE_ID = "";
 const PRO_MONTHLY_DEV_PRODUCT_ID = "366801";
 const PRO_YEARLY_DEV_PRODUCT_ID = "366806";
+const PRO_LIFETIME_DEV_PRODUCT_ID = "";
 const PRO_MONTHLY_PRODUCT_ID = "";
 const PRO_YEARLY_PRODUCT_ID = "";
+const PRO_LIFETIME_PRODUCT_ID = "";
 const PRO_MONTHLY_DEV_VARIANT_ID = "546108";
 const PRO_YEARLY_DEV_VARIANT_ID = "546113";
+const PRO_LIFETIME_DEV_VARIANT_ID = "";
 const PRO_MONTHLY_VARIANT_ID = "";
 const PRO_YEARLY_VARIANT_ID = "";
+const PRO_LIFETIME_VARIANT_ID = "";
 
 const lemonSqueezyProducts: { [key: string]: { productId: string; variantId: string } } = {
   'PRO-MONTHLY': {
@@ -22,6 +26,10 @@ const lemonSqueezyProducts: { [key: string]: { productId: string; variantId: str
   'PRO-YEARLY': {
     productId: process.env.NODE_ENV === 'production' ? PRO_YEARLY_PRODUCT_ID : PRO_YEARLY_DEV_PRODUCT_ID,
     variantId: process.env.NODE_ENV === 'production' ? PRO_YEARLY_VARIANT_ID : PRO_YEARLY_DEV_VARIANT_ID
+  },
+  'PRO-LIFETIME': {
+    productId: process.env.NODE_ENV === 'production' ? PRO_LIFETIME_PRODUCT_ID : PRO_LIFETIME_DEV_PRODUCT_ID,
+    variantId: process.env.NODE_ENV === 'production' ? PRO_LIFETIME_VARIANT_ID : PRO_LIFETIME_DEV_VARIANT_ID
   },
 };
 const lemonSqueezyStoreId = process.env.NODE_ENV === 'production' ? LEMONSQUEEZY_STORE_ID : LEMONSQUEEZY_DEV_STORE_ID;

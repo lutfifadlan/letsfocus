@@ -14,6 +14,7 @@ class MyDocument extends Document {
           {process.env.NODE_ENV === 'production' && (
             <script async src="https://cdn.seline.so/seline.js" data-token="070947bcbabaef4"></script>
           )}
+          <script src="https://autoback.link/autobacklink.js?ref=letsfocus.today" defer async></script>
           <meta name="google-site-verification" content="bzX0de0J2dmI32xsLO5RcRb8dN5YzDW2WKZXv8cAMxY" />
           <meta name="description" content="Let's Focus is a modern todo list app that helps you focus on what matters most." />
           <meta

@@ -1,10 +1,4 @@
 export const PLANS = {
-  FREE: {
-    name: "Free",
-    price: 0,
-    yearly: true,
-    maxTasksPerMonth: 100,
-  },
   'PRO-MONTHLY': {
     name: "Pro",
     price: 3,
@@ -12,9 +6,13 @@ export const PLANS = {
     yearly: false,
     maxTasksPerMonth: -1,
     features: [
-      "Search emails to unsubscribe by sender and content",
-      "Advanced email analysis with charts and statistics",
-      "Scheduled email fetching (coming soon)",
+      'Advanced to-do lists',
+      'Unlimited tasks',
+      'Detailed statistics and analytics',
+      'Tasks history',
+      'Advanced AI features',
+      '10 themes',
+      'Update to new features'
     ],
   },
   'PRO-YEARLY': {
@@ -24,9 +22,25 @@ export const PLANS = {
     yearly: true,
     maxTasksPerMonth: -1,
     features: [
-      "Search emails to unsubscribe by sender and content",
-      "Advanced email analysis with charts and statistics",
-      "Scheduled email fetching (coming soon)",
+      'Advanced to-do lists',
+      'Unlimited tasks',
+      'Detailed statistics and analytics',
+      'Tasks history',
+      'Advanced AI features',
+      '10 themes',
+      'Update to new features'
+    ],
+  },
+  'PRO-LIFETIME': {
+    name: "Pro Lifetime",
+    price: 50,
+    discountedPrice: 25,
+    yearly: false,
+    maxTasksPerMonth: -1,
+    features: [
+      'All Pro included',
+      'Lifetime access',
+      'No recurring payments'
     ],
   },
 };

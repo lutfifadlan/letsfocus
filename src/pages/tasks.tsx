@@ -45,6 +45,7 @@ import {
   DialogClose,
 } from '@/components/ui/dialog';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { PLANS } from '@/constants';
 
 export default function TasksPage() {
   const [tasks, setTasks] = useState<Task[]>([]);
@@ -92,7 +93,19 @@ export default function TasksPage() {
   const fetchTasks = async () => {
     try {
       const response = await fetch('/api/tasks');
-      const data = await response.json();
+      let data = await response.json();
+
+      // Fetch user plan
+      const userPlanResponse = await fetch('/api/user-plans');
+      const userPlanData = await userPlanResponse.json();
+      const userPlan = userPlanData.plan;
+
+      // Check if user plan is part of the plans
+      if (!(userPlan in PLANS)) {
+        // Limit tasks to only 20
+        data = data.slice(0, 20);
+      }
+
       setTasks(data);
       setFilteredTasks(data);
     } catch (error) {
