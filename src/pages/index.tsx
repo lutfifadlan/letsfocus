@@ -162,6 +162,30 @@ export default function Home() {
             </ShineBorder>
           </div>
         </div>
+
+        <div className="relative mt-6 max-w-5xl">
+          <Safari
+            url="https://letsfocus.today/stats"
+            className="size-full"
+            src="/stats-1.png"
+          />
+        </div>
+
+        <div className="relative mt-6 max-w-5xl">
+          <Safari
+            url="https://letsfocus.today/stats"
+            className="size-full"
+            src="/stats-2.png"
+          />
+        </div>
+
+        <div className="relative mt-6 max-w-5xl">
+          <Safari
+            url="https://letsfocus.today/tasks"
+            className="size-full"
+            src="/tasks.png"
+          />
+        </div>
       </main>
     </Layout>
   );
