@@ -27,18 +27,13 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         throw new Error('Invalid external_id format');
       }
 
-      const plan = PLANS[planType as keyof typeof PLANS];
       const currentDate = new Date();
       const subscriptionEndDate = new Date(currentDate.setMonth(currentDate.getMonth() + 1));
+      subscriptionEndDate.setDate(subscriptionEndDate.getDate() + 1);
 
-      await UserPlan.findOneAndUpdate({
-        where: {
-          userId: userId,
-        },
-        data: {
-          plan: plan.name,
-          maxTasksPerMonth: plan.maxTasksPerMonth,
-          updatedAt: new Date().toISOString(),
+      await UserPlan.findOneAndUpdate({ userId: userId}, {
+        $set: {
+          plan: planType,
           subscriptionStartDate: new Date().toISOString(),
           subscriptionEndDate: subscriptionEndDate.toISOString(),
         }

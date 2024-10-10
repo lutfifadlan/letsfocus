@@ -7,6 +7,7 @@
     "dev": "bun next dev",
     "dev:electron": "wait-on http://localhost:3000 && electron .",
     "dev:next-electron": "concurrently \"npm run dev\" \"npm run dev:electron\"",
+    "dev:tunnel": "concurrently \"npm run dev\" \"lt --port 3000 --subdomain letsfocus\"",
     "build": "bun next build",
     "build:electron": "bun build && electron-builder",
     "build:all": "bun build && electron-builder --mac --win --linux",

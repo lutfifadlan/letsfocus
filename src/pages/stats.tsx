@@ -43,6 +43,7 @@ import {
   endOfDay,
   differenceInCalendarDays,
 } from 'date-fns';
+import { PLANS } from '@/constants';
 
 export default function StatsPage() {
   const [tasks, setTasks] = useState<Task[]>([]);
@@ -52,9 +53,13 @@ export default function StatsPage() {
   const [customStartDate, setCustomStartDate] = useState<Date | null>(null);
   const [customEndDate, setCustomEndDate] = useState<Date | null>(null);
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
+  const [userPlan, setUserPlan] = useState('FREE'); // Assume 'basic' by default
+  
+  const plans = Object.keys(PLANS);
 
   useEffect(() => {
     fetchTasks();
+    fetchUserPlan();
   }, []);
 
   const fetchTasks = async () => {
@@ -64,9 +69,22 @@ export default function StatsPage() {
         throw new Error(`Error fetching tasks: ${response.statusText}`);
       }
       const data = await response.json();
-      setTasks(data);
+      setTasks(data.filter((task: Task) => task.status !== 'IGNORED'));
     } catch (error) {
       console.error('Failed to fetch tasks:', error);
+    }
+  };
+
+  const fetchUserPlan = async () => {
+    try {
+      const response = await fetch('/api/user-plans');
+      if (!response.ok) {
+        throw new Error(`Error fetching user plans: ${response.statusText}`);
+      }
+      const data = await response.json();
+      setUserPlan(data.plan);
+    } catch (error) {
+      console.error('Failed to fetch user plan:', error);
     }
   };
 
@@ -194,16 +212,6 @@ export default function StatsPage() {
     return completedAt <= dueDate;
   }).length;
 
-  // Tasks completed faster than due date
-  const completedEarlyTasks = filteredTasks.filter((task) => {
-    if (task.status !== 'COMPLETED' || !task.completedAt || !task.dueDate) {
-      return false;
-    }
-    const completedAt = new Date(task.completedAt);
-    const dueDate = new Date(task.dueDate);
-    return completedAt < dueDate;
-  }).length;
-
   // Tasks completed after due date
   const completedLateTasks = filteredTasks.filter((task) => {
     if (task.status !== 'COMPLETED' || !task.completedAt || !task.dueDate) {
@@ -214,9 +222,6 @@ export default function StatsPage() {
     return completedAt > dueDate;
   }).length;
 
-  const percentageCompletedEarly =
-    completedTasksWithDueDates > 0 ? (completedEarlyTasks / completedTasksWithDueDates) * 100 : 0;
-  
   const percentageCompletedLate =
     completedTasksWithDueDates > 0 ? (completedLateTasks / completedTasksWithDueDates) * 100 : 0;
 
@@ -415,7 +420,6 @@ export default function StatsPage() {
 
   // Prepare data for the new line chart
   const tasksCompletedOnTimePerDay: { [date: string]: number } = {};
-  const tasksCompletedEarlyPerDay: { [date: string]: number } = {};
   const tasksCompletedLatePerDay: { [date: string]: number } = {};
 
   tasksForCurrentPeriod.forEach((task) => {
@@ -424,12 +428,10 @@ export default function StatsPage() {
       if (task.status === 'COMPLETED' && task.dueDate) {
         const completedAt = new Date(task.completedAt);
         const dueDate = new Date(task.dueDate);
-        if (completedAt < dueDate) {
-          tasksCompletedEarlyPerDay[date] = (tasksCompletedEarlyPerDay[date] || 0) + 1;
-        } else if (completedAt > dueDate) {
-          tasksCompletedLatePerDay[date] = (tasksCompletedLatePerDay[date] || 0) + 1;
-        } else {
+        if (completedAt <= dueDate) {
           tasksCompletedOnTimePerDay[date] = (tasksCompletedOnTimePerDay[date] || 0) + 1;
+        } else {
+          tasksCompletedLatePerDay[date] = (tasksCompletedLatePerDay[date] || 0) + 1;
         }
       }
     }
@@ -438,7 +440,6 @@ export default function StatsPage() {
   const lineChartData = dateForTasksCompletedArray.map((date) => ({
     date,
     onTime: tasksCompletedOnTimePerDay[date] || 0,
-    early: tasksCompletedEarlyPerDay[date] || 0,
     late: tasksCompletedLatePerDay[date] || 0,
   }));
 
@@ -446,10 +447,6 @@ export default function StatsPage() {
     onTime: {
       label: 'On Time',
       color: '#22c55e', // Tailwind green-500 hex code
-    },
-    early: {
-      label: 'Early',
-      color: '#3b82f6', // Tailwind blue-500 hex code
     },
     late: {
       label: 'Late',
@@ -516,7 +513,7 @@ export default function StatsPage() {
           </div>
         </div>
         {/* Statistics Cards */}
-        <div className="grid grid-cols-5 sm:grid-cols-2 lg:grid-cols-5 gap-1 mb-6">
+        <div className="grid grid-cols-4 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
           {/* Tasks Completed and Completion Rate Card */}
           <Card className="shadow-md hover:shadow-lg transition-shadow duration-300">
             <CardHeader className="pb-6">
@@ -536,108 +533,96 @@ export default function StatsPage() {
           </Card>
 
           {/* Completed On Time Card */}
-          <Card className="shadow-md hover:shadow-lg transition-shadow duration-300">
-            <CardHeader className="pb-6">
-              <CardTitle className="text-lg">Completed On Time</CardTitle>
-            </CardHeader>
-            <CardContent className="p-6">
-              <p className="text-4xl font-bold text-green-600">
-                {completedOnTimeTasks}
-              </p>
-              <p className="text-sm text-gray-500 mt-2">
-                out of {completedTasksWithDueDates} completed tasks with due dates
-              </p>
-              <p className="text-sm text-gray-500 mt-2">
-                ({percentageCompletedOnTimeOfAllTasksExcludingIgnored.toFixed(2)}% of tasks have been completed on time)
-              </p>
-            </CardContent>
-          </Card>
-
-          {/* Completed Early Card */}
-          <Card className="shadow-md hover:shadow-lg transition-shadow duration-300">
-            <CardHeader className="pb-6">
-              <CardTitle className="text-lg">Completed Early</CardTitle>
-            </CardHeader>
-            <CardContent className="p-6">
-              <p className="text-4xl font-bold text-green-600">
-                {completedEarlyTasks}
-              </p>
-              <p className="text-sm text-gray-500 mt-2">
-                out of {completedTasksWithDueDates} completed tasks with due dates
-              </p>
-              <p className="text-sm text-gray-500 mt-2">
-                ({percentageCompletedEarly.toFixed(2)}% of all tasks)
-              </p>
-            </CardContent>
-          </Card>
+          <div className={plans.includes(userPlan) ? '' : 'blur'}>
+            <Card className="shadow-md hover:shadow-lg transition-shadow duration-300">
+              <CardHeader className="pb-6">
+                <CardTitle className="text-lg">Completed On Time</CardTitle>
+              </CardHeader>
+              <CardContent className="p-6">
+                <p className="text-4xl font-bold text-green-600">
+                  {completedOnTimeTasks}
+                </p>
+                <p className="text-sm text-gray-500 mt-2">
+                  out of {completedTasksWithDueDates} completed tasks with due dates
+                </p>
+                <p className="text-sm text-gray-500 mt-2">
+                  ({percentageCompletedOnTimeOfAllTasksExcludingIgnored.toFixed(2)}% of tasks have been completed on time)
+                </p>
+              </CardContent>
+            </Card>
+          </div>
 
           {/* Completed Late Card */}
-          <Card className="shadow-md hover:shadow-lg transition-shadow duration-300">
-            <CardHeader className="pb-6">
-              <CardTitle className="text-lg">Completed Late</CardTitle>
-            </CardHeader>
-            <CardContent className="p-6">
-              <p className="text-4xl font-bold text-red-600">
-                {completedLateTasks}
-              </p>
-              <p className="text-sm text-gray-500 mt-2">
-                out of {completedTasksWithDueDates} completed tasks with due dates
-              </p>
-              <p className="text-sm text-gray-500 mt-2">
-                ({percentageCompletedLate.toFixed(2)}% of all tasks)
-              </p>
-            </CardContent>
-          </Card>
+          <div className={plans.includes(userPlan) ? '' : 'blur'}>
+            <Card className="shadow-md hover:shadow-lg transition-shadow duration-300">
+              <CardHeader className="pb-6">
+                <CardTitle className="text-lg">Completed Late</CardTitle>
+              </CardHeader>
+              <CardContent className="p-6">
+                <p className="text-4xl font-bold text-red-600">
+                  {completedLateTasks}
+                </p>
+                <p className="text-sm text-gray-500 mt-2">
+                  out of {completedTasksWithDueDates} completed tasks with due dates
+                </p>
+                <p className="text-sm text-gray-500 mt-2">
+                  ({percentageCompletedLate.toFixed(2)}% of all tasks)
+                </p>
+              </CardContent>
+            </Card>
+          </div>
 
           {/* Task Completion Status Pie Chart */}
-          <Card className="shadow-md hover:shadow-lg transition-shadow duration-300">
-            <CardHeader className="items-center pb-0">
-              <CardTitle className="text-lg">
-                Completion Status
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="flex-1 pb-0">
-              {totalCompletedTasksFiltered +
-                totalIncompleteTasksFiltered >
-              0 ? (
-                <ChartContainer
-                  config={chartConfig}
-                  className="mx-auto aspect-square max-h-[250px] pb-0 [&_.recharts-pie-label-text]:fill-foreground"
-                >
-                  <PieChart>
-                    <ChartTooltip
-                      content={<ChartTooltipContent hideLabel />}
-                    />
-                    <Pie
-                      data={pieData}
-                      dataKey="value"
-                      nameKey="name"
-                      outerRadius={80}
-                      innerRadius={40}
-                    >
-                      <LabelList
-                        dataKey="value"
-                        className="fill-foreground"
-                        stroke="none"
-                        fontSize={12}
-                        formatter={(value: number) =>
-                          chartConfig[value]?.label ?? value // Adjust how you format the value here
-                        }
+          <div className={plans.includes(userPlan) ? '' : 'blur'}>
+            <Card className="shadow-md hover:shadow-lg transition-shadow duration-300">
+              <CardHeader className="items-center pb-0">
+                <CardTitle className="text-lg">
+                  Completion Status
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="flex-1 pb-0">
+                {totalCompletedTasksFiltered +
+                  totalIncompleteTasksFiltered >
+                0 ? (
+                  <ChartContainer
+                    config={chartConfig}
+                    className="mx-auto aspect-square max-h-[168px] pb-0 [&_.recharts-pie-label-text]:fill-foreground"
+                  >
+                    <PieChart>
+                      <ChartTooltip
+                        content={<ChartTooltipContent hideLabel />}
                       />
-                    </Pie>
-                  </PieChart>
-                </ChartContainer>
-              ) : (
-                <p className="text-gray-600">No tasks available.</p>
-              )}
-            </CardContent>
-          </Card>
+                      <Pie
+                        data={pieData}
+                        dataKey="value"
+                        nameKey="name"
+                        outerRadius={80}
+                        innerRadius={40}
+                      >
+                        <LabelList
+                          dataKey="value"
+                          className="fill-foreground"
+                          stroke="none"
+                          fontSize={12}
+                          formatter={(value: number) =>
+                            chartConfig[value]?.label ?? value
+                          }
+                        />
+                      </Pie>
+                    </PieChart>
+                  </ChartContainer>
+                ) : (
+                  <p className="text-gray-600">No tasks available.</p>
+                )}
+              </CardContent>
+            </Card>
+          </div>
         </div>
 
         <h2 className="text-xl font-bold mb-4">Tasks Completion Over Time</h2>
 
         {/* Charts Section */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 mb-8">
+        <div className={`grid grid-cols-1 sm:grid-cols-2 gap-6 mb-8 ${plans.includes(userPlan) ? '' : 'blur'}`}>
           {/* Tasks Completed Over Time Line Chart */}
           <Card className="shadow-md hover:shadow-lg transition-shadow duration-300">
             <CardHeader>
@@ -768,11 +753,11 @@ export default function StatsPage() {
             </CardFooter>
           </Card>
 
-           {/* New Line Chart for Tasks Completed On Time vs Early vs Late */}
+           {/* New Line Chart for Tasks Completed On Time vs Late */}
            <Card className="shadow-md hover:shadow-lg transition-shadow duration-300">
             <CardHeader>
               <div className="flex items-center justify-between">
-                <CardTitle>Tasks Completed On Time vs Early vs Late</CardTitle>
+                <CardTitle>Tasks Completed On Time vs Late</CardTitle>
                 <div className="flex items-center space-x-4">
                   {/* Date Range Selector for Chart */}
                   <Select
@@ -808,10 +793,9 @@ export default function StatsPage() {
                     <YAxis tickLine={false} axisLine={false} tickMargin={8} tickCount={3} />
                     <ChartTooltip cursor={false} content={<ChartTooltipContent />} />
                     <Area dataKey="onTime" type="natural" fill={lineChartConfig.onTime.color} fillOpacity={0.4} stroke={lineChartConfig.onTime.color} stackId="a" />
-                    <Area dataKey="early" type="natural" fill={lineChartConfig.early.color} fillOpacity={0.4} stroke={lineChartConfig.early.color} stackId="a" />
                     <Area dataKey="late" type="natural" fill={lineChartConfig.late.color} fillOpacity={0.4} stroke={lineChartConfig.late.color} stackId="a" />
                   </AreaChart>
-                </ChartContainer>
+                  </ChartContainer>
               ) : (
                 <p className="text-gray-600">No tasks completed in the selected period.</p>
               )}
@@ -822,7 +806,7 @@ export default function StatsPage() {
         <h2 className="text-xl font-bold mb-4">Task Group and Tag Statistics</h2>
 
         {/* Top Groups and Tags */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 mb-8">
+        <div className={`grid grid-cols-1 sm:grid-cols-2 gap-6 mb-8 ${plans.includes(userPlan) ? '' : 'blur'}`}>
           {/* Top 5 Groups */}
           <Card className="shadow-md hover:shadow-lg transition-shadow duration-300">
             <CardHeader>
