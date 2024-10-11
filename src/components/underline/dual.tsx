@@ -1,8 +1,8 @@
 import { useTheme } from "next-themes";
 
 const AngryUnderline = ({ children }: { children: React.ReactNode }) => {
-  const { theme } = useTheme();
-  const fillColor = theme === "dark" ? "#fff" : "#000";
+  const { resolvedTheme } = useTheme();
+  const fillColor = resolvedTheme === "dark" ? "#fff" : "#000";
 
   return (
     <span style={{ position: 'relative', display: 'inline-block' }}>
