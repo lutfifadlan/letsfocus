@@ -410,8 +410,6 @@ export default function StatsPage() {
   ];
 
   const dateRangesForCompletionOverTime = [
-    { label: 'Today', value: 'today' },
-    { label: 'Yesterday', value: '1d' },
     { label: 'Last 3 Days', value: '3d' },
     { label: 'Last Week', value: '1w' },
     { label: 'Last 2 Weeks', value: '2w' },

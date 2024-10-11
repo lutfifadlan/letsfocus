@@ -7,8 +7,8 @@ interface LandingArrowProps {
 }
 
 const LandingArrow: React.FC<LandingArrowProps> = ({ width = 70, height = 90 }) => {
-  const { theme } = useTheme();
-  const fillColor = theme === 'dark' ? '#FFFFFF' : '#0D1927';
+  const { resolvedTheme } = useTheme();
+  const fillColor = resolvedTheme === 'dark' ? '#FFFFFF' : '#0D1927';
 
   return (
     <svg width={width} height={height} viewBox="0 0 246 287" fill="none" xmlns="http://www.w3.org/2000/svg">
