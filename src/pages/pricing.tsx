@@ -103,6 +103,8 @@ const PricingTier: React.FC<PricingTierProps> = ({
   const handlePayment = (planType: string, userId: string, email: string) => {
     if (paymentMethod === 'xendit') {
       handleXenditPayment(planType, userId, email);
+    } else if (paymentMethod === 'gumroad') {
+      handleGumroadPayment(planType);
     } else {
       handleLemonsqueezyPayment(planType, userId, email);
     }
@@ -182,6 +184,25 @@ const PricingTier: React.FC<PricingTierProps> = ({
         variant: "destructive",
         title: "Checkout Error",
         description: "Failed to create checkout. Please try again.",
+      });
+    }
+  };
+
+  const handleGumroadPayment = (planType: string) => {
+    const gumroadLinks: { [key: string]: string } = {
+      'PRO-MONTHLY': 'https://lutfifadlan.gumroad.com/l/letsfocus-monthly',
+      'PRO-YEARLY': 'https://lutfifadlan.gumroad.com/l/letsfocus-yearly',
+      'PRO-LIFETIME': 'https://lutfifadlan.gumroad.com/l/letsfocus-pro-lifetime',
+    };
+  
+    const gumroadUrl = gumroadLinks[planType];
+    if (gumroadUrl) {
+      window.open(gumroadUrl, '_blank');
+    } else {
+      toast({
+        variant: 'destructive',
+        title: 'Payment Error',
+        description: 'Failed to process the payment. Please try again.',
       });
     }
   };
@@ -383,10 +404,10 @@ const PricingPage = () => {
                     Xendit (IDR)
                   </div>
                 </SelectItem>
-                <SelectItem value="lemonsqueezy">
+                <SelectItem value="gumroad">
                   <div className="flex items-center cursor-pointer">
-                    <Image src='/lemonsqueezy.png' alt="LemonSqueezy" width={25} height={25} className="mr-2" />
-                    LemonSqueezy (USD)
+                    <Image src='/gumroad.png' alt="Gumroad" width={25} height={25} className="mr-2" />
+                    Gumroad (USD)
                   </div>
                 </SelectItem>
               </SelectContent>
