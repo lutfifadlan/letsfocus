@@ -74,6 +74,17 @@ export default function Home() {
           />
         </div>
 
+        <section className="w-full max-w-5xl mt-12 mb-12">
+          <h2 className="text-3xl font-bold text-center mb-6">Watch Our Demo</h2>
+          <div className="relative" style={{ paddingTop: '56.25%' }}>
+            <iframe
+              src="https://drive.google.com/file/d/1HIosLt0b0xLSc3P5zL32hr6xy3vaUeMm/preview"
+              allow="autoplay"
+              className="absolute top-0 left-0 w-full h-full"
+            ></iframe>
+          </div>
+        </section>
+
         {/* Features Section */}
         <div className="max-w-6xl mx-auto px-6 mb-6">
           <div className="mt-8 grid grid-cols-1 md:grid-cols-3 gap-4">
