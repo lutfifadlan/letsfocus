@@ -2,12 +2,30 @@ import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 
+type AutoBacklinks = { url: string, label: string }[]
+type WindowWithBacklinks = Window & typeof globalThis & { onBacklinksLoaded: (data: AutoBacklinks) => void, Backlinks: AutoBacklinks }
+
 const Footer: React.FC = () => {
   const [isMounted, setIsMounted] = useState(false);
+  const [backlinks, setBacklinks] = useState<{ url: string, label: string }[]>([])
 
   useEffect(() => {
     setIsMounted(true);
   }, []);
+
+  useEffect(() => {
+    (window as WindowWithBacklinks).onBacklinksLoaded = (data: { url: string, label: string }[]) => {
+      setBacklinks(data)
+    }
+    const timer = setTimeout(() => {
+      // fallback to global backlinks
+      if ((window as WindowWithBacklinks).Backlinks?.length) {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        setBacklinks(links => links?.length ? links : (window as any).Backlinks)
+      }
+    }, 2000)
+    return () => clearTimeout(timer)
+  }, [])
 
   if (!isMounted) return null;
 
@@ -65,7 +83,13 @@ const Footer: React.FC = () => {
 
         <div>
           <h4 className="font-semibold text-lg mb-4 text-primary text-center sm:text-left">Indie Friends</h4>
-          <div className="autobacklink"></div>
+          <div className="flex flex-col gap-4">
+            {backlinks.map((item, index) => (
+              <a key={index} href={item.url} target="_blank" rel="noopener noreferrer" className="underline underline-offset-4">
+                {item.label}
+              </a>
+            ))}
+          </div>
         </div>
       </div>
 

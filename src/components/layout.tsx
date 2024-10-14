@@ -3,6 +3,7 @@ import Footer from './footer';
 import Header from './header';
 import { useRouter } from 'next/router';
 import { useSession } from 'next-auth/react';
+import Script from 'next/script';
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -53,6 +54,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
           </>
         )}
       </main>
+      <Script src="https://autoback.link/autobacklink.js?ref=letsfocus.today" defer async />
       {router.pathname !== '/todolists' && router.pathname !== '/stats' && router.pathname !== '/tasks' && <Footer />} {/* Show Footer only on landing page */}
     </div>
   );
