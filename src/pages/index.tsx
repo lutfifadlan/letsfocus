@@ -76,7 +76,7 @@ export default function Home() {
 
         <section className="w-full max-w-5xl mt-12 mb-12">
           <h2 className="text-3xl font-bold text-center mb-6">Watch Our Demo</h2>
-          <div className="relative" style={{ paddingTop: '56.25%' }}>
+          <div className="relative border-2 border-black dark:border-white rounded-lg overflow-hidden" style={{ paddingTop: '56.25%' }}>
             <iframe
               src="https://drive.google.com/file/d/1HIosLt0b0xLSc3P5zL32hr6xy3vaUeMm/preview"
               allow="autoplay"
