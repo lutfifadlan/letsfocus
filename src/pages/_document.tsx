@@ -1,4 +1,5 @@
 import Document, { Html, Head, Main, NextScript } from 'next/document';
+import { GoogleAnalytics } from '@next/third-parties/google'
 
 class MyDocument extends Document {
   render() {
@@ -13,6 +14,7 @@ class MyDocument extends Document {
           />
           {process.env.NODE_ENV === 'production' && (
             <>
+              <GoogleAnalytics gaId="G-C3XCBPBQPL" />
               <script async src="https://cdn.seline.so/seline.js" data-token="070947bcbabaef4"></script>
               <script defer src="https://cloud.umami.is/script.js" data-website-id="46873c0d-9b3b-4209-91f1-41856d7120b3"></script>
               <script src="https://autoback.link/autobacklink.js?ref=letsfocus.today" defer async></script>
