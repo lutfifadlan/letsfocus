@@ -25,6 +25,7 @@ class MyDocument extends Document {
           <meta
             name="keywords"
             content="
+              let's focus,
               productivity app,
               todo list,
               todolist,
@@ -41,7 +42,7 @@ class MyDocument extends Document {
             "
           />
           <meta property="og:title" content="Let's Focus" />
-          <meta property="og:description" content="Let's Focus is a modern todo list app that helps you focus on what matters most." />
+          <meta property="og:description" content="Let's Focus is a simple, modern, and powerful todo list app that helps you get more done." />
           <meta property="og:image" content="/logo.png" />
           <meta property="og:url" content="https://letsfocus.today" />
           <meta property="og:type" content="website" />
