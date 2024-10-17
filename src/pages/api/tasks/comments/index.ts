@@ -26,7 +26,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   }
 
   if (userPlan.plan && !userPlan.plan.toLowerCase().includes('pro')) {
-    return res.status(403).json({ message: 'User plan is not pro' });
+    return res.status(403).json({ message: 'Upgrade to Pro to Add Comments' });
   }
 
   switch (req.method) {

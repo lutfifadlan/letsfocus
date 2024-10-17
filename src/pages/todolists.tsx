@@ -1795,7 +1795,8 @@ export default function TodolistsPage() {
       });
   
       if (!response.ok) {
-        throw new Error('Failed to add comment');
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Failed to add comment');
       }
       const responseData = await response.json();
       setCommentContent('');
@@ -1819,7 +1820,7 @@ export default function TodolistsPage() {
       console.error('Failed to add comment:', error);
       toast({
         title: 'Error',
-        description: 'Failed to add comment.',
+        description: `${error instanceof Error ? error.message : 'Failed to add comment.'}`,
         variant: 'destructive',
         duration: 3000,
       });
@@ -4014,7 +4015,7 @@ export default function TodolistsPage() {
             <DialogTitle>Task Comments</DialogTitle>
           </DialogHeader>
           <div className="space-y-4">
-            {activeTaskId &&
+            {activeTaskId && taskComments.length > 0 &&
               taskComments.map((comment: Comment) => (
                   <div key={comment._id} className="flex items-start space-x-2">
                     <div className="flex-grow">
