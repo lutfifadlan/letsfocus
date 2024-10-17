@@ -50,7 +50,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   }
 
   if (req.method === 'POST') {
-    const { planType, userId } = req.body;
+    const { planType } = req.body;
 
     if (!lemonSqueezyProducts[planType]) {
       return res.status(400).json({ error: "Invalid plan type" });
@@ -70,9 +70,9 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
           },
           checkout_data: {
             custom: {
-              user_id: userId,
+              user_id: user._id,
               plan_type: planType,
-              external_id: `${uuidv4()}_${userId}_${planType}`
+              external_id: `${uuidv4()}_${user._id}_${planType}`
             },
           },
           expires_at: new Date(Date.now() + 3600000).toISOString(), // Set expiry to 1 hour from now

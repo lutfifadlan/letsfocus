@@ -52,7 +52,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       return res.status(400).json({ message: 'Missing required fields' });
     }
 
-    const user = await User.findOne({ nextAuthUserId: user_id, isDeleted: false });
+    const user = await User.findOne({ _id: user_id, isDeleted: false });
 
     if (!user) {
       return res.status(404).json({ message: 'User not found' });

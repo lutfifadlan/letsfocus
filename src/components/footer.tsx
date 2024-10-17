@@ -46,7 +46,7 @@ const Footer: React.FC = () => {
 
   return (
     <div className="w-full pt-4 px-4 sm:px-6 relative z-10">
-      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-5 gap-4">
+      <div className={`grid grid-cols-1 sm:grid-cols-2 ${backlinks.length > 0 ? 'md:grid-cols-5' : 'md:grid-cols-4'} gap-4`}>
         {/* Logo and Description Section */}
         <div className="flex flex-col items-center md:items-start">
           <Link href="/" className="flex items-center justify-center gap-2">
@@ -121,7 +121,7 @@ const Footer: React.FC = () => {
         </div>
 
         {/* Indie Friends Section */}
-        {backlinks.length > 0 && (
+        {backlinks.length > 0 ? (
           <div>
             <h4 className="font-semibold text-lg mb-4 text-primary text-center sm:text-left">
               Indie Friends
@@ -140,7 +140,7 @@ const Footer: React.FC = () => {
               ))}
             </div>
           </div>
-        )}
+        ) : null }
       </div>
 
       {/* Footer Bottom Section */}

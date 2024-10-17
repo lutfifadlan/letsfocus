@@ -34,7 +34,7 @@ export default async function handler(
     isFirstLogin: true
   });
 
-  const createdUser =await newUser.save();
+  const createdUser = await newUser.save();
 
   const newPlan = new UserPlan({
     userId: createdUser._id,
