@@ -4,19 +4,19 @@ import { authOptions } from '@/lib/auth';
 import { User } from '@/lib/models';
 
 const LEMONSQUEEZY_DEV_STORE_ID = "127510";
-const LEMONSQUEEZY_STORE_ID = "";
+const LEMONSQUEEZY_STORE_ID = "127510";
 const PRO_MONTHLY_DEV_PRODUCT_ID = "366801";
 const PRO_YEARLY_DEV_PRODUCT_ID = "366806";
-const PRO_LIFETIME_DEV_PRODUCT_ID = "";
-const PRO_MONTHLY_PRODUCT_ID = "";
-const PRO_YEARLY_PRODUCT_ID = "";
-const PRO_LIFETIME_PRODUCT_ID = "";
+const PRO_LIFETIME_DEV_PRODUCT_ID = "373595";
+const PRO_MONTHLY_PRODUCT_ID = "366809";
+const PRO_YEARLY_PRODUCT_ID = "373593";
+const PRO_LIFETIME_PRODUCT_ID = "373594";
 const PRO_MONTHLY_DEV_VARIANT_ID = "546108";
 const PRO_YEARLY_DEV_VARIANT_ID = "546113";
-const PRO_LIFETIME_DEV_VARIANT_ID = "";
-const PRO_MONTHLY_VARIANT_ID = "";
-const PRO_YEARLY_VARIANT_ID = "";
-const PRO_LIFETIME_VARIANT_ID = "";
+const PRO_LIFETIME_DEV_VARIANT_ID = "558921";
+const PRO_MONTHLY_VARIANT_ID = "546116";
+const PRO_YEARLY_VARIANT_ID = "558919";
+const PRO_LIFETIME_VARIANT_ID = "558920";
 
 const lemonSqueezyProducts: { [key: string]: { productId: string; variantId: string } } = {
   'PRO-MONTHLY': {

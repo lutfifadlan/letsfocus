@@ -103,10 +103,10 @@ const PricingTier: React.FC<PricingTierProps> = ({
   const handlePayment = (planType: string, userId: string, email: string) => {
     if (paymentMethod === 'xendit') {
       handleXenditPayment(planType, userId, email);
-    } else if (paymentMethod === 'gumroad') {
-      handleGumroadPayment(planType);
-    } else {
+    } else if (paymentMethod === 'lemonsqueezy') {
       handleLemonsqueezyPayment(planType, userId, email);
+    } else {
+      handleGumroadPayment(planType);
     }
   };
 
@@ -404,10 +404,10 @@ const PricingPage = () => {
                     Xendit (IDR)
                   </div>
                 </SelectItem>
-                <SelectItem value="gumroad">
+                <SelectItem value="lemonsqueezy">
                   <div className="flex items-center cursor-pointer">
-                    <Image src='/gumroad.png' alt="Gumroad" width={25} height={25} className="mr-2" />
-                    Gumroad (USD)
+                    <Image src='/lemonsqueezy.png' alt="Lemonsqueezy" width={25} height={25} className="mr-2" />
+                    Lemonsqueezy (USD)
                   </div>
                 </SelectItem>
               </SelectContent>
