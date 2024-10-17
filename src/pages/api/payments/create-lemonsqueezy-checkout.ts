@@ -2,6 +2,7 @@ import { NextApiRequest, NextApiResponse } from 'next';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { User } from '@/lib/models';
+import { v4 as uuidv4 } from 'uuid';
 
 const LEMONSQUEEZY_DEV_STORE_ID = "127510";
 const LEMONSQUEEZY_STORE_ID = "127510";
@@ -70,7 +71,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
           checkout_data: {
             custom: {
               user_id: userId,
-              planType: planType,
+              plan_type: planType,
+              external_id: `${uuidv4()}_${userId}_${planType}`
             },
           },
           expires_at: new Date(Date.now() + 3600000).toISOString(), // Set expiry to 1 hour from now

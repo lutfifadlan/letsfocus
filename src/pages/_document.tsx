@@ -17,7 +17,6 @@ class MyDocument extends Document {
               <GoogleAnalytics gaId="G-C3XCBPBQPL" />
               <script async src="https://cdn.seline.so/seline.js" data-token="070947bcbabaef4"></script>
               <script defer src="https://cloud.umami.is/script.js" data-website-id="46873c0d-9b3b-4209-91f1-41856d7120b3"></script>
-              <script src="https://autoback.link/autobacklink.js?ref=letsfocus.today" defer async></script>
             </>
           )}
           <meta name="google-site-verification" content="bzX0de0J2dmI32xsLO5RcRb8dN5YzDW2WKZXv8cAMxY" />

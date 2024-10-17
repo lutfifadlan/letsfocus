@@ -41,7 +41,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     const { total, updated_at, currency, status } = attributes;
     const { custom_data } = meta;
 
-    if (!custom_data || !custom_data.user_id) {
+    if (!custom_data || !custom_data.user_id || !custom_data.plan_type || !custom_data.external_id) {
       return res.status(400).json({ message: 'Missing custom data in the webhook payload' });
     }
 
@@ -61,34 +61,44 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     const paidAmount = total / 100;
     const paymentStatus = status === 'paid' ? 'PAID' : 'PENDING';
 
-    const payment = new Payment({
-      userId: user._id,
-      externalId: id,
-      amount: paidAmount,
-      status: paymentStatus,
-      paidAt: updated_at,
-      paymentMethod: 'Cards',
-      currency: currency,
-      paymentGateway: 'LEMON_SQUEEZY',
-    });
-    await payment.save();
+    const payment = await Payment.findOneAndUpdate(
+      { externalId: custom_data.external_id, userId: user._id },
+      {
+        amount: paidAmount,
+        status: paymentStatus,
+        paidAt: updated_at,
+        paymentMethod: 'Cards',
+        currency: currency,
+        paymentGateway: 'LEMON_SQUEEZY',
+      },
+      { upsert: true, new: true }
+    );
 
     if (status === 'paid') {
       const userPlan = await UserPlan.findOne({ userId: user._id, isDeleted: false });
 
       if (userPlan) {
+        const currentDate = new Date();
+        userPlan.subscriptionStartDate = new Date().toISOString();
+
         if (paidAmount === PLANS['PRO-MONTHLY'].discountedPrice) {
           userPlan.plan = 'PRO-MONTHLY';
+          const subscriptionEndDate = new Date(currentDate.setMonth(currentDate.getMonth() + 1));
+          subscriptionEndDate.setDate(subscriptionEndDate.getDate() + 1);
+          userPlan.subscriptionEndDate = subscriptionEndDate.toISOString();
         } else if (paidAmount === PLANS['PRO-YEARLY'].discountedPrice) {
           userPlan.plan = 'PRO-YEARLY';
+          const subscriptionEndDate = new Date(currentDate.setFullYear(currentDate.getFullYear() + 1));
+          subscriptionEndDate.setDate(subscriptionEndDate.getDate() + 1);
+          userPlan.subscriptionEndDate = subscriptionEndDate.toISOString();
+        } else if (paidAmount === PLANS['PRO-LIFETIME'].discountedPrice) {
+          userPlan.plan = 'PRO-LIFETIME';
         }
 
-        const currentDate = new Date();
-        const subscriptionEndDate = new Date(currentDate.setMonth(currentDate.getMonth() + 1));
-        subscriptionEndDate.setDate(subscriptionEndDate.getDate() + 1);
-
-        userPlan.subscriptionStartDate = new Date().toISOString();
-        userPlan.subscriptionEndDate = subscriptionEndDate.toISOString();
+        if (!userPlan.paymentIds) {
+          userPlan.paymentIds = []; // Initialize if it's undefined
+        }
+        userPlan.paymentIds.push(payment._id.toString()); 
 
         await userPlan.save();
       } else {
