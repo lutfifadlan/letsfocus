@@ -48,6 +48,9 @@ const UserPlanSchema = new mongoose.Schema({
   userId: { type: String, required: true, unique: true },
   plan: { type: String, default: 'FREE' },
   isDeleted: { type: Boolean, default: false },
+  subscriptionStartDate: { type: Date },
+  subscriptionEndDate: { type: Date },
+  paymentIds: { type: [String] },
 }, { timestamps: true });
 
 const PaymentSchema = new mongoose.Schema({
@@ -59,6 +62,7 @@ const PaymentSchema = new mongoose.Schema({
   paymentMethod: { type: String, required: true },
   currency: { type: String, required: true },
   paymentGateway: { type: String, required: true },
+  status: { type: String, required: true },
 }, { timestamps: true });
 
 const ContactMessageSchema = new mongoose.Schema({

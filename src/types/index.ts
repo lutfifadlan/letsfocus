@@ -136,6 +136,8 @@ export interface LemonSqueezyCheckoutPayload {
     custom_data: {
       credits: string; // Credits added from custom data
       user_id: string; // User ID from custom data
+      external_id: string; // External ID from custom data
+      plan_type: string; // Plan type from custom data
     };
   };
 }
