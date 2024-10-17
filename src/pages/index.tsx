@@ -78,7 +78,7 @@ export default function Home() {
           <h2 className="text-3xl font-bold text-center mb-6">Watch Our Demo</h2>
           <div className="relative border-2 border-black dark:border-white rounded-lg overflow-hidden" style={{ paddingTop: '56.25%' }}>
             <iframe
-              src="https://drive.google.com/file/d/1HIosLt0b0xLSc3P5zL32hr6xy3vaUeMm/preview"
+              src="https://www.youtube.com/embed/SGF4dUPH_hY"
               allow="autoplay"
               className="absolute top-0 left-0 w-full h-full"
             ></iframe>
