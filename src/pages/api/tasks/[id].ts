@@ -19,7 +19,7 @@ export default async function handler(
   const { method } = req;
   const { id: taskId } = req.query;
 
-  const user = await User.findOne({ nextAuthUserId: session.user.id });
+  const user = await User.findOne({ email: session.user.email });
 
   if (!user) {
     return res.status(404).json({ message: 'User not found' });
