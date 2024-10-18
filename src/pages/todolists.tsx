@@ -738,11 +738,12 @@ export default function TodolistsPage() {
             isCurrentlyFocused,
           }),
         });
+
         const data = await response.json();
-  
+        const updatedTasks = [data, ...tasks];
+
         setTasks((prevTasks) => {
           if (!prevTasks) return [];
-          const updatedTasks = [data, ...prevTasks];
           if (activeSortOption === 'manualOrder') {
             return updatedTasks.sort((a, b) => a.order - b.order);
           } else {
@@ -774,7 +775,7 @@ export default function TodolistsPage() {
             <ToastAction
               altText="Undo"
               onClick={() => {
-                undoAdd(data._id);
+                undoAdd(data._id, updatedTasks);
               }}
             >
               Undo
@@ -831,7 +832,7 @@ export default function TodolistsPage() {
     }
   };
 
-  const undoAdd = async (taskId: string) => {
+  const undoAdd = async (taskId: string, tasks: Task[]) => {
     setIsLoading(true);
     try {
       const taskToRemove = tasks.find(task => task._id === taskId);

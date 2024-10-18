@@ -26,8 +26,6 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   if (req.method === 'POST') {
     const { amount, description, email, userId, planType } = req.body;
 
-    console.log('planType', planType);
-
     if (typeof planType !== 'string' || !(planType in PLANS)) {
       return res.status(400).json({ error: "Invalid plan type" });
     }

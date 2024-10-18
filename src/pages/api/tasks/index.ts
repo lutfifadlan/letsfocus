@@ -64,7 +64,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     case 'DELETE':
       try {
         const { taskIds } = req.body;
-        await Task.updateMany({ _id: { $in: taskIds } }, { isDeleted: true });
+        await Task.updateMany({ userId: user._id, _id: { $in: taskIds } }, { isDeleted: true });
         res.status(200).json({ message: 'Tasks deleted successfully' });
       } catch (error) {
         console.error(error);
