@@ -2434,17 +2434,19 @@ export default function TodolistsPage() {
                 onApproveAll={handleApproveAllTasks}
                 onRejectAll={handleRejectAllTasks}
               />
-              )}
+            )}
+            
             <div className={`flex flex-row gap-2 ${isFileTextButtonClicked ? 'items-start justify-start' : 'items-center justify-center'}`}>
               <div className="flex flex-col gap-2 w-full">
-                { isAddingTaskInputFocused || newTask.trim() ? (
-                  <Input
-                    placeholder="Input your task here"
-                    className="w-full shadow-none border-none flex-1"
-                    type="text"
-                    value={newTask}
-                    onChange={(e) => setNewTask(e.target.value)}
-                    onKeyDown={(e) => {
+                <div className="flex items-center space-x-2 relative group">
+                  { isAddingTaskInputFocused || newTask.trim() ? (
+                    <Input
+                      placeholder="Input your task here"
+                      className="shadow-none border-none flex-1"
+                      type="text"
+                      value={newTask}
+                      onChange={(e) => setNewTask(e.target.value)}
+                      onKeyDown={(e) => {
                       if (e.key === 'Enter') {
                         handleAddTask(newTaskDescription);
                       }
@@ -2456,391 +2458,381 @@ export default function TodolistsPage() {
                 ) : (
                   <TaskInputPlaceholder onClick={() => setIsAddingTaskInputFocused(true)} />
                 )}
-
-                {isFileTextButtonClicked && (
-                  <Textarea
-                    placeholder="Add task description here"
-                    className="w-full shadow-none resize-vertical text-sm"
-                    value={newTaskDescription}
-                    onChange={(e) => setNewTaskDescription(e.target.value)}
-                    aria-label="New Task Description"
-                    rows={1}
-                    style={{ minHeight: '4rem', overflow: 'hidden' }}
-                    onInput={(e) => {
-                      const target = e.target as HTMLTextAreaElement;
-                      target.style.height = 'auto';
-                      target.style.height = `${target.scrollHeight}px`;
-                    }}
-                    autoFocus
-                  />
-                )}
-              </div>
-
-              <TooltipProvider>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      onClick={() => setIsCurrentlyFocused(!isCurrentlyFocused)}
-                      aria-label="Toggle Currently Focused"
-                      className={`w-auto px-1.5 ${isCurrentlyFocused ? 'bg-blue-400 text-black hover:bg-blue-300 dark:text-black' : 'hover:bg-blue-300 hover:text-black dark:hover:bg-blue-300 dark:hover:text-black'}`}
-                    >
-                      <Rocket size={16} />
-                    </Button>
-                  </TooltipTrigger>
-                  <TooltipContent>
-                    { isCurrentlyFocused ? <p>Remove focus</p> : <p>Let&apos;s focus</p> }
-                  </TooltipContent>
-                </Tooltip>
-              </TooltipProvider>
-              <TooltipProvider>
-                <Tooltip>
-                  <TooltipTrigger>
-                    <Popover open={isCalendarPickerOpen} onOpenChange={setIsCalendarPickerOpen}>
-                      <PopoverTrigger asChild>
+                <div className="flex items-center space-x-2 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
                         <Button
-                          onClick={() => setIsCalendarPickerOpen(!isCalendarPickerOpen)}
-                          aria-label="Add Due Date"
                           variant="ghost"
                           size="icon"
-                          className="w-auto px-1"
+                          onClick={() => setIsCurrentlyFocused(!isCurrentlyFocused)}
+                          aria-label="Toggle Currently Focused"
+                          className={`w-auto px-1.5 ${isCurrentlyFocused ? 'bg-blue-400 text-black hover:bg-blue-300 dark:text-black' : 'hover:bg-blue-300 hover:text-black dark:hover:bg-blue-300 dark:hover:text-black'}`}
                         >
-                          <CalendarClock size={16} />
+                          <Rocket size={16} />
                         </Button>
-                      </PopoverTrigger>
-                      <PopoverContent className="w-52 text-sm">
-                        <div className="flex flex-col space-y-1">
-                          <p className="flex justify-start items-center">Select Due Date</p>
-                          <div className="flex items-center justify-center space-x-1">
-                            <Form {...form}>
-                              <form
-                                onSubmit={form.handleSubmit((data) => {
-                                  setDueDate(data.datePicker.to);
-                                  setIsCalendarPickerOpen(false);
-                                })}
-                                className="flex flex-col justify-center text-center items-center space-y-2"
-                              >
-                                <div className="flex justify-center items-center space-x-1">
-                                  <CalendarDatePicker
-                                    date={{ from: dueDate || new Date(), to: dueDate || new Date() }}
-                                    onDateSelect={({ from, to }) => {
-                                      form.setValue("datePicker", { from, to });
-                                      setDueDate(from);
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        { isCurrentlyFocused ? <p>Remove focus</p> : <p>Let&apos;s focus</p> }
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger>
+                        <Popover open={isCalendarPickerOpen} onOpenChange={setIsCalendarPickerOpen}>
+                          <PopoverTrigger asChild>
+                            <Button
+                              onClick={() => setIsCalendarPickerOpen(!isCalendarPickerOpen)}
+                              aria-label="Add Due Date"
+                              variant="ghost"
+                              size="icon"
+                              className="w-auto px-1"
+                            >
+                              <CalendarClock size={16} />
+                            </Button>
+                          </PopoverTrigger>
+                          <PopoverContent className="w-52 text-sm">
+                            <div className="flex flex-col space-y-1">
+                              <p className="flex justify-start items-center">Select Due Date</p>
+                              <div className="flex items-center justify-center space-x-1">
+                                <Form {...form}>
+                                  <form
+                                    onSubmit={form.handleSubmit((data) => {
+                                      setDueDate(data.datePicker.to);
                                       setIsCalendarPickerOpen(false);
-                                    }}
-                                    variant="outline"
-                                    numberOfMonths={1}
-                                    className="min-w-[150px] border rounded-md ml-3 mt-2 justify-center items-center"
-                                  />
-                                  <Button
-                                    variant="outline"
-                                    type="button"
-                                    onClick={() => {
-                                      setDueDate(null);
-                                      setIsCalendarPickerOpen(false);
-                                    }}
-                                    className="px-2 py-1 mt-2"
+                                    })}
+                                    className="flex flex-col justify-center text-center items-center space-y-2"
                                   >
-                                    <X size={16} />
-                                  </Button>
-                                </div>
-                                <div className="grid grid-cols-2 gap-2 mt-2">
-                                  <Button
-                                    variant="outline"
-                                    type="button"
-                                    onClick={() => {
-                                      setDueDate(new Date());
-                                      setIsCalendarPickerOpen(false);
-                                    }}
-                                    className="px-2 py-1"
-                                  >
-                                    Today
-                                  </Button>
-                                  <Button
-                                    variant="outline"
-                                    type="button"
-                                    onClick={() => {
-                                      const tomorrow = new Date();
-                                      tomorrow.setDate(tomorrow.getDate() + 1);
-                                      setDueDate(tomorrow);
-                                      setIsCalendarPickerOpen(false);
-                                    }}
-                                    className="px-2 py-1"
-                                  >
-                                    Tomorrow
-                                  </Button>
-                                </div>
-                              </form>
-                            </Form>
-                          </div>
-                        </div>
-                      </PopoverContent>
-                    </Popover>
-                  </TooltipTrigger>
-                  <TooltipContent>
-                    <p>Set due date</p>
-                  </TooltipContent>
-                </Tooltip>
-              </TooltipProvider>
-              <TooltipProvider>
-                <Tooltip>
-                  <TooltipTrigger>
-                    <Popover open={showPriorityDropdown} onOpenChange={setShowPriorityDropdown}>
-                      <PopoverTrigger asChild>
+                                    <div className="flex justify-center items-center space-x-1">
+                                      <CalendarDatePicker
+                                        date={{ from: dueDate || new Date(), to: dueDate || new Date() }}
+                                        onDateSelect={({ from, to }) => {
+                                          form.setValue("datePicker", { from, to });
+                                          setDueDate(from);
+                                          setIsCalendarPickerOpen(false);
+                                        }}
+                                        variant="outline"
+                                        numberOfMonths={1}
+                                        className="min-w-[150px] border rounded-md ml-3 mt-2 justify-center items-center"
+                                      />
+                                      <Button
+                                        variant="outline"
+                                        type="button"
+                                        onClick={() => {
+                                          setDueDate(null);
+                                          setIsCalendarPickerOpen(false);
+                                        }}
+                                        className="px-2 py-1 mt-2"
+                                      >
+                                        <X size={16} />
+                                      </Button>
+                                    </div>
+                                    <div className="grid grid-cols-2 gap-2 mt-2">
+                                      <Button
+                                        variant="outline"
+                                        type="button"
+                                        onClick={() => {
+                                          setDueDate(new Date());
+                                          setIsCalendarPickerOpen(false);
+                                        }}
+                                        className="px-2 py-1"
+                                      >
+                                        Today
+                                      </Button>
+                                      <Button
+                                        variant="outline"
+                                        type="button"
+                                        onClick={() => {
+                                          const tomorrow = new Date();
+                                          tomorrow.setDate(tomorrow.getDate() + 1);
+                                          setDueDate(tomorrow);
+                                          setIsCalendarPickerOpen(false);
+                                        }}
+                                        className="px-2 py-1"
+                                      >
+                                        Tomorrow
+                                      </Button>
+                                    </div>
+                                  </form>
+                                </Form>
+                              </div>
+                            </div>
+                          </PopoverContent>
+                        </Popover>
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        <p>Set due date</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger>
+                        <Popover open={showPriorityDropdown} onOpenChange={setShowPriorityDropdown}>
+                          <PopoverTrigger asChild>
+                            <Button
+                              variant="ghost"
+                              aria-label="priority"
+                              size="icon"
+                              onClick={() => setShowPriorityDropdown(!showPriorityDropdown)}
+                              className="w-auto px-1.5"
+                            >
+                              {priority === 'High' && <ChevronsUp size={16} className="text-red-500" />}
+                              {priority === 'Medium' && <ChevronUp size={16} />}
+                              {priority === 'Low' && <ChevronDown size={16} />}
+                              {!priority && <Flag size={16} />}
+                            </Button>
+                          </PopoverTrigger>
+                          <PopoverContent className="w-40 text-sm">
+                            <p className="flex justify-start items-center mb-2">Select Priority</p>
+                            <div
+                              className="flex items-center space-x-2 p-2 rounded-md cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-900"
+                              onClick={() => {
+                                setPriority('High');
+                                setShowPriorityDropdown(false);
+                              }}
+                            >
+                              <ChevronsUp size={16} className="text-red-500" />
+                              <span>High</span>
+                            </div>
+                            <div
+                              className="flex items-center space-x-2 p-2 rounded-md cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-900"
+                              onClick={() => {
+                                setPriority('Medium');
+                                setShowPriorityDropdown(false);
+                              }}
+                            >
+                              <ChevronUp size={16} />
+                              <span>Medium</span>
+                            </div>
+                            <div
+                              className="flex items-center space-x-2 p-2 rounded-md cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-900"
+                              onClick={() => {
+                                setPriority('Low');
+                                setShowPriorityDropdown(false);
+                              }}
+                            >
+                              <ChevronDown size={16} />
+                              <span>Low</span>
+                            </div>
+                            <div
+                              className="flex items-center space-x-2 p-2 rounded-md cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-900"
+                              onClick={() => {
+                                setPriority('');
+                                setShowPriorityDropdown(false);
+                              }}
+                            >
+                              <Flag size={16} />
+                              <span>No Priority</span>
+                            </div>
+                          </PopoverContent>
+                        </Popover>
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        <p>Set priority</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
                         <Button
+                          onClick={() => setIsFileTextButtonClicked(!isFileTextButtonClicked)}
+                          aria-label="Add Description"
                           variant="ghost"
-                          aria-label="priority"
                           size="icon"
-                          onClick={() => setShowPriorityDropdown(!showPriorityDropdown)}
                           className="w-auto px-1.5"
                         >
-                          {priority === 'High' && (
-                            <div className="flex items-center">
-                              <ChevronsUp size={16} className="text-red-500" />
-                            </div>
-                          )}
-                          {priority === 'Medium' && (
-                            <div className="flex items-center">
-                              <ChevronUp size={16} />
-                            </div>
-                          )}
-                          {priority === 'Low' && (
-                            <div className="flex items-center">
-                              <ChevronDown size={16} />
-                            </div>
-                          )}
-                          {!priority && (
-                            <div className="flex items-center">
-                              <Flag size={16} />
-                            </div>
-                          )}
+                          <FileText size={16}/>
                         </Button>
-                      </PopoverTrigger>
-                      <PopoverContent className="w-40 text-sm">
-                        <p className="flex justify-start items-center mb-2">Select Priority</p>
-                        <div
-                          className="flex items-center space-x-2 p-2 rounded-md cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-900"
-                          onClick={() => {
-                            setPriority('High');
-                            setShowPriorityDropdown(false);
-                          }}
-                        >
-                          <ChevronsUp size={16} className="text-red-500" />
-                          <span>High</span>
-                        </div>
-                        <div
-                          className="flex items-center space-x-2 p-2 rounded-md cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-900"
-                          onClick={() => {
-                            setPriority('Medium');
-                            setShowPriorityDropdown(false);
-                          }}
-                        >
-                          <ChevronUp size={16} />
-                          <span>Medium</span>
-                        </div>
-                        <div
-                          className="flex items-center space-x-2 p-2 rounded-md cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-900"
-                          onClick={() => {
-                            setPriority('Low');
-                            setShowPriorityDropdown(false);
-                          }}
-                        >
-                          <ChevronDown size={16} />
-                          <span>Low</span>
-                        </div>
-                        <div
-                          className="flex items-center space-x-2 p-2 rounded-md cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-900"
-                          onClick={() => {
-                            setPriority('');
-                            setShowPriorityDropdown(false);
-                          }}
-                        >
-                          <Flag size={16} />
-                          <span>No Priority</span>
-                        </div>
-                      </PopoverContent>
-                    </Popover>
-                  </TooltipTrigger>
-                  <TooltipContent>
-                    <p>Set priority</p>
-                  </TooltipContent>
-                </Tooltip>
-              </TooltipProvider>
-              <TooltipProvider>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <Button
-                      onClick={() => setIsFileTextButtonClicked(!isFileTextButtonClicked)}
-                      aria-label="Add Description"
-                      variant="ghost"
-                      size="icon"
-                      className="w-auto px-1.5"
-                    >
-                      <FileText size={16}/>
-                    </Button>
-                  </TooltipTrigger>
-                  <TooltipContent>
-                    <p>Add description</p>
-                  </TooltipContent>
-                </Tooltip>
-              </TooltipProvider>
-              <TooltipProvider>
-                <Tooltip>
-                  <TooltipTrigger>
-                    <Popover open={isGroupPopoverOpen} onOpenChange={setIsGroupPopoverOpen}>
-                      <PopoverTrigger asChild>
-                        <Button aria-label="Select Group" variant="ghost" size="icon" className="w-auto px-1.5">
-                          <Folder size={16}/>
-                        </Button>
-                      </PopoverTrigger>
+                      </TooltipTrigger>
                       <TooltipContent>
-                        <p>Select or create group</p>
+                        <p>Add description</p>
                       </TooltipContent>
-                      <PopoverContent className="w-64">
-                        <div className="space-y-2 text-sm">
-                          <p>Select or create a group</p>
-                          <Button
-                            variant={selectedGroup === null ? "secondary" : "ghost"}
-                            className="w-full justify-start text-sm"
-                            onClick={() => setSelectedGroup(null)}
-                          >
-                            No Group
-                          </Button>
-                          {groups.map((group) => (
-                            <div key={group._id} className="flex items-center justify-between text-sm">
-                              {editingGroup === group.name ? (
+                    </Tooltip>
+                  </TooltipProvider>
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger>
+                        <Popover open={isGroupPopoverOpen} onOpenChange={setIsGroupPopoverOpen}>
+                          <PopoverTrigger asChild>
+                            <Button aria-label="Select Group" variant="ghost" size="icon" className="w-auto px-1.5">
+                              <Folder size={16}/>
+                            </Button>
+                          </PopoverTrigger>
+                          <TooltipContent>
+                            <p>Select or create group</p>
+                          </TooltipContent>
+                          <PopoverContent className="w-64">
+                            <div className="space-y-2 text-sm">
+                              <p>Select or create a group</p>
+                              <Button
+                                variant={selectedGroup === null ? "secondary" : "ghost"}
+                                className="w-full justify-start text-sm"
+                                onClick={() => setSelectedGroup(null)}
+                              >
+                                No Group
+                              </Button>
+                              {groups.map((group) => (
+                                <div key={group._id} className="flex items-center justify-between text-sm">
+                                  {editingGroup === group.name ? (
+                                    <Input
+                                      type="text"
+                                      value={newGroupName}
+                                      onChange={(e) => setNewGroupName(e.target.value)}
+                                      onBlur={() => {
+                                        if (newGroupName.trim() && newGroupName !== group.name) {
+                                          updateGroup(group._id, newGroupName);
+                                        }
+                                        setEditingGroup(null);
+                                        setNewGroupName('');
+                                        setIsGroupPopoverOpen(false);
+                                      }}
+                                      onKeyDown={(e) => {
+                                        if (e.key === 'Enter') {
+                                          if (newGroupName.trim() && newGroupName !== group.name) {
+                                            updateGroup(group._id, newGroupName);
+                                          }
+                                          setEditingGroup(null);
+                                          setNewGroupName('');
+                                          setIsGroupPopoverOpen(false);
+                                        }
+                                      }}
+                                      autoFocus
+                                    />
+                                  ) : (
+                                    <>
+                                      <Button
+                                        variant={selectedGroup === group.name ? "secondary" : "ghost"}
+                                        className="w-full justify-start"
+                                        onClick={() => setSelectedGroup(group.name)}
+                                      >
+                                        {group.name}
+                                      </Button>
+                                      <Button
+                                        size="icon"
+                                        variant="ghost"
+                                        onClick={() => {
+                                          setEditingGroup(group.name);
+                                          setNewGroupName(group.name);
+                                        }}
+                                      >
+                                        <Edit size={12} />
+                                      </Button>
+                                    </>
+                                  )}
+                                  <Button size="icon" variant="ghost" onClick={() => deleteGroup(group._id)}>
+                                    <Trash size={12} />
+                                  </Button>
+                                </div>
+                              ))}
+                              <div className="flex items-center space-x-2 text-sm">
                                 <Input
                                   type="text"
+                                  placeholder="New group name"
                                   value={newGroupName}
                                   onChange={(e) => setNewGroupName(e.target.value)}
-                                  onBlur={() => {
-                                    if (newGroupName.trim() && newGroupName !== group.name) {
-                                      updateGroup(group._id, newGroupName);
-                                    }
-                                    setEditingGroup(null);
-                                    setNewGroupName('');
-                                    setIsGroupPopoverOpen(false);
-                                  }}
                                   onKeyDown={(e) => {
-                                    if (e.key === 'Enter') {
-                                      if (newGroupName.trim() && newGroupName !== group.name) {
-                                        updateGroup(group._id, newGroupName);
-                                      }
-                                      setEditingGroup(null);
+                                    if (e.key === 'Enter' && newGroupName.trim()) {
+                                      createGroup(newGroupName);
                                       setNewGroupName('');
-                                      setIsGroupPopoverOpen(false);
                                     }
                                   }}
                                   autoFocus
                                 />
-                              ) : (
-                                <>
-                                  <Button
-                                    variant={selectedGroup === group.name ? "secondary" : "ghost"}
-                                    className="w-full justify-start"
-                                    onClick={() => setSelectedGroup(group.name)}
-                                  >
-                                    {group.name}
-                                  </Button>
-                                  <Button
-                                    size="icon"
-                                    variant="ghost"
-                                    onClick={() => {
-                                      setEditingGroup(group.name);
-                                      setNewGroupName(group.name);
-                                    }}
-                                  >
-                                    <Edit size={12} />
-                                  </Button>
-                                </>
-                              )}
-                              <Button size="icon" variant="ghost" onClick={() => deleteGroup(group._id)}>
-                                <Trash size={12} />
-                              </Button>
+                                <Button
+                                  size="icon"
+                                  onClick={() => {
+                                    if (newGroupName.trim()) {
+                                      createGroup(newGroupName);
+                                      setNewGroupName('');
+                                    }
+                                  }}
+                                >
+                                  <PlusCircle size={16} />
+                                </Button>
+                              </div>
                             </div>
-                          ))}
-                          <div className="flex items-center space-x-2 text-sm">
-                            <Input
-                              type="text"
-                              placeholder="New group name"
-                              value={newGroupName}
-                              onChange={(e) => setNewGroupName(e.target.value)}
-                              onKeyDown={(e) => {
-                                if (e.key === 'Enter' && newGroupName.trim()) {
-                                  createGroup(newGroupName);
-                                  setNewGroupName('');
-                                }
-                              }}
-                              autoFocus
-                            />
-                            <Button
-                              size="icon"
-                              onClick={() => {
-                                if (newGroupName.trim()) {
-                                  createGroup(newGroupName);
-                                  setNewGroupName('');
-                                }
-                              }}
-                            >
-                              <PlusCircle size={16} />
+                          </PopoverContent>
+                        </Popover>
+                      </TooltipTrigger>
+                    </Tooltip>
+                  </TooltipProvider>
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger>
+                        <Popover>
+                          <PopoverTrigger asChild>
+                            <Button aria-label="Add Tags" variant="ghost" size="icon" className="w-auto px-1.5">
+                              <Tag size={16}/>
                             </Button>
-                          </div>
-                        </div>
-                      </PopoverContent>
-                    </Popover>
-                  </TooltipTrigger>
-                </Tooltip>
-              </TooltipProvider>
-              <TooltipProvider>
-                <Tooltip>
-                  <TooltipTrigger>
-                    <Popover>
-                      <PopoverTrigger asChild>
-                        <Button aria-label="Add Tags" variant="ghost" size="icon" className="w-auto px-1.5">
-                          <Tag size={16}/>
+                          </PopoverTrigger>
+                          <PopoverContent className="w-64 text-sm">
+                            <div className="space-y-2">
+                              <div className="font-medium">Add tags</div>
+                              <InputTags
+                                type="text"
+                                value={tags}
+                                onChange={(value) => setTags(value as string[])}
+                                placeholder="Use space, enter or comma to add tag"
+                                className="w-full text-xs"
+                                autoFocus
+                              />
+                            </div>
+                          </PopoverContent>
+                        </Popover>
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        <p>Add tags</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
+                </div>
+
+                <div className="flex items-center justify-center">
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger>
+                        <Button
+                          onClick={() => handleAddTask(newTaskDescription)}
+                          aria-label="Add Task"
+                          variant="ghost"
+                          size="icon"
+                          disabled={!newTask.trim()}
+                          className="w-auto px-1"
+                        >
+                          <Plus size={16} />
                         </Button>
-                      </PopoverTrigger>
-                      <PopoverContent className="w-64 text-sm">
-                        <div className="space-y-2">
-                          <div className="font-medium">Add tags</div>
-                          <InputTags
-                            type="text"
-                            value={tags}
-                            onChange={(value) => setTags(value as string[])}
-                            placeholder="Use space, enter or comma to add tag"
-                            className="w-full text-xs"
-                            autoFocus
-                          />
-                        </div>
-                      </PopoverContent>
-                    </Popover>
-                  </TooltipTrigger>
-                  <TooltipContent>
-                    <p>Add tags</p>
-                  </TooltipContent>
-                </Tooltip>
-              </TooltipProvider>
-              <TooltipProvider>
-                <Tooltip>
-                  <TooltipTrigger>
-                    <Button
-                      onClick={() => handleAddTask(newTaskDescription)}
-                      aria-label="Add Task"
-                      variant="ghost"
-                      size="icon"
-                      disabled={!newTask.trim()}
-                      className="w-auto px-1.5"
-                    >
-                      <Plus size={16} />
-                    </Button>
-                  </TooltipTrigger>
-                  <TooltipContent>
-                    <p>Add task</p>
-                  </TooltipContent>
-                </Tooltip>
-              </TooltipProvider>
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        <p>Add task</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
+                </div>
+              </div>
+
+              {isFileTextButtonClicked && (
+                <Textarea
+                  placeholder="Add task description here"
+                  className="w-full shadow-none resize-vertical text-sm"
+                  value={newTaskDescription}
+                  onChange={(e) => setNewTaskDescription(e.target.value)}
+                  aria-label="New Task Description"
+                  rows={1}
+                  style={{ minHeight: '4rem', overflow: 'hidden' }}
+                  onInput={(e) => {
+                    const target = e.target as HTMLTextAreaElement;
+                    target.style.height = 'auto';
+                    target.style.height = `${target.scrollHeight}px`;
+                  }}
+                  autoFocus
+                />
+              )}
             </div>
+          </div>
+            
             {(selectedGroup || tags.length > 0 || dueDate) && (
               <div className="flex flex-wrap gap-1 mt-1">
                 {selectedGroup && (
