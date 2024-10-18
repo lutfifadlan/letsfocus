@@ -9,7 +9,7 @@ const TaskInputPlaceholder: React.FC<TaskInputPlaceholderProps> = ({ onClick }) 
   return (
     <div 
       onClick={onClick}
-      className="flex items-center justify-between border-b-2 border-dashed border-gray-300 cursor-pointer hover:border-gray-400 transition-colors duration-200 group pr-2 pb-1"
+      className="flex items-center justify-between border-b-2 border-dashed border-gray-300 cursor-pointer hover:border-gray-400 transition-colors duration-200 group w-[620px] pb-1"
     >
       <div className="flex items-center space-x-2 text-sm">
         <Plus className="text-gray-400 group-hover:text-gray-600" size={16} />
