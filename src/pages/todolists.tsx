@@ -3233,7 +3233,6 @@ export default function TodolistsPage() {
                                 </TooltipContent>
                               </Tooltip>
                             </TooltipProvider>
-
                             <div className="flex flex-row gap-2 items-center">
                               {showBulkActions && (
                                 <Checkbox
@@ -3268,31 +3267,28 @@ export default function TodolistsPage() {
                                 </TooltipProvider>
                               )}
 
-                              {
-                                task.isCurrentlyFocused && (
-                                  <TooltipProvider>
-                                    <Tooltip>
-                                      <TooltipTrigger asChild>
-                                        <Button
-                                          variant="ghost"
-                                          size="icon"
-                                          onClick={() => updateTaskCurrentlyFocused(task._id, false)}
-                                          aria-label="Currently Focused"
-                                          className="w-auto px-1 bg-blue-400 dark:bg-blue-400 dark:text-black hover:bg-blue-300 hover:dark:bg-blue-300"
-                                        >
-                                          <Rocket size={16} />
-                                        </Button>
-                                      </TooltipTrigger>
-                                      <TooltipContent>
-                                        {task.isCurrentlyFocused ? <p>Remove focus</p> : <p>Let&apos;s focus</p>}
-                                      </TooltipContent>
-                                    </Tooltip>
-                                  </TooltipProvider>
-                                )
-                              }
+                              {task.isCurrentlyFocused && (
+                                <TooltipProvider>
+                                  <Tooltip>
+                                    <TooltipTrigger asChild>
+                                      <Button
+                                        variant="ghost"
+                                        size="icon"
+                                        onClick={() => updateTaskCurrentlyFocused(task._id, false)}
+                                        aria-label="Currently Focused"
+                                        className="w-auto px-1 bg-blue-400 dark:bg-blue-400 dark:text-black hover:bg-blue-300 hover:dark:bg-blue-300"
+                                      >
+                                        <Rocket size={16} />
+                                      </Button>
+                                    </TooltipTrigger>
+                                    <TooltipContent>
+                                      <p>Remove focus</p>
+                                    </TooltipContent>
+                                  </Tooltip>
+                                </TooltipProvider>
+                              )}
 
-                              {
-                                task.priority && task.priority !== '' ?
+                              {task.priority && task.priority !== '' && (
                                 <TooltipProvider>
                                   <Tooltip>
                                     <TooltipTrigger>
@@ -3302,7 +3298,6 @@ export default function TodolistsPage() {
                                             {task.priority === 'High' && <ChevronsUp size={16} className="text-red-500" />}
                                             {task.priority === 'Medium' && <ChevronUp size={16} />}
                                             {task.priority === 'Low' && <ChevronDown size={16} />}
-                                            {!task.priority && <Flag size={16} />}
                                           </Button>
                                         </PopoverTrigger>
                                         <PopoverContent className="w-36">
@@ -3342,12 +3337,11 @@ export default function TodolistsPage() {
                                     </TooltipContent>
                                   </Tooltip>
                                 </TooltipProvider>
-                                : null
-                              }
+                              )}
 
                               <div className="flex flex-col gap-1 w-full">
                                 {editingTaskTitleId === task._id ? (
-                                  <div className="flex items-center gap-1">
+                                  <div className="flex items-center gap-1 w-[530px]">
                                     <Input
                                       className="flex-1 border mr-1"
                                       type="text"
@@ -3406,578 +3400,529 @@ export default function TodolistsPage() {
                                 )}
                               </div>
 
-                              {
-                                !task.isCurrentlyFocused && (
+                              <div className="flex items-center relative group">
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  className="w-auto px-1 transition-opacity duration-300 group-hover:opacity-0"
+                                  aria-label="Edit Task"
+                                >
+                                  <Edit size={16} />
+                                </Button>
+                                <div className="absolute right-0 flex items-center space-x-2 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                                  {!task.isCurrentlyFocused && (
+                                    <TooltipProvider>
+                                      <Tooltip>
+                                        <TooltipTrigger asChild>
+                                          <Button
+                                            variant="ghost"
+                                            size="icon"
+                                            onClick={() => updateTaskCurrentlyFocused(task._id, !task.isCurrentlyFocused)}
+                                            aria-label="Toggle Currently Focused"
+                                            className="w-auto px-1.5"
+                                          >
+                                            <Rocket size={16} />
+                                          </Button>
+                                        </TooltipTrigger>
+                                        <TooltipContent>
+                                          <p>Let&apos;s focus</p>
+                                        </TooltipContent>
+                                      </Tooltip>
+                                    </TooltipProvider>
+                                  )}
+                                  {!task.dueDate && (
+                                    <TooltipProvider>
+                                      <Tooltip>
+                                        <TooltipTrigger>
+                                          <Popover>
+                                            <PopoverTrigger asChild>
+                                              <Button
+                                                variant="ghost"
+                                                aria-label="Update Task Due Date"
+                                                size="icon"
+                                                onClick={() => {
+                                                  setEditingTaskDueDateId(
+                                                    editingTaskDueDateId === task._id ? null : task._id
+                                                  );
+                                                  setExistingTaskDueDate(
+                                                    editingTaskDueDateId ? null : task.dueDate || null
+                                                  );
+                                                }}
+                                                className="w-auto px-1"
+                                              >
+                                                <CalendarClock size={16} />
+                                              </Button>
+                                            </PopoverTrigger>
+                                            <PopoverContent className="w-52 text-sm">
+                                              <div className="flex flex-col space-y-1">
+                                                <p className="">Select Due Date</p>
+                                                <div className="flex items-center justify-center space-x-1">
+                                                  <div className="flex flex-col justify-center text-center items-center space-y-2">
+                                                    <div className="flex justify-center items-center space-x-1">
+                                                      <CalendarDatePicker
+                                                        date={{
+                                                          from: existingTaskDueDate
+                                                            ? new Date(existingTaskDueDate)
+                                                            : new Date(),
+                                                          to: existingTaskDueDate
+                                                            ? new Date(existingTaskDueDate)
+                                                            : new Date(),
+                                                        }}
+                                                        onDateSelect={({ from }) => {
+                                                          updateTaskDueDate(task._id, from);
+                                                        }}
+                                                        variant="outline"
+                                                        numberOfMonths={1}
+                                                        className="min-w-[150px] border rounded-md ml-3 mt-2 justify-center items-center"
+                                                      />
+                                                      <Button
+                                                        variant="outline"
+                                                        onClick={() => {
+                                                          updateTaskDueDate(task._id, null);
+                                                        }}
+                                                        className="px-2 py-1 mt-2"
+                                                      >
+                                                        <X size={16} />
+                                                      </Button>
+                                                    </div>
+                                                    <div className="grid grid-cols-2 gap-2 mt-2">
+                                                      <Button
+                                                        variant="outline"
+                                                        onClick={() => {
+                                                          updateTaskDueDate(task._id, new Date());
+                                                        }}
+                                                        className="px-2 py-1"
+                                                      >
+                                                        Today
+                                                      </Button>
+                                                      <Button
+                                                        variant="outline"
+                                                        onClick={() => {
+                                                          const tomorrow = new Date();
+                                                          tomorrow.setDate(tomorrow.getDate() + 1);
+                                                          updateTaskDueDate(task._id, tomorrow);
+                                                        }}
+                                                        className="px-2 py-1"
+                                                      >
+                                                        Tomorrow
+                                                      </Button>
+                                                    </div>
+                                                  </div>
+                                                </div>
+                                              </div>
+                                            </PopoverContent>
+                                          </Popover>
+                                        </TooltipTrigger>
+                                        <TooltipContent>
+                                          <p>Set due date</p>
+                                        </TooltipContent>
+                                      </Tooltip>
+                                    </TooltipProvider>
+                                  )}
                                   <TooltipProvider>
                                     <Tooltip>
                                       <TooltipTrigger asChild>
                                         <Button
                                           variant="ghost"
                                           size="icon"
-                                          onClick={() => updateTaskCurrentlyFocused(task._id, !task.isCurrentlyFocused)}
-                                          aria-label="Toggle Currently Focused"
-                                          className={`w-auto px-1.5 ${task.isCurrentlyFocused ? 'bg-yellow-100 dark:bg-yellow-900' : ''}`}
-                                        >
-                                          <Rocket size={16} />
-                                        </Button>
-                                      </TooltipTrigger>
-                                      <TooltipContent>
-                                        {task.isCurrentlyFocused ? <p>Remove focus</p> : <p>Let&apos;s focus</p>}
-                                      </TooltipContent>
-                                    </Tooltip>
-                                  </TooltipProvider>
-                                )
-                              }
-
-                              { !task.dueDate && (
-                                <TooltipProvider>
-                                  <Tooltip>
-                                    <TooltipTrigger>
-                                      <Popover>
-                                      <PopoverTrigger asChild>
-                                        <Button
-                                          variant="ghost"
-                                          aria-label="Update Task Due Date"
-                                          size="icon"
                                           onClick={() => {
-                                            setEditingTaskDueDateId(
-                                              editingTaskDueDateId === task._id ? null : task._id
+                                            setEditingTaskDescriptionId(
+                                              editingTaskDescriptionId === task._id ? null : task._id
                                             );
-                                            setExistingTaskDueDate(
-                                              editingTaskDueDateId ? null : task.dueDate || null
-                                            );
+                                            setTaskDescription(editingTaskDescriptionId ? '' : task.description || '');
                                           }}
                                           className="w-auto px-1"
                                         >
-                                          <CalendarClock size={16} />
+                                          <FileText size={16} />
                                         </Button>
-                                      </PopoverTrigger>
-                                      <PopoverContent className="w-52 text-sm">
-                                        <div className="flex flex-col space-y-1">
-                                          <p className="text-center">Select Due Date</p>
-                                          <div className="flex items-center justify-center space-x-1">
-                                            <div className="flex flex-col justify-center text-center items-center space-y-2">
-                                              <div className="flex justify-center items-center space-x-1">
-                                                <CalendarDatePicker
-                                                  date={{
-                                                    from: existingTaskDueDate
-                                                      ? new Date(existingTaskDueDate)
-                                                      : new Date(),
-                                                    to: existingTaskDueDate
-                                                      ? new Date(existingTaskDueDate)
-                                                      : new Date(),
-                                                  }}
-                                                  onDateSelect={({ from }) => {
-                                                    setExistingTaskDueDate(from);
-                                                    updateTaskDueDate(task._id, from);
-                                                  }}
-                                                  variant="outline"
-                                                  numberOfMonths={1}
-                                                  className="min-w-[150px] border rounded-md ml-3 mt-2 justify-center items-center"
-                                                />
+                                      </TooltipTrigger>
+                                      <TooltipContent>
+                                        <p>Edit description</p>
+                                      </TooltipContent>
+                                    </Tooltip>
+                                  </TooltipProvider>
+                                  <TooltipProvider>
+                                    <Tooltip>
+                                      <TooltipTrigger asChild>
+                                        <Button
+                                          variant="ghost"
+                                          size="icon"
+                                          onClick={() => handleCommentDialogOpen(task._id)}
+                                          className="w-auto px-1"
+                                        >
+                                          <MessageCircle size={16} />
+                                        </Button>
+                                      </TooltipTrigger>
+                                      <TooltipContent>
+                                        <p>Manage comments</p>
+                                      </TooltipContent>
+                                    </Tooltip>
+                                  </TooltipProvider>
+                                  {!task.group && (
+                                    <TooltipProvider>
+                                      <Tooltip>
+                                        <TooltipTrigger>
+                                          <Popover>
+                                            <PopoverTrigger asChild>
+                                              <Button variant="ghost" size="icon" className="w-auto px-1">
+                                                <Folder size={16} />
+                                              </Button>
+                                            </PopoverTrigger>
+                                            <PopoverContent className="w-48">
+                                              <div className="space-y-2 text-sm">
+                                                <p>Change group</p>
                                                 <Button
-                                                  variant="outline"
+                                                  variant="ghost"
+                                                  className="w-full justify-start"
+                                                  onClick={() => updateTaskGroup(task._id, null)}
+                                                >
+                                                  No Group
+                                                </Button>
+                                                {groups.map((group) => (
+                                                  <Button
+                                                    key={group._id}
+                                                    variant="ghost"
+                                                    className="w-full justify-start"
+                                                    onClick={() => updateTaskGroup(task._id, group.name)}
+                                                  >
+                                                    {group.name}
+                                                  </Button>
+                                                ))}
+                                              </div>
+                                            </PopoverContent>
+                                          </Popover>
+                                        </TooltipTrigger>
+                                        <TooltipContent>
+                                          <p>Change group</p>
+                                        </TooltipContent>
+                                      </Tooltip>
+                                    </TooltipProvider>
+                                  )}
+                                  <TooltipProvider>
+                                    <Tooltip>
+                                      <TooltipTrigger>
+                                        <Popover
+                                          open={editingTaskTagsId === task._id}
+                                          onOpenChange={(isOpen) => {
+                                            if (isOpen) {
+                                              setEditingTaskTagsId(task._id);
+                                              setEditingTaskTags(task.tags || []);
+                                            } else {
+                                              setEditingTaskTagsId(null);
+                                              setEditingTaskTags([]);
+                                            }
+                                          }}
+                                        >
+                                          <PopoverTrigger asChild>
+                                            <Button variant="ghost" size="icon" className="w-auto px-1">
+                                              <Tag size={16} />
+                                            </Button>
+                                          </PopoverTrigger>
+                                          <PopoverContent className="w-64 text-sm">
+                                            <div className="space-y-2">
+                                              <div className="font-medium">Edit tags</div>
+                                              <InputTags
+                                                type="text"
+                                                value={editingTaskTags}
+                                                onChange={(value) => setEditingTaskTags(value as string[])}
+                                                placeholder="Use space, enter or comma to add tag"
+                                                className="w-full text-xs"
+                                                autoFocus
+                                              />
+                                              <div className="flex justify-end mt-2 space-x-2">
+                                                <Button
+                                                  variant="ghost"
+                                                  size="sm"
                                                   onClick={() => {
-                                                    setExistingTaskDueDate(null);
-                                                    updateTaskDueDate(task._id, null);
+                                                    setEditingTaskTagsId(null);
+                                                    setEditingTaskTags([]);
                                                   }}
-                                                  className="px-2 py-1 mt-2"
                                                 >
                                                   <X size={16} />
                                                 </Button>
-                                              </div>
-                                              <div className="grid grid-cols-2 gap-2 mt-2">
                                                 <Button
-                                                  variant="outline"
+                                                  variant="ghost"
+                                                  size="sm"
                                                   onClick={() => {
-                                                    setExistingTaskDueDate(new Date());
-                                                    updateTaskDueDate(task._id, new Date());
+                                                    updateTaskTags(task._id, editingTaskTags);
+                                                    setEditingTaskTagsId(null);
+                                                    setEditingTaskTags([]);
                                                   }}
-                                                  className="px-2 py-1"
+                                                  disabled={JSON.stringify(editingTaskTags) === JSON.stringify(task.tags)}
                                                 >
-                                                  Today
-                                                </Button>
-                                                <Button
-                                                  variant="outline"
-                                                  onClick={() => {
-                                                    const tomorrow = new Date();
-                                                    tomorrow.setDate(tomorrow.getDate() + 1);
-                                                    setExistingTaskDueDate(tomorrow);
-                                                    updateTaskDueDate(task._id, tomorrow);
-                                                  }}
-                                                  className="px-2 py-1"
-                                                >
-                                                  Tomorrow
+                                                  <Save size={16} />
                                                 </Button>
                                               </div>
                                             </div>
-                                          </div>
-                                        </div>
-                                      </PopoverContent>
-                                    </Popover>
-                                  </TooltipTrigger>
-                                  <TooltipContent>
-                                    <p>Set due date</p>
-                                  </TooltipContent>
-                                  </Tooltip>
-                                </TooltipProvider>
-                              )}
+                                          </PopoverContent>
+                                        </Popover>
+                                      </TooltipTrigger>
+                                      <TooltipContent>
+                                        <p>Edit tags</p>
+                                      </TooltipContent>
+                                    </Tooltip>
+                                  </TooltipProvider>
+                                </div>
+                              </div>
 
-                              {
-                                !task.priority || (task.priority  && task.priority === '') ?
+                              <div className="flex items-center space-x-2">
                                 <TooltipProvider>
                                   <Tooltip>
-                                    <TooltipTrigger>
-                                      <Popover>
-                                        <PopoverTrigger asChild>
-                                          <Button variant="ghost" size="icon" className="w-auto px-1">
-                                            {task.priority === 'High' && <ChevronsUp size={16} className="text-red-500" />}
-                                            {task.priority === 'Medium' && <ChevronUp size={16} />}
-                                            {task.priority === 'Low' && <ChevronDown size={16} />}
-                                            {!task.priority && <Flag size={16} />}
-                                          </Button>
-                                        </PopoverTrigger>
-                                        <PopoverContent className="w-36">
-                                          <div
-                                            className="flex items-center space-x-2 p-2 rounded-md cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-900 text-sm"
-                                            onClick={() => updateTaskPriority(task._id, 'High')}
-                                          >
-                                            <ChevronsUp size={16} className="text-red-500" />
-                                            <span>High</span>
-                                          </div>
-                                          <div
-                                            className="flex items-center space-x-2 p-2 rounded-md cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-900 text-sm"
-                                            onClick={() => updateTaskPriority(task._id, 'Medium')}
-                                          >
-                                            <ChevronUp size={16} />
-                                            <span>Medium</span>
-                                          </div>
-                                          <div
-                                            className="flex items-center space-x-2 p-2 rounded-md cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-900 text-sm"
-                                            onClick={() => updateTaskPriority(task._id, 'Low')}
-                                          >
-                                            <ChevronDown size={16} />
-                                            <span>Low</span>
-                                          </div>
-                                          <div
-                                            className="flex items-center space-x-2 p-2 rounded-md cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-900 text-sm"
-                                            onClick={() => updateTaskPriority(task._id, '')}
-                                          >
-                                            <Flag size={16} />
-                                            <span>No Priority</span>
-                                          </div>
-                                        </PopoverContent>
-                                      </Popover>
-                                    </TooltipTrigger>
-                                    <TooltipContent>
-                                      <p>Set priority</p>
-                                    </TooltipContent>
-                                  </Tooltip>
-                                </TooltipProvider>
-                              : null}
-
-                              <TooltipProvider>
-                                <Tooltip>
-                                  <TooltipTrigger asChild>
-                                    <Button
-                                      variant="ghost"
-                                      size="icon"
-                                      onClick={() => {
-                                        setEditingTaskDescriptionId(
-                                          editingTaskDescriptionId === task._id ? null : task._id
-                                        );
-                                        setTaskDescription(editingTaskDescriptionId ? '' : task.description || '');
-                                      }}
-                                    >
-                                      <FileText size={16} />
-                                    </Button>
-                                  </TooltipTrigger>
-                                  <TooltipContent>
-                                    <p>Edit description</p>
-                                  </TooltipContent>
-                                </Tooltip>
-                              </TooltipProvider>
-
-                              <TooltipProvider>
-                                <Tooltip>
-                                  <TooltipTrigger asChild>
-                                    <Button
-                                      variant="ghost"
-                                      size="icon"
-                                      onClick={() => handleCommentDialogOpen(task._id)}
-                                      className="w-auto px-1"
-                                    >
-                                      <MessageCircle size={16} />
-                                    </Button>
-                                  </TooltipTrigger>
-                                  <TooltipContent>
-                                    <p>Manage comments</p>
-                                  </TooltipContent>
-                                </Tooltip>
-                              </TooltipProvider>
-
-                              { !task.group && (
-                                <TooltipProvider>
-                                  <Tooltip>
-                                    <TooltipTrigger>
-                                      <Popover>
-                                        <PopoverTrigger asChild>
-                                          <Button variant="ghost" size="icon" className="w-auto px-1">
-                                            <Folder size={16} />
-                                          </Button>
-                                        </PopoverTrigger>
-                                        <PopoverContent className="w-48">
-                                          <div className="space-y-2 text-sm">
-                                            <p>Change group</p>
-                                            <Button
-                                              variant="ghost"
-                                              className="w-full justify-start"
-                                              onClick={() => updateTaskGroup(task._id, null)}
-                                            >
-                                              No Group
-                                            </Button>
-                                            {groups.map((group) => (
-                                              <Button
-                                                key={group._id}
-                                                variant="ghost"
-                                                className="w-full justify-start"
-                                                onClick={() => updateTaskGroup(task._id, group.name)}
-                                              >
-                                                {group.name}
-                                              </Button>
-                                            ))}
-                                          </div>
-                                        </PopoverContent>
-                                      </Popover>
-                                    </TooltipTrigger>
-                                    <TooltipContent>
-                                      <p>Change group</p>
-                                    </TooltipContent>
-                                  </Tooltip>
-                                </TooltipProvider>
-                              )}
-
-                              <TooltipProvider>
-                                <Tooltip>
-                                  <TooltipTrigger>
-                                    <Popover
-                                      open={editingTaskTagsId === task._id}
-                                      onOpenChange={(isOpen) => {
-                                        if (isOpen) {
-                                          setEditingTaskTagsId(task._id);
-                                          setEditingTaskTags(task.tags || []);
-                                        } else {
-                                          setEditingTaskTagsId(null);
-                                          setEditingTaskTags([]);
-                                        }
-                                      }}
-                                    >
-                                      <PopoverTrigger asChild>
-                                        <Button variant="ghost" size="icon" className="w-auto px-1">
-                                          <Tag size={16} />
-                                        </Button>
-                                      </PopoverTrigger>
-                                      <PopoverContent className="w-64 text-sm">
-                                        <div className="space-y-2">
-                                          <div className="font-medium">Add tags</div>
-                                          <InputTags
-                                            type="text"
-                                            value={editingTaskTags}
-                                            onChange={(value) => setEditingTaskTags(value as string[])}
-                                            placeholder="Use space, enter or comma to add tag"
-                                            className="w-full text-xs"
-                                            autoFocus
-                                          />
-                                          <div className="flex justify-end mt-2 space-x-2">
-                                            <Button
-                                              variant="ghost"
-                                              size="sm"
-                                              onClick={() => {
-                                                setEditingTaskTagsId(null);
-                                                setEditingTaskTags([]);
-                                              }}
-                                            >
-                                              <X size={16} />
-                                            </Button>
-                                            <Button
-                                              variant="ghost"
-                                              size="sm"
-                                              onClick={() => {
-                                                updateTaskTags(task._id, editingTaskTags);
-                                                setEditingTaskTagsId(null);
-                                                setEditingTaskTags([]);
-                                              }}
-                                              disabled={JSON.stringify(editingTaskTags) === JSON.stringify(task.tags)}
-                                            >
-                                              <Save size={16} />
-                                            </Button>
-                                          </div>
-                                        </div>
-                                      </PopoverContent>
-                                    </Popover>
-                                  </TooltipTrigger>
-                                  <TooltipContent>
-                                    <p>Edit tags</p>
-                                  </TooltipContent>
-                                </Tooltip>
-                              </TooltipProvider>
-
-                              <TooltipProvider>
-                                <Tooltip>
-                                  <AlertDialog>
-                                    <TooltipTrigger asChild>
-                                      <AlertDialogTrigger asChild>
-                                        <Button
-                                          variant="ghost"
-                                          size="icon"
-                                          aria-label="Ignore Task"
-                                          className="w-auto px-1"
-                                        >
-                                          <CircleMinus size={16} />
-                                        </Button>
-                                      </AlertDialogTrigger>
-                                    </TooltipTrigger>
-                                    <AlertDialogContent>
-                                      <AlertDialogHeader>
-                                        <AlertDialogTitle>Confirm Ignore</AlertDialogTitle>
-                                        <AlertDialogDescription>
-                                          Are you sure you want to ignore this task? This action can be undone later.
-                                        </AlertDialogDescription>
-                                      </AlertDialogHeader>
-                                      <AlertDialogFooter>
-                                        <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                        <AlertDialogAction
-                                          onClick={() => updateTaskStatus(task._id, 'IGNORED')}
-                                        >
-                                          Ignore
-                                        </AlertDialogAction>
-                                      </AlertDialogFooter>
-                                    </AlertDialogContent>
-                                  </AlertDialog>
-                                  <TooltipContent>
-                                    <p>Ignore task</p>
-                                  </TooltipContent>
-                                </Tooltip>
-                              </TooltipProvider>
-
-                              <TooltipProvider>
-                                <Tooltip>
-                                  <TooltipTrigger>
                                     <AlertDialog>
-                                      <AlertDialogTrigger asChild>
-                                        <Button
-                                          variant="ghost"
-                                          size="icon"
-                                          aria-label="Delete Task"
-                                          className="w-auto px-1"
-                                        >
-                                          <Trash size={16} />
-                                        </Button>
-                                      </AlertDialogTrigger>
+                                      <TooltipTrigger asChild>
+                                        <AlertDialogTrigger asChild>
+                                          <Button
+                                            variant="ghost"
+                                            size="icon"
+                                            aria-label="Ignore Task"
+                                            className="w-auto px-1"
+                                          >
+                                            <CircleMinus size={16} />
+                                          </Button>
+                                        </AlertDialogTrigger>
+                                      </TooltipTrigger>
                                       <AlertDialogContent>
                                         <AlertDialogHeader>
-                                          <AlertDialogTitle>Confirm Deletion</AlertDialogTitle>
+                                          <AlertDialogTitle>Confirm Ignore</AlertDialogTitle>
                                           <AlertDialogDescription>
-                                            Are you sure you want to delete this task?.
+                                            Are you sure you want to ignore this task? This action can be undone later.
                                           </AlertDialogDescription>
                                         </AlertDialogHeader>
                                         <AlertDialogFooter>
                                           <AlertDialogCancel>Cancel</AlertDialogCancel>
                                           <AlertDialogAction
-                                            onClick={() => deleteTask(task._id)}
+                                            onClick={() => updateTaskStatus(task._id, 'IGNORED')}
                                           >
-                                            Delete
+                                            Ignore
                                           </AlertDialogAction>
                                         </AlertDialogFooter>
                                       </AlertDialogContent>
                                     </AlertDialog>
-                                  </TooltipTrigger>
-                                  <TooltipContent>
-                                    <p>Delete task</p>
-                                  </TooltipContent>
-                                </Tooltip>
-                              </TooltipProvider>
+                                    <TooltipContent>
+                                      <p>Ignore task</p>
+                                    </TooltipContent>
+                                  </Tooltip>
+                                </TooltipProvider>
+
+                                <TooltipProvider>
+                                  <Tooltip>
+                                    <TooltipTrigger>
+                                      <AlertDialog>
+                                        <AlertDialogTrigger asChild>
+                                          <Button
+                                            variant="ghost"
+                                            size="icon"
+                                            aria-label="Delete Task"
+                                            className="w-auto px-1"
+                                          >
+                                            <Trash size={16} />
+                                          </Button>
+                                        </AlertDialogTrigger>
+                                        <AlertDialogContent>
+                                          <AlertDialogHeader>
+                                            <AlertDialogTitle>Confirm Deletion</AlertDialogTitle>
+                                            <AlertDialogDescription>
+                                              Are you sure you want to delete this task?.
+                                            </AlertDialogDescription>
+                                          </AlertDialogHeader>
+                                          <AlertDialogFooter>
+                                            <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                            <AlertDialogAction
+                                              onClick={() => deleteTask(task._id)}
+                                            >
+                                              Delete
+                                            </AlertDialogAction>
+                                          </AlertDialogFooter>
+                                        </AlertDialogContent>
+                                      </AlertDialog>
+                                    </TooltipTrigger>
+                                    <TooltipContent>
+                                      <p>Delete task</p>
+                                    </TooltipContent>
+                                  </Tooltip>
+                                </TooltipProvider>
+                              </div>
                             </div>
 
                             {editingTaskDescriptionId === task._id && (
-                            <div className="mt-2">
-                              <Textarea
-                                placeholder="Update description..."
-                                value={taskDescription}
-                                onChange={(e) => setTaskDescription(e.target.value)}
-                                className="w-full resize-vertical"
-                                onInput={(e) => {
-                                  const target = e.target as HTMLTextAreaElement;
-                                  target.style.height = 'auto';
-                                  target.style.height = `${target.scrollHeight}px`;
-                                }}
-                              />
-                              <div className="flex justify-end items-center gap-2 mt-1">
-                                <Button
-                                  variant="ghost"
-                                  size="icon"
-                                  onClick={() => {
-                                    updateTaskDescription(task._id, taskDescription);
-                                    setEditingTaskDescriptionId(null);
-                                    setTaskDescription('');
+                              <div className="mt-2">
+                                <Textarea
+                                  placeholder="Update description..."
+                                  value={taskDescription}
+                                  onChange={(e) => setTaskDescription(e.target.value)}
+                                  className="w-full resize-vertical"
+                                  onInput={(e) => {
+                                    const target = e.target as HTMLTextAreaElement;
+                                    target.style.height = 'auto';
+                                    target.style.height = `${target.scrollHeight}px`;
                                   }}
-                                >
-                                  <Save size={16} />
-                                </Button>
-                                <Button
-                                  variant="ghost"
-                                  size="icon"
-                                  onClick={() => {
-                                    setEditingTaskDescriptionId(null);
-                                    setTaskDescription('');
-                                  }}
-                                >
-                                  <X size={16} />
-                                </Button>
+                                />
+                                <div className="flex justify-end items-center gap-2 mt-1">
+                                  <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    onClick={() => {
+                                      updateTaskDescription(task._id, taskDescription);
+                                      setEditingTaskDescriptionId(null);
+                                      setTaskDescription('');
+                                    }}
+                                  >
+                                    <Save size={16} />
+                                  </Button>
+                                  <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    onClick={() => {
+                                      setEditingTaskDescriptionId(null);
+                                      setTaskDescription('');
+                                    }}
+                                  >
+                                    <X size={16} />
+                                  </Button>
+                                </div>
                               </div>
-                            </div>
-                          )}
+                            )}
 
-                          <div className="flex flex-wrap gap-1 mt-1">
-                            {task.dueDate && (
-                              <Popover>
-                                <PopoverTrigger asChild>
-                                  <div>
-                                    <Badge
-                                      variant="outline"
-                                      className={`
-                                        ${new Date(task.dueDate) < new Date() && !isSameDay(new Date(task.dueDate), new Date())
-                                          ? 'bg-red-400 text-black'
-                                          : isSameDay(new Date(task.dueDate), new Date())
-                                          ? 'bg-yellow-200 text-black'
+                            <div className="flex flex-wrap gap-1 mt-1">
+                              {task.dueDate && (
+                                <Popover>
+                                  <PopoverTrigger asChild>
+                                    <div>
+                                      <Badge
+                                        variant="outline"
+                                        className={`
+                                          ${new Date(task.dueDate) < new Date() && !isSameDay(new Date(task.dueDate), new Date())
+                                            ? 'bg-red-400 text-black'
+                                            : isSameDay(new Date(task.dueDate), new Date())
+                                            ? 'bg-yellow-200 text-black'
+                                            : isSameDay(new Date(task.dueDate), new Date(new Date().setDate(new Date().getDate() + 1)))
+                                            ? 'bg-orange-200 text-black'
+                                            : ''
+                                          } cursor-pointer hover:bg-opacity-80 transition-colors
+                                        `}
+                                      >
+                                        <CalendarClock size={12} className="mr-1" />
+                                        {isSameDay(new Date(task.dueDate), new Date())
+                                          ? 'Today'
                                           : isSameDay(new Date(task.dueDate), new Date(new Date().setDate(new Date().getDate() + 1)))
-                                          ? 'bg-orange-200 text-black'
-                                          : ''
-                                        } cursor-pointer hover:bg-opacity-80 transition-colors
-                                      `}
-                                    >
-                                      <CalendarClock size={12} className="mr-1" />
-                                      {isSameDay(new Date(task.dueDate), new Date())
-                                        ? 'Today'
-                                        : isSameDay(new Date(task.dueDate), new Date(new Date().setDate(new Date().getDate() + 1)))
-                                        ? 'Tomorrow'
-                                        : format(new Date(task.dueDate), 'PPP')}
-                                    </Badge>
-                                  </div>
-                                </PopoverTrigger>
-                                <PopoverContent className="w-52 text-sm">
-                                  <div className="flex flex-col space-y-1">
-                                    <p className="">Select Due Date</p>
-                                    <div className="flex items-center justify-center space-x-1">
-                                      <div className="flex flex-col justify-center text-center items-center space-y-2">
-                                        <div className="flex justify-center items-center space-x-1">
-                                          <CalendarDatePicker
-                                            date={{
-                                              from: existingTaskDueDate
-                                                ? new Date(existingTaskDueDate)
-                                                : new Date(),
-                                              to: existingTaskDueDate
-                                                ? new Date(existingTaskDueDate)
-                                                : new Date(),
-                                            }}
-                                            onDateSelect={({ from }) => {
-                                              updateTaskDueDate(task._id, from);
-                                            }}
-                                            variant="outline"
-                                            numberOfMonths={1}
-                                            className="min-w-[150px] border rounded-md ml-3 mt-2 justify-center items-center"
-                                          />
-                                          <Button
-                                            variant="outline"
-                                            onClick={() => {
-                                              updateTaskDueDate(task._id, null);
-                                            }}
-                                            className="px-2 py-1 mt-2"
-                                          >
-                                            <X size={16} />
-                                          </Button>
-                                        </div>
-                                        <div className="grid grid-cols-2 gap-2 mt-2">
-                                          <Button
-                                            variant="outline"
-                                            onClick={() => {
-                                              updateTaskDueDate(task._id, new Date());
-                                            }}
-                                            className="px-2 py-1"
-                                          >
-                                            Today
-                                          </Button>
-                                          <Button
-                                            variant="outline"
-                                            onClick={() => {
-                                              const tomorrow = new Date();
-                                              tomorrow.setDate(tomorrow.getDate() + 1);
-                                              updateTaskDueDate(task._id, tomorrow);
-                                            }}
-                                            className="px-2 py-1"
-                                          >
-                                            Tomorrow
-                                          </Button>
+                                          ? 'Tomorrow'
+                                          : format(new Date(task.dueDate), 'PPP')}
+                                      </Badge>
+                                    </div>
+                                  </PopoverTrigger>
+                                  <PopoverContent className="w-52 text-sm">
+                                    <div className="flex flex-col space-y-1">
+                                      <p className="">Select Due Date</p>
+                                      <div className="flex items-center justify-center space-x-1">
+                                        <div className="flex flex-col justify-center text-center items-center space-y-2">
+                                          <div className="flex justify-center items-center space-x-1">
+                                            <CalendarDatePicker
+                                              date={{
+                                                from: existingTaskDueDate
+                                                  ? new Date(existingTaskDueDate)
+                                                  : new Date(),
+                                                to: existingTaskDueDate
+                                                  ? new Date(existingTaskDueDate)
+                                                  : new Date(),
+                                              }}
+                                              onDateSelect={({ from }) => {
+                                                updateTaskDueDate(task._id, from);
+                                              }}
+                                              variant="outline"
+                                              numberOfMonths={1}
+                                              className="min-w-[150px] border rounded-md ml-3 mt-2 justify-center items-center"
+                                            />
+                                            <Button
+                                              variant="outline"
+                                              onClick={() => {
+                                                updateTaskDueDate(task._id, null);
+                                              }}
+                                              className="px-2 py-1 mt-2"
+                                            >
+                                              <X size={16} />
+                                            </Button>
+                                          </div>
+                                          <div className="grid grid-cols-2 gap-2 mt-2">
+                                            <Button
+                                              variant="outline"
+                                              onClick={() => {
+                                                updateTaskDueDate(task._id, new Date());
+                                              }}
+                                              className="px-2 py-1"
+                                            >
+                                              Today
+                                            </Button>
+                                            <Button
+                                              variant="outline"
+                                              onClick={() => {
+                                                const tomorrow = new Date();
+                                                tomorrow.setDate(tomorrow.getDate() + 1);
+                                                updateTaskDueDate(task._id, tomorrow);
+                                              }}
+                                              className="px-2 py-1"
+                                            >
+                                              Tomorrow
+                                            </Button>
+                                          </div>
                                         </div>
                                       </div>
                                     </div>
-                                  </div>
-                                </PopoverContent>
-                              </Popover>
-                            )}
-                            {task.group && (
-                              <Popover>
-                                <PopoverTrigger asChild>
-                                  <div>
-                                    <Badge variant="secondary" className="cursor-pointer hover:bg-opacity-80 transition-colors">
-                                      <Folder size={12} className="mr-1" />
-                                      {task.group}
-                                    </Badge>
-                                  </div>
-                                </PopoverTrigger>
-                                <PopoverContent className="w-48">
-                                  <div className="space-y-2 text-sm">
-                                    <p>Change group</p>
-                                    <Button
-                                      variant="ghost"
-                                      className="w-full justify-start"
-                                      onClick={() => updateTaskGroup(task._id, null)}
-                                    >
-                                      No Group
-                                    </Button>
-                                    {groups.map((group) => (
+                                  </PopoverContent>
+                                </Popover>
+                              )}
+                              {task.group && (
+                                <Popover>
+                                  <PopoverTrigger asChild>
+                                    <div>
+                                      <Badge variant="secondary" className="cursor-pointer hover:bg-opacity-80 transition-colors">
+                                        <Folder size={12} className="mr-1" />
+                                        {task.group}
+                                      </Badge>
+                                    </div>
+                                  </PopoverTrigger>
+                                  <PopoverContent className="w-48">
+                                    <div className="space-y-2 text-sm">
+                                      <p>Change group</p>
                                       <Button
-                                        key={group._id}
                                         variant="ghost"
                                         className="w-full justify-start"
-                                        onClick={() => updateTaskGroup(task._id, group.name)}
+                                        onClick={() => updateTaskGroup(task._id, null)}
                                       >
-                                        {group.name}
+                                        No Group
                                       </Button>
-                                    ))}
-                                  </div>
-                                </PopoverContent>
-                              </Popover>
-                            )}
-                            {task.tags?.map((tag, index) => (
-                              <Badge key={index} variant="outline" className="flex items-center">
-                                <Tag size={12} className="mr-1" />
-                                {tag}
-                                <Button
-                                  variant="ghost"
-                                  size="icon"
-                                  className="h-4 w-4 p-0 ml-1"
-                                  onClick={() => {
-                                    const newTags = task.tags?.filter((t) => t !== tag);
-                                    updateTaskTags(task._id, newTags || []);
-                                  }}
-                                >
-                                  <X size={12} />
-                                </Button>
-                              </Badge>
-                            ))}
+                                      {groups.map((group) => (
+                                        <Button
+                                          key={group._id}
+                                          variant="ghost"
+                                          className="w-full justify-start"
+                                          onClick={() => updateTaskGroup(task._id, group.name)}
+                                        >
+                                          {group.name}
+                                        </Button>
+                                      ))}
+                                    </div>
+                                  </PopoverContent>
+                                </Popover>
+                              )}
+                              {task.tags?.map((tag, index) => (
+                                <Badge key={index} variant="outline" className="flex items-center">
+                                  <Tag size={12} className="mr-1" />
+                                  {tag}
+                                  <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    className="h-4 w-4 p-0 ml-1"
+                                    onClick={() => {
+                                      const newTags = task.tags?.filter((t) => t !== tag);
+                                      updateTaskTags(task._id, newTags || []);
+                                    }}
+                                  >
+                                    <X size={12} />
+                                  </Button>
+                                </Badge>
+                              ))}
+                            </div>
                           </div>
-                        </div>
                         )}
                       </Draggable>
                     ))
