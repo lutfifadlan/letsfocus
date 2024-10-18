@@ -6,10 +6,17 @@ import { Toaster } from '@/components/ui/toaster';
 import { SessionProvider } from 'next-auth/react';
 import { SpeedInsights } from '@vercel/speed-insights/next';
 import { Analytics } from "@vercel/analytics/react"
+import { OpenPanelComponent } from '@openpanel/nextjs';
 
 function MyApp({ Component, pageProps }: AppProps) {
   return (
     <>
+      <OpenPanelComponent
+        clientId={process.env.OPEN_PANEL as string}
+        trackScreenViews={true}
+        profileId={pageProps.session?.user.id as string}
+        trackAttributes={true}
+      />
       <ThemeProvider
         attribute="class"
         defaultTheme="system"

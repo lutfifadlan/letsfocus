@@ -1,5 +1,5 @@
 import { NextApiRequest, NextApiResponse } from 'next';
-import { User, UserPlan } from '@/lib/models';
+import { AI, User, UserPlan } from '@/lib/models';
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/lib/auth";
 
@@ -75,6 +75,17 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
   const data = await response.json();
   const tasks = data.choices[0].message.content.split('\n').map((task: string) => task.trim()).filter((task: string) => task);
+
+  const ai = new AI({
+    userId: user._id,
+    input: todolistsInput,
+    output: tasks,
+    modelType: modelType,
+    inputTokens: data.usage.prompt_tokens,
+    outputTokens: data.usage.completion_tokens,
+  });
+
+  await ai.save();
 
   res.status(200).json({ tasks });
 }

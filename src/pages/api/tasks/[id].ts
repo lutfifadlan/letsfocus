@@ -126,7 +126,8 @@ export default async function handler(
         if (result.matchedCount === 0) {
           return res.status(404).json({ message: 'Task not found' });
         }
-        res.status(200).json({ message: 'Task marked as deleted successfully' });
+        const deletedTask = await Task.findOne({ _id: new ObjectId(taskId as string) });
+        res.status(200).json({ message: 'Task marked as deleted successfully', deletedTask });
       } catch (error) {
         console.error(error);
         res.status(500).json({ message: 'Internal Server Error' });

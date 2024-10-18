@@ -55,6 +55,8 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import TaskInputPlaceholder from '@/components/task-input-placeholder';
 import AiInputPlaceholder from '@/components/ai-input-placeholder';
 import SearchInputPlaceholder from '@/components/search-input-placeholder';
+import { useOpenPanel } from '@openpanel/nextjs';
+
 
 const MAXIMUM_COMMENT_CHARS_LENGTH = 10000;
 
@@ -180,6 +182,7 @@ const CurrentDateTime: React.FC = () => {
 };
 
 export default function TodolistsPage() {
+  const op = useOpenPanel();
   const form = useForm<z.infer<typeof FormSchema>>({
     resolver: zodResolver(FormSchema),
     defaultValues: {
@@ -271,7 +274,7 @@ export default function TodolistsPage() {
   const [activeTaskId, setActiveTaskId] = useState<string | null>(null);
   const [taskComments, setTaskComments] = useState<Comment[]>([]);
 
-  const { status } = useSession();
+  const { data: session, status } = useSession();
   const { toast } = useToast();
 
   const incompleteTasks = tasks.filter((task) => {
@@ -351,6 +354,13 @@ export default function TodolistsPage() {
         tags: [],
         description: '',
       }));
+
+      op.track('ai_tasks_generated', {
+        userId: session?.user.id,
+        input: aiInput,
+        modelType: aiModel,
+        tasksGenerated: data.tasks.length,
+      });
   
       setGeneratedTasks(generatedTasksData);
       setAiInput('');
@@ -532,6 +542,12 @@ export default function TodolistsPage() {
         return sortedTasks ? sortedTasks : prevTasks;
       });
     }
+
+    op.track('sort_changed', {
+      userId: session?.user.id,
+      sortKey: key,
+      direction: sortDirection[key],
+    });
   };  
 
   const handleFilterChange = (type: 'group' | 'tag' | null, value: string | null) => {
@@ -543,6 +559,12 @@ export default function TodolistsPage() {
     } else {
       setManualOrderingEnabled(true);
     }
+
+    op.track('filter_changed', {
+      userId: session?.user.id,
+      type,
+      value,
+    });
   };
 
   const fetchTasksAndGroups = async () => {
@@ -716,11 +738,12 @@ export default function TodolistsPage() {
             isCurrentlyFocused,
           }),
         });
+
         const data = await response.json();
-  
+        const updatedTasks = [data, ...tasks];
+
         setTasks((prevTasks) => {
           if (!prevTasks) return [];
-          const updatedTasks = [data, ...prevTasks];
           if (activeSortOption === 'manualOrder') {
             return updatedTasks.sort((a, b) => a.order - b.order);
           } else {
@@ -733,7 +756,18 @@ export default function TodolistsPage() {
   
         setNewTask('');
         setTags([]);
-  
+
+        op.track('task_added', {
+          userId: session?.user.id,
+          title: newTask,
+          tags,
+          group: selectedGroup,
+          description,
+          dueDate: dueDate ? dueDate.toISOString() : null,
+          priority,
+          isCurrentlyFocused,
+        });
+
         toast({
           title: 'New Task',
           description: 'A new task has been added.',
@@ -741,7 +775,7 @@ export default function TodolistsPage() {
             <ToastAction
               altText="Undo"
               onClick={() => {
-                undoAdd(data._id);
+                undoAdd(data._id, updatedTasks);
               }}
             >
               Undo
@@ -798,7 +832,7 @@ export default function TodolistsPage() {
     }
   };
 
-  const undoAdd = async (taskId: string) => {
+  const undoAdd = async (taskId: string, tasks: Task[]) => {
     setIsLoading(true);
     try {
       const taskToRemove = tasks.find(task => task._id === taskId);
@@ -880,6 +914,11 @@ export default function TodolistsPage() {
         });
       }
 
+      op.track('task_completed', {
+        userId: session?.user.id,
+        taskId,
+      });
+
       toast({
         title: updatedTask.status === 'COMPLETED'
           ? 'Task Completed'
@@ -924,6 +963,11 @@ export default function TodolistsPage() {
         const errorData = await response.json();
         throw new Error(errorData.message || 'Failed to delete task');
       }
+
+      op.track('task_deleted', {
+        userId: session?.user.id,
+        taskId,
+      });
   
       toast({
         title: 'Task Deleted',
@@ -1637,6 +1681,10 @@ export default function TodolistsPage() {
         duration: 3000,
       });
     }
+    op.track('bulk_tasks_completed', {
+      userId: session?.user.id,
+      taskCount: selectedTaskIds.length,
+    });
     setIsLoading(false);
     setShowBulkActions(false);
   };
