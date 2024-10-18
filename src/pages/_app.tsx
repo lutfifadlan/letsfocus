@@ -12,7 +12,7 @@ function MyApp({ Component, pageProps }: AppProps) {
   return (
     <>
       <OpenPanelComponent
-        clientId={process.env.OPEN_PANEL as string}
+        clientId={process.env.OPENPANEL_CLIENT_ID as string}
         trackScreenViews={true}
         profileId={pageProps.session?.user.id as string}
         trackAttributes={true}
