@@ -3334,9 +3334,8 @@ export default function TodolistsPage() {
                               <div className="flex flex-col gap-1 w-full">
                                 {editingTaskTitleId === task._id ? (
                                   <div className="flex items-center gap-1 w-[530px]">
-                                    <Input
-                                      className="flex-1 border mr-1"
-                                      type="text"
+                                    <Textarea
+                                      className="flex-1 border mr-1 w-full min-h-[34px] resize-vertical"
                                       value={taskTitle}
                                       onChange={(e) => setTaskTitle(e.target.value)}
                                       onKeyDown={(e) => {
@@ -3352,6 +3351,12 @@ export default function TodolistsPage() {
                                         }
                                       }}
                                       autoFocus
+                                      rows={Math.ceil(task.title.length / 50)}
+                                      onInput={(e) => {
+                                        const target = e.target as HTMLTextAreaElement;
+                                        target.style.height = 'auto';
+                                        target.style.height = `${target.scrollHeight}px`;
+                                      }}
                                     />
                                     <Button
                                       variant="ghost"
@@ -3381,7 +3386,7 @@ export default function TodolistsPage() {
                                   </div>
                                 ) : (
                                   <p
-                                    className="flex-1 font-medium text-sm hover:cursor-text"
+                                    className="flex-1 font-medium text-sm hover:cursor-text w-[530px] break-words"
                                     onClick={() => {
                                       setEditingTaskTitleId(task._id);
                                       setTaskTitle(task.title);
@@ -3507,6 +3512,54 @@ export default function TodolistsPage() {
                                         </TooltipTrigger>
                                         <TooltipContent>
                                           <p>Set due date</p>
+                                        </TooltipContent>
+                                      </Tooltip>
+                                    </TooltipProvider>
+                                  )}
+                                  {(!task.priority || task.priority === '') && (
+                                    <TooltipProvider>
+                                      <Tooltip>
+                                        <TooltipTrigger>
+                                          <Popover>
+                                            <PopoverTrigger asChild>
+                                              <Button variant="ghost" size="icon" className="w-auto px-1">
+                                                <Flag size={16} />
+                                              </Button>
+                                            </PopoverTrigger>
+                                            <PopoverContent className="w-36">
+                                              <div
+                                                className="flex items-center space-x-2 p-2 rounded-md cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-900 text-sm"
+                                                onClick={() => updateTaskPriority(task._id, 'High')}
+                                              >
+                                                <ChevronsUp size={16} />
+                                                <span>High</span>
+                                              </div>
+                                              <div
+                                                className="flex items-center space-x-2 p-2 rounded-md cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-900 text-sm"
+                                                onClick={() => updateTaskPriority(task._id, 'Medium')}
+                                              >
+                                                <ChevronUp size={16} />
+                                                <span>Medium</span>
+                                              </div>
+                                              <div
+                                                className="flex items-center space-x-2 p-2 rounded-md cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-900 text-sm"
+                                                onClick={() => updateTaskPriority(task._id, 'Low')}
+                                              >
+                                                <ChevronDown size={16} />
+                                                <span>Low</span>
+                                              </div>
+                                              <div
+                                                className="flex items-center space-x-2 p-2 rounded-md cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-900 text-sm"
+                                                onClick={() => updateTaskPriority(task._id, '')}
+                                              >
+                                                <Flag size={16} />
+                                                <span>No Priority</span>
+                                              </div>
+                                            </PopoverContent>
+                                          </Popover>
+                                        </TooltipTrigger>
+                                        <TooltipContent>
+                                          <p>Set priority</p>
                                         </TooltipContent>
                                       </Tooltip>
                                     </TooltipProvider>
