@@ -73,6 +73,15 @@ const ContactMessageSchema = new mongoose.Schema({
   isDeleted: { type: Boolean, default: false },
 }, { timestamps: true });
 
+const AISchema = new mongoose.Schema({
+  userId: { type: String, required: true },
+  input: { type: String, required: true },
+  output: { type: [String] },
+  modelType: { type: String },
+  inputTokens: { type: Number },
+  outputTokens: { type: Number },
+}, { timestamps: true });
+
 UserSchema.index({ email: 1, isDeleted: 1 });
 
 GroupSchema.index({ userId: 1, isDeleted: 1 });
@@ -81,7 +90,7 @@ TaskSchema.index({ userId: 1, isDeleted: 1 });
 
 UserPlanSchema.index({ userId: 1, isDeleted: 1 });
 
-CommentSchema.index({ userId: 1,taskId: 1, isDeleted: 1 });
+CommentSchema.index({ userId: 1, taskId: 1, isDeleted: 1 });
 
 export const User = mongoose.models.User || mongoose.model('User', UserSchema);
 export const Task = mongoose.models.Task || mongoose.model('Task', TaskSchema);
@@ -90,3 +99,4 @@ export const UserPlan = mongoose.models.UserPlan || mongoose.model('UserPlan', U
 export const ContactMessage = mongoose.models.ContactMessage || mongoose.model('ContactMessage', ContactMessageSchema);
 export const Payment = mongoose.models.Payment || mongoose.model('Payment', PaymentSchema);
 export const Comment = mongoose.models.Comment || mongoose.model('Comment', CommentSchema);
+export const AI = mongoose.models.AI || mongoose.model('AI', AISchema);

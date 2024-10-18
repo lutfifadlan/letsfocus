@@ -5,6 +5,7 @@ import bcrypt from "bcryptjs";
 import { User, UserPlan } from "@/lib/models";
 import { connectDB } from "@/lib/mongodb";
 import "next-auth/jwt";
+import { op } from "@/lib/op";
 
 export const authOptions: NextAuthOptions = {
   providers: [
@@ -46,16 +47,19 @@ export const authOptions: NextAuthOptions = {
   },
   callbacks: {
     async session({ session, token }) {
-      session.user.id = token.id as string;
-
+      if (token?.id) {
+        session.user.id = token.id as string;
+      }
       return session;
     },
     async jwt({ token, account, user }) {
       if (account) {
-        token.accessToken = account.access_token
-        token.id = user?.id
+        token.accessToken = account.access_token;
       }
-      return token
+      if (user) {
+        token.id = user.id;
+      }
+      return token;
     },
     async signIn({ user, account }) {
       if (account?.provider === "google") {
@@ -80,6 +84,12 @@ export const authOptions: NextAuthOptions = {
           await userPlan.save();
         }
       }
+
+      op.track('signin', {
+        userId: user.id,
+        email: user.email,
+      });
+
       return true;
     },
   },
