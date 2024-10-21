@@ -1,24 +1,34 @@
+// run with tsx src/migrations/deleteSafeDeletedTasks.ts
 import { connectDB } from '@/lib/mongodb';
-import { Task } from '@/lib/models';
+import { Task, Group, Comment, UserPlan } from '@/lib/models';
 
-async function deleteSafeDeletedTasks(dryRun = false) {
+async function deleteIsDeletedTrueData(dryRun = false) {
   await connectDB();
 
-  const query = { isDeleted: true };
+  const taskQuery = { isDeleted: true };
+  const groupQuery = { isDeleted: true };
+  const commentQuery = { isDeleted: true };
+  const userPlanQuery = { isDeleted: true };
 
   if (dryRun) {
-    const count = await Task.countDocuments(query);
-    console.log(`Dry run: ${count} safe deleted tasks would be deleted.`);
+    const taskCount = await Task.countDocuments(taskQuery);
+    const groupCount = await Group.countDocuments(groupQuery);
+    const commentCount = await Comment.countDocuments(commentQuery);
+    const userPlanCount = await UserPlan.countDocuments(userPlanQuery);
+    console.log(`Dry run: ${taskCount} safe deleted tasks, ${groupCount} groups, ${commentCount} comments, and ${userPlanCount} user plans would be deleted.`);
   } else {
-    const result = await Task.deleteMany(query);
-    console.log(`${result.deletedCount} safe deleted tasks were deleted successfully.`);
+    const taskResult = await Task.deleteMany(taskQuery);
+    const groupResult = await Group.deleteMany(groupQuery);
+    const commentResult = await Comment.deleteMany(commentQuery);
+    const userPlanResult = await UserPlan.deleteMany(userPlanQuery);
+    console.log(`${taskResult.deletedCount} safe deleted tasks, ${groupResult.deletedCount} groups, ${commentResult.deletedCount} comments, and ${userPlanResult.deletedCount} user plans were deleted successfully.`);
   }
 
   process.exit(0);
 }
 
 // Call the function with dryRun parameter as needed
-deleteSafeDeletedTasks(true).catch((error) => {
+deleteIsDeletedTrueData(false).catch((error) => {
   console.error(error);
   process.exit(1);
 });
