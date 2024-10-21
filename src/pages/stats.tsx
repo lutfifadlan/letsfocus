@@ -44,6 +44,7 @@ import {
   differenceInCalendarDays,
 } from 'date-fns';
 import { PLANS } from '@/constants';
+import CustomBackground from '@/components/backgrounds/custom';
 
 export default function StatsPage() {
   const [tasks, setTasks] = useState<Task[]>([]);
@@ -454,7 +455,8 @@ export default function StatsPage() {
 
   return (
     <Layout>
-      <div className="container mx-auto my-8 px-4">
+      <CustomBackground type="animated-grid" />
+      <div className="container mx-auto my-8 px-4 relative z-10">
         {/* Header Section */}
         <div className="flex flex-col sm:flex-row justify-between items-center mb-4">
           <h2 className="text-xl font-bold">
@@ -466,7 +468,7 @@ export default function StatsPage() {
               value={selectedDateRange}
               onValueChange={setSelectedDateRange}
             >
-              <SelectTrigger className="w-[180px]">
+              <SelectTrigger className="w-[180px] bg-background">
                 <SelectValue placeholder="Select a date range" />
               </SelectTrigger>
               <SelectContent>

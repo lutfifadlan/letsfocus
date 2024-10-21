@@ -33,7 +33,7 @@ import {
   TableBody,
   TableCell,
 } from '@/components/ui/table';
-import { CardTitle } from '@/components/ui/card';
+import { Card, CardTitle } from '@/components/ui/card';
 import { Popover, PopoverTrigger, PopoverContent } from '@/components/ui/popover';
 import { CalendarDatePicker } from '@/components/calendar-date-picker';
 import { InputTags } from '@/components/ui/input-tags';
@@ -46,6 +46,7 @@ import {
 } from '@/components/ui/dialog';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { PLANS } from '@/constants';
+import CustomBackground from '@/components/backgrounds/custom';
 
 export default function TasksPage() {
   const [tasks, setTasks] = useState<Task[]>([]);
@@ -410,7 +411,8 @@ export default function TasksPage() {
 
   return (
     <Layout>
-      <div className="max-w-7xl mx-auto">
+      <CustomBackground type="animated-grid" />
+      <Card className="max-w-7xl mx-auto relative z-10 px-4 py-4">
         <CardTitle className="text-center text-2xl">Tasks History</CardTitle>
 
         {/* Search Bar and Toolbar */}
@@ -972,7 +974,7 @@ export default function TasksPage() {
             <p className="text-gray-500 text-center text-sm">No tasks found.</p>
           )}
         </div>
-      </div>
+      </Card>
 
       {/* Task Details Dialog */}
       {selectedTask && (

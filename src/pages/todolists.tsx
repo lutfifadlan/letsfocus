@@ -56,6 +56,7 @@ import TaskInputPlaceholder from '@/components/task-input-placeholder';
 import AiInputPlaceholder from '@/components/ai-input-placeholder';
 import SearchInputPlaceholder from '@/components/search-input-placeholder';
 import { useOpenPanel } from '@openpanel/nextjs';
+import CustomBackground from '@/components/backgrounds/custom';
 
 
 const MAXIMUM_COMMENT_CHARS_LENGTH = 10000;
@@ -2085,7 +2086,8 @@ export default function TodolistsPage() {
 
   return (
     <Layout>
-      <Card className="max-w-4xl mx-auto border-none shadow-none">
+      <CustomBackground type="animated-grid" />
+      <Card className="max-w-4xl mx-auto relative z-20 py-5">
         <CardHeader className="mb-2 pt-0 pb-0">
           <div className="flex justify-between items-center mb-1">
             <div className="flex items-center space-x-2">
