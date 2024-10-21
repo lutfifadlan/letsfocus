@@ -74,7 +74,8 @@ const config: Config = {
   			'background-position-spin': 'background-position-spin 3000ms infinite alternate',
   			shine: 'shine var(--duration) infinite linear',
   			'accordion-down': 'accordion-down 0.2s ease-out',
-  			'accordion-up': 'accordion-up 0.2s ease-out'
+  			'accordion-up': 'accordion-up 0.2s ease-out',
+  			grid: 'grid 15s linear infinite'
   		},
   		keyframes: {
   			rainbow: {
@@ -118,6 +119,14 @@ const config: Config = {
   				},
   				to: {
   					height: '0'
+  				}
+  			},
+  			grid: {
+  				'0%': {
+  					transform: 'translateY(-50%)'
+  				},
+  				'100%': {
+  					transform: 'translateY(0)'
   				}
   			}
   		}

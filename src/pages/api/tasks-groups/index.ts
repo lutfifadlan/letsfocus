@@ -12,7 +12,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
   await connectDB();
 
-  const user = await User.findOne({ email: session.user.email });
+  const user = await User.findOne({ email: session.user.email, isDeleted: false });
 
   if (!user) {
     return res.status(404).json({ message: 'User not found' });
@@ -23,12 +23,10 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       try {
         const tasks = await Task.find({
           userId: user._id,
-          isDeleted: false,
         });
 
         const groups = await Group.find({
           userId: user._id,
-          isDeleted: false,
         });
 
         res.status(200).json({ tasks, groups });

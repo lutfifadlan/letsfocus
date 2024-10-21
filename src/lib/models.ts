@@ -15,21 +15,18 @@ const UserSchema = new mongoose.Schema({
 const GroupSchema = new mongoose.Schema({
   name: { type: String, required: true },
   userId: { type: String, required: true },
-  isDeleted: { type: Boolean, default: false },
 }, { timestamps: true });
 
 const CommentSchema = new mongoose.Schema({
   taskId: { type: String, required: true },
   userId: { type: String, required: true },
   content: { type: String, required: true },
-  isDeleted: { type: Boolean, default: false },
 }, { timestamps: true });
 
 const TaskSchema = new mongoose.Schema({
   title: { type: String, required: true },
   description: { type: String, default: null },
   userId: { type: String, required: true },
-  isDeleted: { type: Boolean, default: false },
   tags: { type: [String], default: [] },
   group: { type: String, default: null },
   dueDate: { type: Date, default: null },
@@ -47,7 +44,6 @@ const TaskSchema = new mongoose.Schema({
 const UserPlanSchema = new mongoose.Schema({
   userId: { type: String, required: true, unique: true },
   plan: { type: String, default: 'FREE' },
-  isDeleted: { type: Boolean, default: false },
   subscriptionStartDate: { type: Date },
   subscriptionEndDate: { type: Date },
   paymentIds: { type: [String] },
@@ -70,7 +66,6 @@ const ContactMessageSchema = new mongoose.Schema({
   message: { type: String, required: true },
   isResolved: { type: Boolean, default: false },
   resolvedAt: Date,
-  isDeleted: { type: Boolean, default: false },
 }, { timestamps: true });
 
 const AISchema = new mongoose.Schema({
@@ -84,13 +79,13 @@ const AISchema = new mongoose.Schema({
 
 UserSchema.index({ email: 1, isDeleted: 1 });
 
-GroupSchema.index({ userId: 1, isDeleted: 1 });
+GroupSchema.index({ userId: 1 });
 
-TaskSchema.index({ userId: 1, isDeleted: 1 });
+TaskSchema.index({ userId: 1 });
 
-UserPlanSchema.index({ userId: 1, isDeleted: 1 });
+UserPlanSchema.index({ userId: 1 });
 
-CommentSchema.index({ userId: 1, taskId: 1, isDeleted: 1 });
+CommentSchema.index({ userId: 1, taskId: 1 });
 
 export const User = mongoose.models.User || mongoose.model('User', UserSchema);
 export const Task = mongoose.models.Task || mongoose.model('Task', TaskSchema);

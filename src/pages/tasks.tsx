@@ -170,8 +170,6 @@ export default function TasksPage() {
       });
     }
 
-    filtered = filtered.filter((task) => !task.isDeleted);
-
     if (filterCriteria.tags.length > 0) {
       filtered = filtered.filter((task) =>
         filterCriteria.tags.every((tag) => task.tags.includes(tag))

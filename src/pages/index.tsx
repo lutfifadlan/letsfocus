@@ -12,6 +12,7 @@ import BlurIn from "@/components/ui/blur-in";
 import { ArrowUpDown, ChartNoAxesCombined, List, ListChecks, Sparkles, MessageSquare } from "lucide-react";
 import { useTheme } from "next-themes";
 import Safari from "@/components/ui/safari";
+import CustomBackground from "@/components/backgrounds/custom";
 
 export default function Home() {
   const router = useRouter();
@@ -29,7 +30,8 @@ export default function Home() {
 
   return (
     <Layout>
-      <main className="flex flex-col items-center justify-center min-h-screen px-4">
+      <CustomBackground type="animated-grid" />
+      <main className="flex flex-col items-center justify-center min-h-screen px-4 relative z-10">
         {/* Hero Section */}
         <section className="text-center mt-4">
           <h1 className="text-3xl md:text-5xl font-extrabold text-gray-900">

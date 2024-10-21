@@ -4,6 +4,9 @@ import dotenv from 'dotenv';
 if (process.env.NODE_ENV !== 'production') {
   dotenv.config({ path: '.env.local' });
 }
+// } else { -> add this when migrating
+//   dotenv.config({ path: '.env.local' });
+// }
 
 const { MONGODB_URI } = process.env;
 const { MONGODB_DEV_URI } = process.env;

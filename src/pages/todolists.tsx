@@ -278,7 +278,7 @@ export default function TodolistsPage() {
   const { toast } = useToast();
 
   const incompleteTasks = tasks.filter((task) => {
-    const baseCondition = task.status !== 'COMPLETED' && !task.isDeleted && task.status !== 'IGNORED';
+    const baseCondition = task.status !== 'COMPLETED' && task.status !== 'IGNORED';
     const filterCondition = 
       currentFilter.type === null ? true :
       currentFilter.type === 'group' ? task.group === currentFilter.value :
@@ -346,7 +346,6 @@ export default function TodolistsPage() {
       const generatedTasksData = data.tasks.map((title: string) => ({
         title,
         status: 'PENDING',
-        isDeleted: false,
         isCurrentlyFocused: false,
         priority: '',
         dueDate: null,
@@ -572,7 +571,7 @@ export default function TodolistsPage() {
     try {
       const response = await fetch('/api/tasks-groups');
       const data = await response.json();
-      const fetchedTasks = data.tasks?.filter((task: Task) => !task.isDeleted && task.status !== 'COMPLETED') || [];
+      const fetchedTasks = data.tasks?.filter((task: Task) => task.status !== 'COMPLETED') || [];
       
       // Check if manual ordering is disabled (i.e., sorting is active)
       if (!manualOrderingEnabled) {
@@ -946,11 +945,9 @@ export default function TodolistsPage() {
     if (!taskToDelete) return;
   
     setTasks((prevTasks) =>
-      prevTasks.map((task) =>
-        task._id === taskId ? { ...task, isDeleted: true } : task
-      )
+      prevTasks.filter((task) => task._id !== taskId)
     );
-  
+
     try {
       const response = await fetch(`/api/tasks/${taskId}`, {
         method: 'DELETE',
@@ -976,7 +973,7 @@ export default function TodolistsPage() {
           action: (
           <Button
             variant="outline"
-            onClick={() => undoDelete(taskToDelete._id)}
+            onClick={() => undoDelete(taskToDelete)}
           >
             Undo
           </Button>
@@ -992,7 +989,7 @@ export default function TodolistsPage() {
   
       setTasks((prevTasks) =>
         prevTasks.map((task) =>
-          task._id === taskId ? { ...task, isDeleted: false } : task
+          task._id === taskId ? { ...task } : task
         )
       );
     }
@@ -1001,15 +998,15 @@ export default function TodolistsPage() {
     setShowBulkActions(false);
   };
   
-  const undoDelete = async (taskId: string) => {
+  const undoDelete = async (deletedTask: Task) => {
     setIsLoading(true);
     try {
-      const response = await fetch(`/api/tasks/${taskId}`, {
-        method: 'PUT',
+      const response = await fetch(`/api/tasks`, {
+        method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ isDeleted: false }),
+        body: JSON.stringify({ ...deletedTask }),
       });
   
       if (!response.ok) {
@@ -1017,11 +1014,8 @@ export default function TodolistsPage() {
         throw new Error(errorData.message || 'Failed to undo delete');
       }
   
-      setTasks((prevTasks) =>
-        prevTasks.map((task) =>
-          task._id === taskId ? { ...task, isDeleted: false } : task
-        )
-      );
+      const newTask = await response.json();
+      setTasks((prevTasks) => [...prevTasks, newTask]);
   
       toast({
         title: 'Undo Successful',
@@ -1047,10 +1041,6 @@ export default function TodolistsPage() {
     );
     if (tasksToDelete.length === 0) return;
 
-    setTasks((prevTasks) =>
-      prevTasks.filter((task) => !selectedTaskIds.includes(task._id))
-    );
-
     try {
       const response = await fetch('/api/tasks', {
         method: 'DELETE',
@@ -1070,7 +1060,7 @@ export default function TodolistsPage() {
         description: `${tasksToDelete.length} tasks have been deleted.`,
         duration: 5000,
         action: (
-          <ToastAction altText="Undo" onClick={() => undoDeleteSelectedTasks(selectedTaskIds)}>
+          <ToastAction altText="Undo" onClick={() => undoDeleteSelectedTasks(tasksToDelete)}>
             Undo
           </ToastAction>
         ),
@@ -1083,20 +1073,15 @@ export default function TodolistsPage() {
         variant: 'destructive',
         duration: 3000,
       });
-
-      setTasks((prevTasks) =>
-        prevTasks.map((task) =>
-          selectedTaskIds.includes(task._id)
-            ? { ...task, isDeleted: false }
-            : task
-        )
-      );
     }
+    setTasks((prevTasks) =>
+      prevTasks.filter((task) => !selectedTaskIds.includes(task._id))
+    );
     setShowBulkActions(false);
     setIsLoading(false);
   };
 
-  const undoDeleteSelectedTasks = async (taskIds: string[]) => {
+  const undoDeleteSelectedTasks = async (deletedTasks: Task[]) => {
     setIsLoading(true);
     try {
       const response = await fetch(`/api/tasks/bulk`, {
@@ -1104,7 +1089,7 @@ export default function TodolistsPage() {
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ taskIds, isDeleted: false }),
+        body: JSON.stringify({ tasks: deletedTasks }),
       });
 
       if (!response.ok) {
@@ -1117,7 +1102,7 @@ export default function TodolistsPage() {
       setTasks((prevTasks) =>
         prevTasks.map((task) =>
           selectedTasks.updatedTasks.some((selectedTask: Task) => selectedTask._id === task._id)
-            ? { ...task, isDeleted: false }
+            ? { ...task }
             : task
         )
       );
@@ -1854,7 +1839,6 @@ export default function TodolistsPage() {
           content, 
           taskId: responseData.taskId, 
           userId: responseData.userId, 
-          isDeleted: responseData.isDeleted, 
           createdAt: responseData.createdAt, 
           updatedAt: responseData.updatedAt 
         }
@@ -1911,10 +1895,13 @@ export default function TodolistsPage() {
   };
   
   const deleteComment = async (taskId: string, commentId: string) => {
+    console.log('taskId', taskId);
+    console.log('commentId', commentId);
     setIsLoading(true);
     try {
       const response = await fetch(`/api/tasks/comments/${commentId}`, {
         method: 'DELETE',
+        body: JSON.stringify({ taskId }),
       });
   
       if (!response.ok) {

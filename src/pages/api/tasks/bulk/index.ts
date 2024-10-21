@@ -18,18 +18,15 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     return res.status(404).json({ message: 'User not found' });
   }
 
-  const { taskIds, tags, dueDate, priority, group, status, isDeleted, isCurrentlyFocused, tasks } = req.body;
+  const { taskIds, tags, dueDate, priority, group, status, isCurrentlyFocused, tasks } = req.body;
   let completedAt = null;
   let ignoredAt = null;
-  let deletedAt = null;
 
   if (req.method === 'PUT') {
     if (status === 'COMPLETED') {
       completedAt = new Date();
     } else if (status === 'IGNORED') {
       ignoredAt = new Date();
-    } else if (status === 'DELETED') {
-      deletedAt = new Date();
     }
 
     try {
@@ -41,15 +38,13 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         status,
         completedAt,
         ignoredAt,
-        deletedAt,
-        isDeleted,
         isCurrentlyFocused,
       });
       const updatedTasks = await Task.find({ _id: { $in: taskIds }, userId: user._id });
-      res.status(200).json({ message: 'Tags updated successfully', updatedTasks });
+      res.status(200).json({ message: 'Tasks updated successfully', updatedTasks });
     } catch (error) {
-    console.error(error);
-      res.status(500).json({ error: 'Error updating tags' });
+      console.error(error);
+      res.status(500).json({ error: 'Error updating tasks' });
     }
   } else if (req.method === 'POST') {
     try {
@@ -62,6 +57,17 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     } catch (error) {
       console.error(error);
       res.status(500).json({ error: 'Error adding tasks' });
+    }
+  } else if (req.method === 'DELETE') {
+    try {
+      const result = await Task.deleteMany({ _id: { $in: taskIds }, userId: user._id });
+      if (result.deletedCount === 0) {
+        return res.status(404).json({ message: 'No tasks found to delete' });
+      }
+      res.status(200).json({ message: 'Tasks deleted successfully', deletedCount: result.deletedCount });
+    } catch (error) {
+      console.error(error);
+      res.status(500).json({ error: 'Error deleting tasks' });
     }
   } else {
     res.status(405).json({ error: 'Method not allowed' });

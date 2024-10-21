@@ -42,7 +42,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       break;
     case 'DELETE':
       const { groupId: deleteGroupId } = req.body;
-      const deletedGroup = await Group.findOneAndUpdate({ _id: deleteGroupId, userId: user._id, isDeleted: false }, { isDeleted: true }, { new: true });
+      const deletedGroup = await Group.findOneAndDelete({ _id: deleteGroupId, userId: user._id }, { new: true });
       res.status(200).json(deletedGroup);
       break;
     default:

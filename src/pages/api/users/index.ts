@@ -24,7 +24,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       res.status(200).json(user);
     } else if (req.method === 'PUT') {
       const { isFirstLogin } = req.body;
-      const user = await User.findOne({ email: session.user.email, isDeleted: false });
+      const user = await User.findOne({ email: session.user.email });
 
       if (!user) {
         return res.status(404).json({ message: 'User not found' });
