@@ -11,6 +11,7 @@ import { FaGoogle } from 'react-icons/fa';
 import { Separator } from "@/components/ui/separator";
 import Image from 'next/image';
 import { useSession } from 'next-auth/react';
+import CustomBackground from '@/components/backgrounds/custom';
 
 const SignIn: React.FC = () => {
   const [email, setEmail] = useState<string>('');
@@ -92,6 +93,7 @@ const SignIn: React.FC = () => {
 
   return (
     <div className="relative min-h-screen flex items-center justify-center">
+      <CustomBackground type="animated-grid" />
       <motion.div 
         className="z-10 bg-background p-8 rounded-xl w-full max-w-md border border-gray-300 dark:border-gray-700"
         initial={{ opacity: 0, y: -20 }}

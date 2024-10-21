@@ -37,7 +37,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
         onMouseLeave={handleMouseLeave}
         className={`${
           isHeaderVisible || router.pathname === '/' || router.pathname !=='/todolists' ? 'opacity-100' : 'opacity-0'
-        }`}
+        } relative z-10`}
       >
         <Header />
       </div>

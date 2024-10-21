@@ -12,6 +12,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useSession } from 'next-auth/react';
 import Layout from '@/components/layout';
 import confetti from 'canvas-confetti';
+import CustomBackground from '@/components/backgrounds/custom';
 
 const MAX_DISCOUNT_SEATS = 50;
 const DISCOUNT_PERCENTAGE = 0.35;
@@ -370,63 +371,64 @@ const PricingPage = () => {
 
   return (
   <Layout>
-      <div className="flex-grow container mx-auto py-2 px-4 pb-3">
-        <h1 className="text-4xl font-extrabold text-center mb-4">Upgrade to Pro</h1>
-        <div className="bg-gradient-to-r from-yellow-200 via-yellow-300 to-yellow-400 border-yellow-500 text-yellow-900 p-4 mb-4 rounded-lg shadow-md" role="alert">
-          <p className="font-extrabold text-center text-lg">Limited-seats offer!</p>
-          <p className="text-center text-sm">
-            Only for the first <span className="font-bold">{MAX_DISCOUNT_SEATS}</span> users (<span className="font-bold">{remainingDiscountSeats}</span> left) who will get special price
-          </p>
-        </div>
-        <div className="flex justify-center items-center mb-4">
-          <span className={`mr-3 ${!isYearly ? 'font-semibold' : ''}`}>Monthly</span>
-          <Switch 
-            checked={isYearly} 
-            onCheckedChange={setIsYearly} 
-            className="scale-125"
-          />
-          <span className={`ml-3 ${isYearly ? 'font-semibold' : ''}`}>
-            Yearly <span className="font-bold">(Save 33%)</span>
-          </span>
-          <div className="flex items-center ml-6">
-            <Label htmlFor="payment-method" className="mr-2">Payment Method:</Label>
-            <Select 
-              value={paymentMethod} 
-              onValueChange={(value) => setPaymentMethod(value as 'xendit' | 'lemonsqueezy')}
-            >
-              <SelectTrigger className="w-[220px]" id="payment-method">
-                <SelectValue placeholder="Select Payment Method" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="xendit">
-                  <div className="flex items-center cursor-pointer">
-                    <Image src='/xendit.png' alt="Xendit" width={25} height={25} className="mr-2" />
-                    Xendit (IDR)
-                  </div>
-                </SelectItem>
-                <SelectItem value="lemonsqueezy">
-                  <div className="flex items-center cursor-pointer">
-                    <Image src='/lemonsqueezy.png' alt="Lemonsqueezy" width={25} height={25} className="mr-2" />
-                    Lemonsqueezy (USD)
-                  </div>
-                </SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-        </div>
-        <div className="flex justify-center items-center gap-8 max-w-6xl mx-auto">
-          {pricingTiers.map((tier, index) => (
-            <PricingTier 
-              key={index} 
-              {...tier} 
-              isYearly={isYearly}
-              paymentMethod={paymentMethod}
-              discountEndDate={discountEndDate}
-            />
-          ))}
+    <CustomBackground type="animated-grid" />
+    <div className="flex-grow container mx-auto py-2 px-4 pb-3 relative z-10">
+      <h1 className="text-4xl font-extrabold text-center mb-4">Upgrade to Pro</h1>
+      <div className="bg-gradient-to-r from-yellow-200 via-yellow-300 to-yellow-400 border-yellow-500 text-yellow-900 p-4 mb-4 rounded-lg shadow-md" role="alert">
+        <p className="font-extrabold text-center text-lg">Limited-seats offer!</p>
+        <p className="text-center text-sm">
+          Only for the first <span className="font-bold">{MAX_DISCOUNT_SEATS}</span> users (<span className="font-bold">{remainingDiscountSeats}</span> left) who will get special price
+        </p>
+      </div>
+      <div className="flex justify-center items-center mb-4">
+        <span className={`mr-3 ${!isYearly ? 'font-semibold' : ''}`}>Monthly</span>
+        <Switch 
+          checked={isYearly} 
+          onCheckedChange={setIsYearly} 
+          className="scale-125"
+        />
+        <span className={`ml-3 ${isYearly ? 'font-semibold' : ''}`}>
+          Yearly <span className="font-bold">(Save 33%)</span>
+        </span>
+        <div className="flex items-center ml-6">
+          <Label htmlFor="payment-method" className="mr-2">Payment Method:</Label>
+          <Select 
+            value={paymentMethod} 
+            onValueChange={(value) => setPaymentMethod(value as 'xendit' | 'lemonsqueezy')}
+          >
+            <SelectTrigger className="w-[220px] bg-white dark:bg-black" id="payment-method">
+              <SelectValue placeholder="Select Payment Method" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="xendit">
+                <div className="flex items-center cursor-pointer">
+                  <Image src='/xendit.png' alt="Xendit" width={25} height={25} className="mr-2" />
+                  Xendit (IDR)
+                </div>
+              </SelectItem>
+              <SelectItem value="lemonsqueezy">
+                <div className="flex items-center cursor-pointer">
+                  <Image src='/lemonsqueezy.png' alt="Lemonsqueezy" width={25} height={25} className="mr-2" />
+                  Lemonsqueezy (USD)
+                </div>
+              </SelectItem>
+            </SelectContent>
+          </Select>
         </div>
       </div>
-    </Layout>
+      <div className="flex justify-center items-center gap-8 max-w-6xl mx-auto">
+        {pricingTiers.map((tier, index) => (
+          <PricingTier 
+            key={index} 
+            {...tier} 
+            isYearly={isYearly}
+            paymentMethod={paymentMethod}
+            discountEndDate={discountEndDate}
+          />
+        ))}
+      </div>
+    </div>
+  </Layout>
   );
 };
 

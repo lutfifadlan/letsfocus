@@ -14,6 +14,7 @@ import Link from 'next/link';
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import { Eye, EyeOff } from 'lucide-react';
+import CustomBackground from '@/components/backgrounds/custom';
 
 const Register: React.FC = () => {
   const { status } = useSession();
@@ -109,6 +110,7 @@ const Register: React.FC = () => {
 
   return (
     <div className="relative min-h-screen flex items-center justify-center">
+      <CustomBackground type="animated-grid" />
       <motion.div
         className="z-10 bg-background p-8 rounded-xl w-full max-w-md border border-gray-300 dark:border-gray-700"
         initial={{ opacity: 0, y: -20 }}
