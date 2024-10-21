@@ -3,7 +3,7 @@ import { Comment, User, UserPlan } from '@/lib/models';
 import { connectDB } from '@/lib/mongodb';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
-
+import { ObjectId } from 'mongodb';
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   const session = await getServerSession(req, res, authOptions);
 
@@ -47,7 +47,9 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       break;
 
     case 'DELETE':
-      await Comment.findOneAndUpdate({ _id: req.query.id, userId: user._id }, { isDeleted: true });
+      const { taskId: deleteTaskId } = req.body;
+      console.log("req.query.id", req.query);
+      await Comment.findOneAndDelete({ _id: new ObjectId(req.query.id as string), userId: user._id, taskId: deleteTaskId });
       res.status(200).json({ message: 'Comment deleted' });
       break;
   }

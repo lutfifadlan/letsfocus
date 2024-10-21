@@ -2,7 +2,6 @@ export interface Task {
   _id: string;
   title: string;
   description: string;
-  isDeleted: boolean;
   userId: string;
   createdAt: Date;
   updatedAt: Date;
@@ -23,7 +22,6 @@ export interface UserPlan {
   _id: string;
   userId: string;
   plan: string;
-  isDeleted: boolean;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -38,7 +36,6 @@ export interface Comment {
   taskId: string;
   userId: string;
   content: string;
-  isDeleted: boolean;
   createdAt: Date;
   updatedAt: Date;
 }

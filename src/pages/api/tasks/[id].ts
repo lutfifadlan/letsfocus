@@ -119,15 +119,13 @@ export default async function handler(
 
     case 'DELETE':
       try {
-        const result = await Task.updateOne(
+        const result = await Task.deleteOne(
           { _id: new ObjectId(taskId as string), userId: user._id },
-          { $set: { isDeleted: true, deletedAt: new Date() } }
         );
-        if (result.matchedCount === 0) {
+        if (result.deletedCount === 0) {
           return res.status(404).json({ message: 'Task not found' });
         }
-        const deletedTask = await Task.findOne({ _id: new ObjectId(taskId as string) });
-        res.status(200).json({ message: 'Task marked as deleted successfully', deletedTask });
+        res.status(200).json({ message: 'Task deleted successfully' });
       } catch (error) {
         console.error(error);
         res.status(500).json({ message: 'Internal Server Error' });

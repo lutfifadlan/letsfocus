@@ -6,7 +6,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   try {
     await connectDB();
 
-    const userPlansCount = await UserPlan.countDocuments({ isDeleted: false, plan: { $ne: 'FREE' } });
+    const userPlansCount = await UserPlan.countDocuments({ plan: { $ne: 'FREE' } });
 
     res.status(200).json({ count: userPlansCount });
   } catch (error) {

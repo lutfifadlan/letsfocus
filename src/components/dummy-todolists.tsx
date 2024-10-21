@@ -63,7 +63,6 @@ const defaultTasks: Task[] = [
     description: '',
     dueDate: new Date(), // due date as today
     status: 'PENDING',
-    isDeleted: false,
     userId,
     createdAt: new Date(),
     updatedAt: new Date(),
@@ -81,7 +80,6 @@ const defaultTasks: Task[] = [
     description: '',
     dueDate: new Date(), // due date as today
     status: 'PENDING',
-    isDeleted: false,
     userId,
     createdAt: new Date(),
     updatedAt: new Date(),
@@ -151,7 +149,7 @@ export default function DummyTodolists() {
 
   const { toast } = useToast();
   const incompleteTasks = tasks.filter(
-    (task) => task.status !== 'COMPLETED' && !task.isDeleted
+    (task) => task.status !== 'COMPLETED'
   );
 
   const handleAddTask = (description: string) => {
@@ -236,7 +234,6 @@ export default function DummyTodolists() {
           description: description,
           dueDate: dueDate,
           status: 'PENDING',
-          isDeleted: false,
           userId,
           createdAt: new Date(),
           updatedAt: new Date(),

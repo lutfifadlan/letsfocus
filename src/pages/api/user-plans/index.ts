@@ -14,7 +14,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   try {
     await connectDB();
 
-    const user = await User.findOne({ email: session.user.email, isDeleted: false });
+    const user = await User.findOne({ email: session.user.email });
 
     if (!user) {
       return res.status(404).json({ message: 'User not found' });
@@ -22,7 +22,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
     switch (req.method) {
       case 'GET':
-        const userPlan = await UserPlan.findOne({ userId: user._id, isDeleted: false })
+        const userPlan = await UserPlan.findOne({ userId: user._id })
           .sort({ createdAt: -1 });
 
         if (!userPlan) {
@@ -43,7 +43,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       case 'PUT':
         const { plan } = req.body;
 
-        const existingPlan = await UserPlan.findOne({ userId: user._id, isDeleted: false })
+        const existingPlan = await UserPlan.findOne({ userId: user._id })
           .sort({ createdAt: -1 });
 
         if (!existingPlan) {

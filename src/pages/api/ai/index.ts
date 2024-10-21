@@ -25,7 +25,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     return res.status(404).json({ message: 'User not found' });
   }
 
-  const userPlan = await UserPlan.findOne({ userId: user._id, isDeleted: false })
+  const userPlan = await UserPlan.findOne({ userId: user._id })
 
   if (!userPlan) {
     return res.status(404).json({ message: 'User plan not found' });
