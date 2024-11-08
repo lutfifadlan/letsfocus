@@ -25,7 +25,13 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
     );
   }
 
-  if (status === 'unauthenticated' && (router.pathname === '/todolists' || router.pathname === '/stats' || router.pathname === '/tasks')) {
+  if (status === 'unauthenticated' && (
+    router.pathname === '/todolists' || 
+    router.pathname === '/stats' || 
+    router.pathname === '/tasks' ||
+    router.pathname === '/habits' ||
+    router.pathname === '/habits-history'
+  )) {
     router.push('/signin');
     return null;
   }
@@ -42,7 +48,11 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
         <Header />
       </div>
       <main className="flex-grow w-full mx-auto overflow-y-auto">  {/* Updated this line */}
-        {router.pathname === '/todolists' || router.pathname === '/stats' || router.pathname === '/tasks' ? (
+        {router.pathname === '/todolists' || 
+         router.pathname === '/stats' || 
+         router.pathname === '/tasks' ||
+         router.pathname === '/habits' ||
+         router.pathname === '/habits-history' ? (
           <div className="flex">
             <div className="flex-grow">
               {children}
@@ -55,7 +65,11 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
         )}
       </main>
       <Script src="https://autoback.link/autobacklink.js?ref=letsfocus.today" defer async />
-      {router.pathname !== '/todolists' && router.pathname !== '/stats' && router.pathname !== '/tasks' && <Footer />} {/* Show Footer only on landing page */}
+      {router.pathname !== '/todolists' && 
+       router.pathname !== '/stats' && 
+       router.pathname !== '/tasks' &&
+       router.pathname !== '/habits' &&
+       router.pathname !== '/habits-history' && <Footer />} {/* Show Footer only on landing page */}
     </div>
   );
 };
