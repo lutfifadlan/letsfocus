@@ -77,6 +77,22 @@ const AISchema = new mongoose.Schema({
   outputTokens: { type: Number },
 }, { timestamps: true });
 
+const habitSchema = new mongoose.Schema({
+  title: {
+    type: String,
+    required: true,
+  },
+  userId: {
+    type: String,
+    required: true,
+  },
+  completionDates: [{
+    type: String,
+  }],
+}, {
+  timestamps: true,
+});
+
 UserSchema.index({ email: 1, isDeleted: 1 });
 
 GroupSchema.index({ userId: 1 });
@@ -95,3 +111,4 @@ export const ContactMessage = mongoose.models.ContactMessage || mongoose.model('
 export const Payment = mongoose.models.Payment || mongoose.model('Payment', PaymentSchema);
 export const Comment = mongoose.models.Comment || mongoose.model('Comment', CommentSchema);
 export const AI = mongoose.models.AI || mongoose.model('AI', AISchema);
+export const Habit = mongoose.models.Habit || mongoose.model('Habit', habitSchema);
