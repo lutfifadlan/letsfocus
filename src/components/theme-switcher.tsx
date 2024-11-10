@@ -8,7 +8,6 @@ import {
   DropdownMenuContent,
   DropdownMenuItem,
 } from '@/components/ui/dropdown-menu';
-import { Button } from './ui/button';
 import { useSession } from 'next-auth/react';
 import { useToast } from "@/hooks/use-toast";
 
@@ -72,26 +71,32 @@ const ThemeSwitcher = () => {
   }
 
   return (
-    <div className="theme-switcher">
+    <div className="theme-switcher w-full">
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
-          <Button
-            variant="ghost"
-            className="w-full border-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700">
-            {themes.find(t => t.name === resolvedTheme)?.icon}
-          </Button>
+          <div className="flex justify-start items-center w-full">
+            <div className="h-4 w-4 mr-5">
+              {themes.find(t => t.name === resolvedTheme)?.icon}
+            </div>
+            <span>Switch Theme</span>
+          </div>
         </DropdownMenuTrigger>
-        <DropdownMenuContent>
+        <DropdownMenuContent
+          align="start"
+          sideOffset={8}
+          className="w-[200px] bg-popover border border-border"
+        >
           {themes.map(({ name, icon }) => (
             <DropdownMenuItem
               key={name}
               onSelect={() => handleThemeChange(name)}
               disabled={!isPro && name !== 'light'}
+              className="text-foreground hover:bg-accent hover:text-accent-foreground"
             >
-              <div className={`flex items-center space-x-2 cursor-pointer ${!isPro && name !== 'light' ? 'opacity-50' : ''}`}>
-                {icon}
+              <div className={`flex items-center space-x-2 w-full cursor-pointer ${!isPro && name !== 'light' ? 'opacity-50' : ''}`}>
+                <span className="h-4 w-4 mr-2">{icon}</span>
                 <span>{name.charAt(0).toUpperCase() + name.slice(1)}</span>
-                {!isPro && name !== 'light' && <span className="text-xs text-gray-500">(Pro)</span>}
+                {!isPro && name !== 'light' && <span className="text-xs text-muted-foreground ml-auto">(Pro)</span>}
               </div>
             </DropdownMenuItem>
           ))}

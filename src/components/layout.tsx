@@ -21,17 +21,18 @@ import { Button } from './ui/button';
 import { 
   BarChart, 
   Calendar,
-  CheckCircle,
-  ListTodo,
-  Heart,
   LogOut,
   Menu,
-  Moon,
-  Sun
+  CalendarCheck,
+  ListChecks,
+  Table,
+  Crown
 } from 'lucide-react';
-import { useTheme } from "next-themes";
 import Image from 'next/image';
+import ThemeSwitcher from './theme-switcher';
 import Link from 'next/link';
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
+import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover"
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -39,8 +40,7 @@ interface LayoutProps {
 
 const Layout: React.FC<LayoutProps> = ({ children }) => {
   const router = useRouter();
-  const { status } = useSession();
-  const { setTheme, theme } = useTheme();
+  const { data: session, status } = useSession();
   const isFeaturePage = ['/todolists', '/stats', '/tasks', '/habits', '/habits-history'].includes(router.pathname);
 
   if (status === 'loading') {
@@ -57,28 +57,29 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
   }
 
   const navigationItems = [
-    { href: '/todolists', label: 'Todo Lists', icon: ListTodo },
-    { href: '/tasks', label: 'Tasks', icon: CheckCircle },
-    { href: '/habits', label: 'Habits', icon: Heart },
+    { href: '/todolists', label: 'Todo Lists', icon: ListChecks },
+    { href: '/tasks', label: 'Tasks History', icon: Table },
+    { href: '/habits', label: 'Habits', icon: CalendarCheck },
     { href: '/habits-history', label: 'Habits History', icon: Calendar },
-    { href: '/stats', label: 'Statistics', icon: BarChart },
+    { href: '/stats', label: 'Task Stats', icon: BarChart },
+    { href: '/pricing', label: 'Upgrade', icon: Crown },
   ];
 
   return (
     <div className="min-h-screen flex flex-col">
       {!isFeaturePage && <Header />}
-      <main className="flex-grow w-full mx-auto">
+      <main className="flex-1 w-full flex">
         {isFeaturePage ? (
           <SidebarProvider>
-            <div className="flex h-screen overflow-hidden">
+            <div className="flex h-screen w-full">
               <Sidebar className="z-40 bg-background border-r border-border">
                 <SidebarHeader className="border-b border-border">
                   <SidebarMenu>
                     <SidebarMenuItem>
-                      <div className="flex items-center justify-center space-x-3 px-4 py-2">
+                      <Link href="/" className="flex items-center justify-center space-x-3 px-4 py-2">
                         <Image src="/logo.png" alt="logo" width={30} height={30} />
-                        <span className="font-semibold text-lg">Let's Focus</span>
-                      </div>
+                        <span className="font-semibold text-lg dark:text-white">Let&apos;s Focus</span>
+                      </Link>
                     </SidebarMenuItem>
                   </SidebarMenu>
                 </SidebarHeader>
@@ -106,14 +107,37 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
 
                         <SidebarMenuItem className="mb-1">
                           <SidebarMenuButton asChild>
-                            <Button
-                              variant="ghost"
-                              onClick={() => setTheme(theme === "light" ? "dark" : "light")}
+                            <Button 
+                              variant="ghost" 
                               className="w-full justify-start h-10 px-4 text-foreground hover:bg-accent hover:text-accent-foreground"
                             >
-                              <Sun className="mr-3 h-4 w-4 dark:hidden" />
-                              <Moon className="hidden mr-3 h-4 w-4 dark:block" />
-                              <span>Switch theme</span>
+                              <div className="flex items-center w-full">
+                                <ThemeSwitcher />
+                              </div>
+                            </Button>
+                          </SidebarMenuButton>
+                        </SidebarMenuItem>
+
+                        <SidebarMenuItem key='profile' className="mb-1">
+                          <SidebarMenuButton asChild>
+                            <Button 
+                              variant="ghost" 
+                              className="w-full justify-start h-10 px-4 text-foreground hover:bg-accent hover:text-accent-foreground"
+                            >
+                              <Popover>
+                                <PopoverTrigger asChild>
+                                  <div className="flex items-center">
+                                    <Avatar className="cursor-pointer rounded-full border h-5 w-5 mr-4">
+                                      <AvatarImage src={session?.user?.image || ''} alt={session?.user?.name || ''}/>
+                                      <AvatarFallback>{session?.user?.name?.charAt(0) || 'U'}</AvatarFallback>
+                                    </Avatar>
+                                    <span>Profile</span>
+                                  </div>
+                                </PopoverTrigger>
+                                <PopoverContent className="w-auto p-1">
+                                  <p>{session?.user?.email}</p>
+                                </PopoverContent>
+                              </Popover>
                             </Button>
                           </SidebarMenuButton>
                         </SidebarMenuItem>
@@ -139,27 +163,27 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
                 <SidebarRail />
               </Sidebar>
 
-              <div className="flex-1 flex flex-col">
-                <div className="sticky top-0 z-30 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-                  <div className="flex items-center h-[3.9rem] px-6 border-b border-border">
+              <div className="flex-1 flex flex-col overflow-y-auto">
+                <div className="sticky top-0 z-30">
+                  <div className="flex items-center h-[3.9rem] px-3">
                     <SidebarTrigger>
-                      <Button variant="ghost" size="icon">
+                      <Button variant="ghost" size="sm">
                         <Menu className="h-5 w-5" />
                         <span className="sr-only">Toggle sidebar</span>
                       </Button>
                     </SidebarTrigger>
                   </div>
                 </div>
-                <div className="flex-1 overflow-auto">
-                  <div className="container mx-auto py-6 px-6">
-                    {children}
-                  </div>
+                <div className="flex-1 p-6">
+                  {children}
                 </div>
               </div>
             </div>
           </SidebarProvider>
         ) : (
-          children
+          <div className="flex-1">
+            {children}
+          </div>
         )}
       </main>
       <Script src="https://autoback.link/autobacklink.js?ref=letsfocus.today" defer async />
