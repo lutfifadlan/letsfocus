@@ -126,7 +126,7 @@ const Footer: React.FC = () => {
             <h4 className="font-semibold text-lg mb-4 text-primary text-center sm:text-left">
               Indie Friends
             </h4>
-            <div className="flex flex-col gap-4">
+            <div className="flex flex-col gap-4 items-center sm:items-start">
               {backlinks.map((item, index) => (
                 <a
                   key={index}

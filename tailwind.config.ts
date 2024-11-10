@@ -62,7 +62,17 @@ const config: Config = {
   			'color-4': 'hsl(var(--color-4))',
   			'color-5': 'hsl(var(--color-5))',
   			'green-500': 'hsl(var(--green-500))',
-  			'red-500': 'hsl(var(--red-500))'
+  			'red-500': 'hsl(var(--red-500))',
+  			sidebar: {
+  				DEFAULT: 'hsl(var(--sidebar))',
+  				foreground: 'hsl(var(--sidebar-foreground))',
+  				border: 'hsl(var(--sidebar-border))',
+  				accent: {
+  					DEFAULT: 'hsl(var(--sidebar-accent))',
+  					foreground: 'hsl(var(--sidebar-accent-foreground))',
+  				},
+  				ring: 'hsl(var(--sidebar-ring))',
+  			}
   		},
   		borderRadius: {
   			lg: 'var(--radius)',

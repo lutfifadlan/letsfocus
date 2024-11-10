@@ -1,4 +1,4 @@
-import '../styles/globals.css';
+import '@/app/globals.css';
 import { ThemeProvider } from 'next-themes';
 import type { AppProps } from 'next/app';
 import { NextUIProvider} from "@nextui-org/react";
@@ -7,14 +7,22 @@ import { SessionProvider } from 'next-auth/react';
 import { SpeedInsights } from '@vercel/speed-insights/next';
 import { Analytics } from "@vercel/analytics/react"
 import { OpenPanelComponent } from '@openpanel/nextjs';
+import { Session } from 'next-auth';
 
-function MyApp({ Component, pageProps }: AppProps) {
+// Extend AppProps to include the session
+type AppPropsWithSession = AppProps & {
+  pageProps: {
+    session?: Session;
+  };
+};
+
+function MyApp({ Component, pageProps: { session, ...pageProps } }: AppPropsWithSession) {
   return (
-    <>
+    <SessionProvider session={session}>
       <OpenPanelComponent
         clientId={process.env.OPENPANEL_CLIENT_ID as string}
         trackScreenViews={true}
-        profileId={pageProps.session?.user.id as string}
+        profileId={session?.user?.id as string}
         trackAttributes={true}
       />
       <ThemeProvider
@@ -35,17 +43,16 @@ function MyApp({ Component, pageProps }: AppProps) {
           'nord'
         ]}
       >
-        <SessionProvider session={pageProps.session}>
-          <NextUIProvider>
-            <Component {...pageProps} />
-            <Toaster />
-          </NextUIProvider>
-        </SessionProvider>
+        <NextUIProvider>
+          <Component {...pageProps} />
+          <Toaster />
+        </NextUIProvider>
       </ThemeProvider>
       <SpeedInsights />
       <Analytics />
-    </>
+    </SessionProvider>
   );
 }
+
 export default MyApp;
 

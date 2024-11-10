@@ -4,10 +4,9 @@ import { useSession, signOut } from 'next-auth/react';
 import { useRouter } from 'next/router';
 import { Button } from "@/components/ui/button";
 import Image from 'next/image';
-import { Menu, LogIn, LogOut, List, ChartNoAxesCombined, ListChecks, Crown, Calendar } from 'lucide-react'; // Add Calendar to imports
+import { Menu, LogIn, LogOut, ListChecks, Crown, CalendarCheck } from 'lucide-react'; // Add Calendar to imports
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover"
-import ThemeSwitcher from '@/components/theme-switcher';
 
 const Header: React.FC = () => {
   const { data: session } = useSession();
@@ -64,7 +63,7 @@ const Header: React.FC = () => {
               variant="ghost"
               className="border-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
             >
-              <Calendar className="w-5 h-5" />
+              <CalendarCheck className="w-5 h-5" />
             </Button>
             <Button
               onClick={() => router.push('/todolists')}
@@ -73,25 +72,6 @@ const Header: React.FC = () => {
             >
               <ListChecks className="w-5 h-5" />
             </Button>
-            {!isLandingPage && (
-              <>
-                <Button
-                  onClick={() => router.push('/stats')}
-                  variant="ghost"
-                  className="border-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
-                >
-                  <ChartNoAxesCombined className="w-5 h-5" />
-                </Button>
-                <Button
-                  onClick={() => router.push('/tasks')}
-                  variant="ghost"
-                  className="border-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
-                >
-                  <List className="w-5 h-5" />
-                </Button>
-              </>
-            )}
-            {!isLandingPage && <ThemeSwitcher />} {/* Conditionally render ThemeSwitcher */}
             {!isLandingPage && (
               <>
                 {session && (
@@ -138,11 +118,18 @@ const Header: React.FC = () => {
           <div className="lg:hidden mt-4">
             <div className="space-y-2">
               <Button
+                onClick={() => router.push('/pricing')}
+                variant="ghost"
+                className="w-full mt-2 border-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
+              >
+                <Crown className="w-5 h-5" />
+              </Button>
+              <Button
                 onClick={() => router.push('/habits')}
                 variant="ghost"
                 className="w-full mt-2 border-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
               >
-                <Calendar className="w-5 h-5" />
+                <CalendarCheck className="w-5 h-5" />
               </Button>
               <Button
                 onClick={() => router.push('/todolists')}
@@ -151,25 +138,6 @@ const Header: React.FC = () => {
               >
                 <ListChecks className="w-5 h-5" />
               </Button>
-              {!isLandingPage && (
-                <>
-                  <Button
-                    onClick={() => router.push('/stats')}
-                    variant="ghost"
-                    className="w-full mt-2 border-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
-                  >
-                    <ChartNoAxesCombined className="w-5 h-5" />
-                  </Button>
-                  <Button
-                    onClick={() => router.push('/tasks')}
-                    variant="ghost"
-                    className="w-full mt-2 border-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
-                  >
-                    <List className="w-5 h-5" />
-                  </Button>
-                </>
-              )}
-              {!isLandingPage && <ThemeSwitcher />} {/* Conditionally render ThemeSwitcher */}
               {!isLandingPage && (
                 <>
                   {session && (
