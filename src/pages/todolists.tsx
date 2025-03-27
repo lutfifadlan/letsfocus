@@ -15,7 +15,7 @@ import {
   CalendarClock, SquareCheck, Trash2, ChevronsUp, ChevronUp,
   ChevronDown, Flag, CalendarPlus, ArrowDownUp, CopyCheck,
   MinusCircle, Rocket, CircleMinus, Sparkles, XSquare, Filter, Search,
-  AlertCircle, Clock, CheckCircle, Settings, Check, Crown, GripVertical,
+  AlertCircle, Clock, CheckCircle, Check, Crown, GripVertical,
   MessageCircle
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
@@ -256,7 +256,6 @@ export default function TodolistsPage() {
   const [searchTerm, setSearchTerm] = useState('');
   const [showSearch, setShowSearch] = useState(false);
   const [showFilter, setShowFilter] = useState(false);
-  const [aiModel, setAiModel] = useState('llama-3.2-3b-instruct');
   const [userPlan, setUserPlan] = useState('');
   const [manualOrderingEnabled, setManualOrderingEnabled] = useState(true);
   const [activeSortOption, setActiveSortOption] = useState<string | null>(() => {
@@ -335,7 +334,7 @@ export default function TodolistsPage() {
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ todolistsInput: aiInput, modelType: aiModel }),
+        body: JSON.stringify({ todolistsInput: aiInput }),
       });
   
       if (!response.ok) {
@@ -358,7 +357,6 @@ export default function TodolistsPage() {
       op.track('ai_tasks_generated', {
         userId: session?.user.id,
         input: aiInput,
-        modelType: aiModel,
         tasksGenerated: data.tasks.length,
       });
   
@@ -2366,78 +2364,6 @@ export default function TodolistsPage() {
                       <AiInputPlaceholder onClick={() => setIsAiInputFocused(true)} />
                     )}
                   </div>
-                  <TooltipProvider>
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <div>
-                          <DropdownMenu>
-                            <DropdownMenuTrigger asChild>
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                aria-label="AI Model Settings"
-                              >
-                                <Settings size={16} />
-                              </Button>
-                            </DropdownMenuTrigger>
-                            <DropdownMenuContent className="w-48">
-                              <TooltipProvider>
-                                <Tooltip>
-                                  <TooltipTrigger asChild>
-                                    <div>
-                                      <DropdownMenuItem 
-                                        onClick={() => setAiModel("llama-3.2-3b-instruct")}
-                                        className="flex items-center justify-start cursor-pointer"
-                                      >
-                                        {aiModel === "llama-3.2-3b-instruct" && <Check className="h-4 w-4 mr-2" />}
-                                        Llama 3.2 3B Instruct
-                                      </DropdownMenuItem>
-                                    </div>
-                                  </TooltipTrigger>
-                                  <TooltipContent className="w-80">
-                                    <p>
-                                      The Llama 3.2 instruction-tuned text only models are optimized
-                                      for multilingual dialogue use cases, including agentic retrieval and summarization tasks.
-                                      Free to use.
-                                    </p>
-                                  </TooltipContent>
-                                </Tooltip>
-                              </TooltipProvider>
-                              <TooltipProvider>
-                                <Tooltip>
-                                  <TooltipTrigger asChild>
-                                    <div>
-                                      <DropdownMenuItem 
-                                        onClick={() => setAiModel("gpt-4o")}
-                                        disabled={userPlan === "FREE"}
-                                        className={`flex items-center justify-start ${userPlan === "FREE" ? "cursor-not-allowed pointer-events-none" : "cursor-pointer"}`}
-                                      >
-                                        {aiModel === "gpt-4o" && <Check className="h-4 w-4 mr-2" />}
-                                        GPT-4o
-                                      </DropdownMenuItem>
-                                    </div>
-                                  </TooltipTrigger>
-                                    <TooltipContent className="w-80">
-                                      <p>
-                                        The GPT-4o model is a version of GPT-4 optimized for performance in various generative tasks.
-                                        It is designed to excel in tasks like text generation, summarization, and language understanding across multiple languages.
-                                      </p>
-                                      {userPlan === "FREE" && (
-                                      <p className="text-red-500 mt-2">
-                                        Subscribe to the Pro plan to use this model.
-                                      </p>)}
-                                    </TooltipContent>
-                                </Tooltip>
-                              </TooltipProvider>
-                            </DropdownMenuContent>
-                          </DropdownMenu>
-                        </div>
-                      </TooltipTrigger>
-                      <TooltipContent>
-                        <p>AI Model Settings</p>
-                      </TooltipContent>
-                    </Tooltip>
-                  </TooltipProvider>
                   <TooltipProvider>
                     <Tooltip>
                       <TooltipTrigger asChild>
