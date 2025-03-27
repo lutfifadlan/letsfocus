@@ -14,7 +14,7 @@ const PricingPage = () => {
         <div className="max-w-2xl mx-auto text-center">
           <h1 className="text-4xl font-extrabold mb-6">Payments Currently Disabled</h1>
           <p className="text-xl mb-8">
-            We're currently not accepting any payments. All features are available for free during this period.
+            We&apos;re currently not accepting any payments. All features are available for free during this period.
           </p>
           <Button 
             onClick={() => router.push('/todolists')}
