@@ -8,7 +8,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     return res.status(405).json({ message: 'Method not allowed' });
   }
 
-  const { todolistsInput, modelType } = req.body;
+  const { todolistsInput } = req.body;
 
   const prompt = `Create a to-do list based on the following input: ${todolistsInput}. Provide an array of tasks with titles only.
   Don't include numbers of tasks or any other additional characters or text please. Don't include bullet points or any other formatting.`;
@@ -31,31 +31,12 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     return res.status(404).json({ message: 'User plan not found' });
   }
 
-  if (!userPlan.plan.toLowerCase().includes('pro') && modelType !== 'llama-3.2-3b-instruct') {
-    return res.status(400).json({ message: 'Insufficient credits' });
-  }
-
-  let apiUrl = '';
-  let headers = {};
-  let model = '';
-
-  if (modelType === 'gpt-4o') {
-    apiUrl = 'https://api.openai.com/v1/chat/completions';
-    headers = {
-      'Content-Type': 'application/json',
-      'Authorization': `Bearer ${process.env.OPENAI_API_KEY}`,
-    };
-    model = 'gpt-4o';
-  } else if (modelType === 'llama-3.2-3b-instruct') {
-    apiUrl = 'https://openrouter.ai/api/v1/chat/completions';
-    headers = {
-      'Content-Type': 'application/json',
-      'Authorization': `Bearer ${process.env.OPENROUTER_API_KEY}`,
-    };
-    model = 'meta-llama/llama-3.2-3b-instruct:free';
-  } else {
-    return res.status(400).json({ message: 'Invalid model type' });
-  }
+  const apiUrl = 'https://openrouter.ai/api/v1/chat/completions';
+  const headers = {
+    'Content-Type': 'application/json',
+    'Authorization': `Bearer ${process.env.OPENROUTER_API_KEY}`,
+  };
+  const model = 'meta-llama/llama-3.2-3b-instruct:free';
 
   let response;
   try {
@@ -80,7 +61,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     userId: user._id,
     input: todolistsInput,
     output: tasks,
-    modelType: modelType,
+    modelType: 'llama-3.2-3b-instruct',
     inputTokens: data.usage.prompt_tokens,
     outputTokens: data.usage.completion_tokens,
   });

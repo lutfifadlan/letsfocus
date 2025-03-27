@@ -25,10 +25,6 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     return res.status(404).json({ message: 'User plan not found' });
   }
 
-  if (userPlan.plan && !userPlan.plan.toLowerCase().includes('pro')) {
-    return res.status(403).json({ message: 'Upgrade to Pro to Add Comments' });
-  }
-
   switch (req.method) {
     case 'GET':
       const { taskId } = req.query;
