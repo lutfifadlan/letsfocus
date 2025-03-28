@@ -8,7 +8,6 @@ import {
   DropdownMenuContent,
   DropdownMenuItem,
 } from '@/components/ui/dropdown-menu';
-import { useSession } from 'next-auth/react';
 import { useToast } from "@/hooks/use-toast";
 
 const themes = [
@@ -28,42 +27,18 @@ const themes = [
 const ThemeSwitcher = () => {
   const { setTheme, resolvedTheme } = useTheme();
   const [mounted, setMounted] = useState(false);
-  const [isPro, setIsPro] = useState(false);
-  const { data: session } = useSession();
   const { toast } = useToast();
 
   useEffect(() => {
     setMounted(true);
   }, []);
 
-  useEffect(() => {
-    const fetchUserPlan = async () => {
-      if (session?.user) {
-        try {
-          const response = await fetch('/api/user-plans');
-          if (response.ok) {
-            const data = await response.json();
-            if (data && data.plan) {
-              setIsPro(data.plan.toLocaleLowerCase().includes('pro'));
-            }
-          }
-        } catch (error) {
-          console.error('Error fetching user plan:', error);
-        }
-      }
-    };
-
-    fetchUserPlan();
-  }, [session]);
-
   const handleThemeChange = (newTheme: string) => {
-    if (isPro || newTheme === 'light') {
-      setTheme(newTheme);
-      toast({
-        title: "Theme Changed",
-        description: `Theme has been set to ${newTheme}.`,
-      });
-    }
+    setTheme(newTheme);
+    toast({
+      title: "Theme Changed",
+      description: `Theme has been set to ${newTheme}.`,
+    });
   };
 
   if (!mounted) {
@@ -90,13 +65,11 @@ const ThemeSwitcher = () => {
             <DropdownMenuItem
               key={name}
               onSelect={() => handleThemeChange(name)}
-              disabled={!isPro && name !== 'light'}
               className="text-foreground hover:bg-accent hover:text-accent-foreground"
             >
-              <div className={`flex items-center space-x-2 w-full cursor-pointer ${!isPro && name !== 'light' ? 'opacity-50' : ''}`}>
+              <div className="flex items-center space-x-2 w-full cursor-pointer">
                 <span className="h-4 w-4 mr-2">{icon}</span>
                 <span>{name.charAt(0).toUpperCase() + name.slice(1)}</span>
-                {!isPro && name !== 'light' && <span className="text-xs text-muted-foreground ml-auto">(Pro)</span>}
               </div>
             </DropdownMenuItem>
           ))}
