@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">letsfocus</string>
+    <string name="title_activity_main">letsfocus</string>
+    <string name="package_name">today.letsfocus.www</string>
+    <string name="custom_url_scheme">today.letsfocus.www</string>
+</resources>
