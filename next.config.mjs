@@ -1,6 +1,30 @@
 import {withSentryConfig} from '@sentry/nextjs';
 /** @type {import('next').NextConfig} */
-const nextConfig = {};
+const nextConfig = {
+  trailingSlash: true,
+  images: {
+    unoptimized: true,
+  },
+  reactStrictMode: true,
+  swcMinify: true,
+  async headers() {
+    return [
+      {
+        source: '/:path*',
+        headers: [
+          {
+            key: 'Access-Control-Allow-Origin',
+            value: '*',
+          },
+          {
+            key: 'Access-Control-Allow-Methods',
+            value: 'GET,OPTIONS,PATCH,DELETE,POST,PUT',
+          },
+        ],
+      },
+    ];
+  },
+};
 
 export default withSentryConfig(nextConfig, {
   org: "fadlan-solusi-teknologi",

@@ -16,7 +16,10 @@
     "package": "electron-builder --dir",
     "dist": "electron-builder",
     "start": "bun next start",
-    "lint": "bun next lint"
+    "lint": "bun next lint",
+    "sync": "npx cap sync",
+    "android": "npx cap run android",
+    "ios": "npx cap run ios"
   },
   "build": {
     "appId": "letsfocus.today",
@@ -42,6 +45,9 @@
     }
   },
   "dependencies": {
+    "@capacitor/android": "^7.1.0",
+    "@capacitor/core": "^7.1.0",
+    "@capacitor/ios": "^7.1.0",
     "@hookform/resolvers": "^3.9.0",
     "@next/third-parties": "^14.2.15",
     "@nextui-org/react": "^2.4.8",
@@ -99,13 +105,13 @@
     "zod": "^3.23.8"
   },
   "devDependencies": {
+    "@capacitor/cli": "^7.1.0",
     "@types/node": "^20",
     "@types/react": "^18",
     "@types/react-beautiful-dnd": "^13.1.8",
     "@types/react-dom": "^18",
     "concurrently": "^9.0.1",
     "daisyui": "^4.12.12",
-    "dmg-license": "^1.0.11",
     "electron": "^32.1.2",
     "electron-builder": "^25.1.7",
     "eslint": "^8",
@@ -114,5 +120,8 @@
     "tailwindcss": "^3.4.1",
     "typescript": "^5",
     "wait-on": "^7.2.0"
+  },
+  "optionalDependencies": {
+    "dmg-license": "^1.0.11"
   }
 }
