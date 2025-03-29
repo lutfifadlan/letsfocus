@@ -16,7 +16,10 @@
     "package": "electron-builder --dir",
     "dist": "electron-builder",
     "start": "bun next start",
-    "lint": "bun next lint"
+    "lint": "bun next lint",
+    "sync": "npx cap sync",
+    "android": "npx cap run android",
+    "ios": "npx cap run ios"
   },
   "build": {
     "appId": "letsfocus.today",
