@@ -17,17 +17,18 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   switch (req.method) {
     case 'PUT':
       try {
+        const updateData = req.body;
         const habit = await Habit.findOneAndUpdate(
           { _id: id, userId: session.user.id },
-          { completionDates: req.body.completionDates },
+          { $set: updateData },
           { new: true }
         );
         if (!habit) {
           return res.status(404).json({ error: 'Habit not found' });
         }
         res.status(200).json(habit);
-      // eslint-disable-next-line @typescript-eslint/no-unused-vars
       } catch (error) {
+        console.error('Failed to update habit:', error);
         res.status(500).json({ error: 'Failed to update habit' });
       }
       break;

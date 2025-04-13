@@ -24,6 +24,12 @@ import CustomBackground from '@/components/backgrounds/custom';
 import Link from 'next/link';
 import { BarChart } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 
 interface StreakInfo {
   current: number;
@@ -428,21 +434,32 @@ export default function HabitsPage() {
                           const isCompleted = habit.completionDates.includes(dateStr);
                           return (
                             <TableCell key={date.toISOString()} className="text-center p-2 sm:p-4">
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                className={cn(
-                                  'w-6 h-6 sm:w-8 sm:h-8 transition-all duration-200',
-                                  isCompleted ? 'bg-green-500/20 hover:bg-green-500/30' : 'hover:bg-gray-100 dark:hover:bg-gray-800'
-                                )}
-                                onClick={() => toggleHabitCompletion(habit._id, date)}
-                              >
-                                {isCompleted ? (
-                                  <Check className="h-3 w-3 sm:h-4 sm:w-4 text-green-500" />
-                                ) : (
-                                  <X className="h-3 w-3 sm:h-4 sm:w-4 text-gray-300" />
-                                )}
-                              </Button>
+                              <TooltipProvider>
+                                <Tooltip>
+                                  <TooltipTrigger asChild>
+                                    <Button
+                                      variant="ghost"
+                                      size="icon"
+                                      className={cn(
+                                        'w-6 h-6 sm:w-8 sm:h-8 transition-all duration-200 rounded-full border-2',
+                                        isCompleted 
+                                          ? 'bg-green-500/20 border-green-500 hover:bg-green-500/30' 
+                                          : 'border-gray-200 dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-gray-800'
+                                      )}
+                                      onClick={() => toggleHabitCompletion(habit._id, date)}
+                                    >
+                                      {isCompleted ? (
+                                        <Check className="h-3 w-3 sm:h-4 sm:w-4 text-green-500" />
+                                      ) : (
+                                        <span className="text-gray-400 text-xs">✓</span>
+                                      )}
+                                    </Button>
+                                  </TooltipTrigger>
+                                  <TooltipContent>
+                                    <p>{isCompleted ? 'Mark as incomplete' : 'Mark as complete'}</p>
+                                  </TooltipContent>
+                                </Tooltip>
+                              </TooltipProvider>
                             </TableCell>
                           );
                         })}
